@@ -17,6 +17,7 @@ mod config;
 mod max_subtile;
 mod packer;
 mod projector;
+mod stitch;
 mod tile;
 
 use clap::Parser as _;
@@ -46,6 +47,7 @@ fn main() -> Result<()> {
             }
         }
         crate::config::Commands::MaxSubTiles(_) => max_subtiles()?,
+        crate::config::Commands::Stitch(stitch_config) => stitch::make_tile(stitch_config)?,
     }
 
     Ok(())

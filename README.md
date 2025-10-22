@@ -4,9 +4,11 @@ This repo is for all the supporting code used to find and display the longest li
 
 The main viewshed algorithm is another repo https://github.com/tombh/total-viewsheds
 
-The raw elevation data is currently from (October 2025) https://www.viewfinderpanoramas.org/Coverage%20map%20viewfinderpanoramas_org3.htm Other sources of data are available, notably via AWS's https://registry.opendata.aws/terrain-tiles, but as far as I can tell viewfinderpanoramas.org offers a cleaned version, removing noisy data and filling in voids with other sources.
+The raw elevation data is, as of writing (October 2025), from https://www.viewfinderpanoramas.org/Coverage%20map%20viewfinderpanoramas_org3.htm Other sources of data are available, notably via AWS's https://registry.opendata.aws/terrain-tiles, but as far as I can tell viewfinderpanoramas.org offers a cleaned version, removing noisy data and filling in voids with other sources.
 
 ## Packer
+
+I wrote an in-depth blog post about the Packer https://tombh.co.uk/packing-world-lines-of-sight
 
 ![Map of all the longest line of sight tiles in the world](/assets/world_packed.webp)
 
@@ -33,12 +35,59 @@ We could just cover the world with hundreds of 670km x 670km squares and calcula
 So can we strike an optimal balance? This is what the `Packer` in this repo tries to do.
 
 ### Steps
-1. Create a "lower" resolution version of the global elevation data that for every N degrees/minutes/seconds creates subtile that captures the highest point within itself. So it's lower resolution but it hasn't lost any critical data via the conventional side effects of interpolation. These subtiles are like an accelerating data structure for all the lookups we'll be doing to build the tiles.
+1. Create a "lower" resolution version of the global elevation data that for every N degrees (I chose 0.1°, or ~11km at the equator) there's a _sub_-tile that captures the highest point within itself. So it is lower resolution but it hasn't lost any critical data via the typical side effects of interpolation. These subtiles are like an accelerating data structure for all the lookups we'll be doing to find TVS tiles.
 2. For each subtile on a popable stack:
-  1. Create a tile that fits the highest elevation of all the subtiles it covers.
-  2. If the tile overlaps with any other tiles move on to the next subtile.
-  3. Remove all the subtiles from the stack that the tile covers.
-  4. Repeat this process until no more non-overlapping tiles can be found.
+    1. Create any TVS tile that fits the highest elevation of all the subtiles it covers.
+    2. If the tile overlaps with other tiles discard it and move on to the next subtile.
+    3. If the tile doesn't overlap then keep it and remove all the subtiles from the stack that the tile covers.
+    4. Repeat this process until no more non-overlapping tiles can be found.
 3. Repeat step 2 but allow for overlapping tiles.
 4. Once all subtiles are covered, run some cleanup, like removing tiles that are already encompassed by larger tiles.
 
+### Usage
+1. `cargo run --bin tasks -- max-sub-tiles`. Creates `./max_subtiles.bin`.
+2. `cargo run --bin tasks -- packer`. Creates a `static/tiles.json`.
+
+## Stitcher
+
+Creates arbitrary tiles out of the global DEM data.
+
+`cargo run --bin tasks -- stitch --dems /publicish/dems --centre -3.049208402633667,53.24937438964844 --width 366610.1875`
+
+## Calculate Total Viewsheds
+
+Using https://github.com/AllTheLines/CacheTVS
+
+Outputs `.bt` heatmap.
+
+## Prepare For Cloud
+
+```
+# pip install rio-tiler rio-pmtiles
+gdal_translate -of COG -co COMPRESS=DEFLATE -co ZLEVEL=9 -co BIGTIFF=YES ../total-viewsheds/output/total_surfaces.bt output/cardiff_cog.tiff
+gdalwarp -t_srs EPSG:3857 output/cardiff_cog.tiff output/cardiff_cog_3857.tiff
+
+gdal_translate -expand rgb output/cardiff_cog_3857.tiff output/cardiff_cog_3857_3band.tiff -ot Byte -co COMPRESS=DEFLATE
+
+rio pmtiles output/cardiff_cog_3857.tiff output/cardiff_cog_3857.pmtiles \
+--format WEBP \
+--resampling bilinear \
+--zoom-levels 0..14
+
+gdal_translate output/cardiff_cog_3857.tiff output/cardiff_cog_3857.pmtiles \
+-of PMTiles \
+-co TILING_SCHEME=GoogleMapsCompatible \
+-co TILE_FORMAT=WEBP \
+-co COMPRESS=DEFLATE \
+-co TARGET_ZLEVEL=14
+```
+
+Aggregate `.bt` heatmap into COG. One COG per continent?
+
+How long does it take to regenerate a COG?
+
+Upload/update COG onto S3.
+
+## Website
+
+Slippy map of all heatmaps

@@ -21,9 +21,11 @@ pub enum Commands {
     /// Convert a directory of DEM data into a reduced resolution version where each point
     /// represents the highest point in its square "orbit".
     MaxSubTiles(MaxSubTiles),
+    /// Create tiles identifited by the packer.
+    Stitch(Stitch),
 }
 
-/// `carg run packer` arguments.
+/// `cargo run packer` arguments.
 #[derive(clap::Parser, Debug, Clone)]
 pub struct Packer {
     /// Just run for one step
@@ -49,9 +51,30 @@ pub struct Packer {
     pub steps: Option<u32>,
 }
 
-/// `carg run max-sub-tiles` arguments.
+/// `cargo run max-sub-tiles` arguments.
 #[derive(clap::Parser, Debug, Clone)]
 pub struct MaxSubTiles;
+
+/// `cargo run stitch` arguments.
+#[derive(clap::Parser, Debug, Clone)]
+pub struct Stitch {
+    /// Source of all the DEM files.
+    #[arg(long, value_name = "Path to DEMs folder")]
+    pub dems: std::path::PathBuf,
+
+    /// The lon/lat coord for the centre of the tile to create.
+    #[arg(
+        long,
+        allow_hyphen_values(true),
+        value_parser = parse_coord,
+        value_name = "Centre of tile")
+    ]
+    pub centre: (f64, f64),
+
+    /// The width of the tile in meters.
+    #[arg(long, value_name = "Tile width")]
+    pub width: f32,
+}
 
 /// Parse a single coordinate.
 fn parse_coord(string: &str) -> Result<(f64, f64)> {

@@ -30,7 +30,7 @@ impl Tile {
     /// The bounding box for the tile in lon/lat coordinates. Note that this is not a bounding box
     /// in the sense that it preserves a true metric square. It is "square" within degree-based
     /// units.
-    fn to_bbox_lonlat(
+    pub fn to_bbox_lonlat(
         self,
     ) -> Result<(
         crate::projector::LonLatCoord,
