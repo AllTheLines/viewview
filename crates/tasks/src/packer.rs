@@ -81,11 +81,19 @@ impl Packer {
 
     /// Run for the entire globe.
     pub fn run_all(&mut self) -> Result<()> {
-        let default_start = (-180.0f64, 90.0f64);
+        // We don't go all the way to ±90 because the current (October 2025) implementation doesn't
+        // work well when a tile crosses the North or South poles. 85°N is roughly the
+        // northern-most part of Greenland, beyond which there isn't really any more land. And we
+        // assume that beyond 85°S, which is solely in Antartica, doesn't have the longest line of
+        // sight on the planet.
+        let max_latitude = 85.0f64;
+
+        let max_longitude = 180.0f64;
+        let default_start = (-max_longitude, max_latitude);
         let mut centre = LonLatCoord(self.config.start.unwrap_or(default_start).into());
 
         let mut steps = 0u32;
-        while (-90.0f64..=90.0f64).contains(&centre.0.y) {
+        while (-max_latitude..=max_latitude).contains(&centre.0.y) {
             if let Some(stop_at_step) = self.config.steps
                 && steps >= stop_at_step
             {
@@ -94,7 +102,7 @@ impl Packer {
 
             let longtitude_step = Self::calculate_longtitude_step(centre.0.y);
             let mut is_last_longitude = false;
-            while (-180.0f64..=180.0f64).contains(&centre.0.x) {
+            while (-max_longitude..=max_longitude).contains(&centre.0.x) {
                 if let Some(stop_at_step) = self.config.steps
                     && steps >= stop_at_step
                 {
@@ -116,8 +124,8 @@ impl Packer {
                     y: centre.0.y
                 });
 
-                if centre.0.x > 180.0f64 {
-                    centre.0.x = 180.0f64;
+                if centre.0.x > max_longitude {
+                    centre.0.x = max_longitude;
                     is_last_longitude = true;
                 }
 
