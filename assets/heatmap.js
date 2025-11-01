@@ -44,7 +44,7 @@ const HeatmapLayer = {
 		this.gl = gl;
 		this.map = map;
 		this.tiles = new Map();
-		this.tileSize = 512;
+		this.tileSize = 256;
 
 		if (!(gl instanceof WebGL2RenderingContext)) {
 			console.error("Need WebGL2 for R32F textures.");
@@ -149,12 +149,20 @@ const HeatmapLayer = {
 			const tileBuf = await heatmapTiles.getZxy(z, x, y);
 			if (!tileBuf) return null;
 
-			const tvs_surfaces = new Float32Array(tileBuf.data);
+			const compressed = new Uint8Array(tileBuf.data);
+			const stream = new DecompressionStream("deflate");
+
+			const decompressedResp = new Response(
+				new Blob([compressed]).stream().pipeThrough(stream)
+			);
+			const arrayBuffer = await decompressedResp.arrayBuffer();
+
+			const tvs_surfaces = new Float32Array(arrayBuffer);
 			const minVal = Math.min(...tvs_surfaces);
 			const maxVal = Math.max(...tvs_surfaces);
 
-			const tex = this.gl.createTexture();
-			this.gl.bindTexture(this.gl.TEXTURE_2D, tex);
+			const texture = this.gl.createTexture();
+			this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
 			this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
 			this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
 			this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
@@ -171,7 +179,7 @@ const HeatmapLayer = {
 				tvs_surfaces
 			);
 
-			data = { tex, minVal, maxVal, isLoaded: true };
+			data = { texture, minVal, maxVal, isLoaded: true };
 			this.tiles.set(key, data);
 			console.debug(`Tile loaded: ${key}`);
 			return true;
@@ -182,42 +190,23 @@ const HeatmapLayer = {
 	},
 
 	prerender() {
-		// for (const tile of map.coveringTiles({ tileSize: 256 })) {
-		// 	const key = `${tile.canonical.z}/${tile.canonical.x}/${tile.canonical.y}`;
-		// };
-		// // Get the list of currently visible tile IDs
-		// const visibleTileKeys = new Set(this.map.getVisibleTiles().map(this.tileManager.getTileKey));
-		//
-		// // Check for any tiles in the cache that are no longer visible
-		// for (const key of this.tiles.keys()) {
-		// 	if (!visibleTileKeys.has(key)) {
-		// 		const texture = this.tiles.get(key);
-		// 		gl.deleteTexture(texture); // Delete the GL texture
-		// 		this.tiles.delete(key);    // Remove from the cache
-		// 	}
-		// }
+		// TODO: Delete unused cached tiles.
 	},
 
 	async render(gl, matrix) {
-		let loading = false;
 		let max = 0.0;
 
 		// We do this is in a seperate loop because:
 		// * You can't call await during GL setup.
 		// * We need to calculate the max total surface accumulation for the entire viewport.
 		for (const tile of map.coveringTiles({ tileSize: 256 })) {
-			loading = await this.loadTile(tile.canonical.z, tile.canonical.x, tile.canonical.y);
+			this.loadTile(tile.canonical.z, tile.canonical.x, tile.canonical.y);
 			const key = `${tile.canonical.z}/${tile.canonical.x}/${tile.canonical.y}`;
 			let cachedTile = this.tiles.get(key);
 			if (cachedTile.maxVal > max) {
 				max = cachedTile.maxVal;
 			}
 
-		};
-
-		if (loading) {
-			this.map.triggerRepaint();
-			return;
 		};
 
 		gl.useProgram(this.program);
@@ -231,7 +220,10 @@ const HeatmapLayer = {
 		for (const tile of map.coveringTiles({ tileSize: 256 })) {
 			const key = `${tile.canonical.z}/${tile.canonical.x}/${tile.canonical.y}`
 			let cachedTile = this.tiles.get(key);
-			if (!cachedTile.isLoaded) continue;
+			if (!cachedTile.isLoaded) {
+				console.debug(`Loading: ${key}`);
+				continue;
+			};
 			console.debug(`Rendering: ${key}`);
 
 			const projection = map.transform.getProjectionData({
@@ -239,7 +231,7 @@ const HeatmapLayer = {
 			});
 
 			gl.activeTexture(gl.TEXTURE0);
-			gl.bindTexture(gl.TEXTURE_2D, cachedTile.tex);
+			gl.bindTexture(gl.TEXTURE_2D, cachedTile.texture);
 			gl.uniform1i(this.uData, 0);
 
 			gl.uniform1f(this.uMax, max);

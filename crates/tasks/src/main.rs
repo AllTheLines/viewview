@@ -1,4 +1,4 @@
-//! sdf
+//! Entrypoint
 #![expect(
     clippy::panic_in_result_fn,
     reason = "This is just code for short tasks, so panicking is better"
@@ -31,6 +31,11 @@ const SUBTILES_FILE: &str = "max_subtiles.bin";
 
 fn main() -> Result<()> {
     setup_logging()?;
+
+    // Safety: We're just some adhoc tasks code, so not running anywhere vulnerbale.
+    unsafe {
+        std::env::set_var("GDAL_NUM_THREADS", "ALL_CPUS");
+    };
 
     let config = crate::config::Config::parse();
     tracing::info!("Initialising with config: {config:?}",);

@@ -14,6 +14,9 @@ use rstar::PointDistance as _;
 
 use crate::projector::LonLatCoord;
 
+/// Where to save the final packed tiles output.
+const TILES_OUTPUT: &str = "assets/tiles.json";
+
 /// The minimum elevation inside a tile to start considering larger tiles from. Another way of
 /// looking at this is rather the minimum _width_ of tile, as tile widths are primarilly dictated
 /// by the maximum point of elevation inside them. We don't use 0m because in fact the lowest
@@ -904,7 +907,6 @@ impl Packer {
     /// Save the tiles to [`GeoJSON`].
     fn save_tiles_as_geojson(&self) -> Result<()> {
         let mut features: Vec<geojson::Feature> = Vec::new();
-        let path = "static/tiles.json";
         for tile in &self.tiles {
             let geometry: geo::Geometry = tile.data.to_polygon_lonlat()?.into();
             let json: geojson::Geometry = geojson::Geometry::from(&geometry);
@@ -923,9 +925,9 @@ impl Packer {
             features.push(feature);
         }
 
-        tracing::info!("Saving {} tiles to: {path}", self.tiles.size());
+        tracing::info!("Saving {} tiles to: {TILES_OUTPUT}", self.tiles.size());
         let json = geojson::GeoJson::from(features);
-        std::fs::write(path, json.to_string())?;
+        std::fs::write(TILES_OUTPUT, json.to_string())?;
 
         Ok(())
     }
@@ -934,8 +936,6 @@ impl Packer {
     #[expect(dead_code, reason = "Useful for debugging.")]
     fn save_tiles_and_points(tiles: &[crate::tile::Tile], points: &[LonLatCoord]) -> Result<()> {
         let mut features: Vec<geo::Geometry> = Vec::new();
-
-        let path = "static/tiles.json";
 
         for tile in tiles {
             let geojson_tile = tile.to_polygon_lonlat()?;
@@ -952,12 +952,12 @@ impl Packer {
         let feature_collection = geojson::FeatureCollection::from(&features.into());
 
         tracing::info!(
-            "DEBUG: saving {} tiles and {} points to: {path}",
+            "DEBUG: saving {} tiles and {} points to: {TILES_OUTPUT}",
             tiles.len(),
             points.len()
         );
         let json = geojson::GeoJson::from(feature_collection);
-        std::fs::write(path, json.to_string())?;
+        std::fs::write(TILES_OUTPUT, json.to_string())?;
 
         Ok(())
     }
@@ -965,7 +965,6 @@ impl Packer {
     /// Save polygons for debugging.
     #[expect(dead_code, reason = "Useful for debugging.")]
     fn save_polygons(polygons: &[geo::MultiPolygon]) -> Result<()> {
-        let path = "static/tiles.json";
         let mut features: Vec<geo::Geometry> = Vec::new();
         for polygon in polygons.iter().cloned() {
             features.push(polygon.into());
@@ -973,9 +972,12 @@ impl Packer {
 
         let feature_collection = geojson::FeatureCollection::from(&features.into());
 
-        tracing::info!("DEBUG: saving {} polygons to: {path}", polygons.len());
+        tracing::info!(
+            "DEBUG: saving {} polygons to: {TILES_OUTPUT}",
+            polygons.len()
+        );
         let json = geojson::GeoJson::from(feature_collection);
-        std::fs::write(path, json.to_string())?;
+        std::fs::write(TILES_OUTPUT, json.to_string())?;
 
         Ok(())
     }

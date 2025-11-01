@@ -2,6 +2,8 @@
 
 PROJECT_ROOT=$(dirname "$(readlink -f "$0")")
 
+export GDAL_NUM_THREADS=ALL_CPUS
+
 function _load_includes {
 	for file in "$PROJECT_ROOT"/scripts/*.bash; do
 		# shellcheck disable=1090
@@ -12,5 +14,6 @@ function _load_includes {
 _load_includes
 
 subcommand=$1
+shift
 args=("$@")
 "$subcommand" "${args[@]}"
