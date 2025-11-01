@@ -1,10 +1,28 @@
-const params = new URLSearchParams(window.location.search);
-const source = params.get('source');
+let tileCache = new Map();
+const worker = new Worker(new URL('./worker.js', import.meta.url));
 
-let protocol = new pmtiles.Protocol({ metadata: true });
-maplibregl.addProtocol("pmtiles", protocol.tile);
-const heatmapTiles = new pmtiles.PMTiles(source);
-protocol.add(heatmapTiles);
+worker.onmessage = (event) => {
+	const { type, key, data, min, max } = event.data;
+
+	if (type === "tile") {
+		const tile = {
+			data,
+			min,
+			max,
+		}
+
+		tileCache.set(key, tile);
+		console.debug(`Tile loaded: ${key}`);
+	}
+};
+
+const params = new URLSearchParams(self.location.search);
+const source = params.get('source');
+worker.postMessage({ type: "init", source });
+
+function tileKey(z, x, y) {
+	return `${z}/${x}/${y}`;
+}
 
 const map = new maplibregl.Map({
 	container: "map",
@@ -139,56 +157,6 @@ const HeatmapLayer = {
 		this.uMax = gl.getUniformLocation(program, "u_max");
 	},
 
-	async loadTile(z, x, y) {
-		const key = `${z}/${x}/${y}`;
-		if (this.tiles.has(key)) { return false };
-
-		try {
-			var data = { isLoaded: false };
-			this.tiles.set(key, data);
-			const tileBuf = await heatmapTiles.getZxy(z, x, y);
-			if (!tileBuf) return null;
-
-			const compressed = new Uint8Array(tileBuf.data);
-			const stream = new DecompressionStream("deflate");
-
-			const decompressedResp = new Response(
-				new Blob([compressed]).stream().pipeThrough(stream)
-			);
-			const arrayBuffer = await decompressedResp.arrayBuffer();
-
-			const tvs_surfaces = new Float32Array(arrayBuffer);
-			const minVal = Math.min(...tvs_surfaces);
-			const maxVal = Math.max(...tvs_surfaces);
-
-			const texture = this.gl.createTexture();
-			this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
-			this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-			this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
-			this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
-			this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
-			this.gl.texImage2D(
-				this.gl.TEXTURE_2D,
-				0,
-				this.gl.R32F,
-				this.tileSize,
-				this.tileSize,
-				0,
-				this.gl.RED,
-				this.gl.FLOAT,
-				tvs_surfaces
-			);
-
-			data = { texture, minVal, maxVal, isLoaded: true };
-			this.tiles.set(key, data);
-			console.debug(`Tile loaded: ${key}`);
-			return true;
-		} catch (e) {
-			console.error("Tile fetch error:", e);
-			return null;
-		}
-	},
-
 	prerender() {
 		// TODO: Delete unused cached tiles.
 	},
@@ -196,17 +164,21 @@ const HeatmapLayer = {
 	async render(gl, matrix) {
 		let max = 0.0;
 
-		// We do this is in a seperate loop because:
-		// * You can't call await during GL setup.
-		// * We need to calculate the max total surface accumulation for the entire viewport.
 		for (const tile of map.coveringTiles({ tileSize: 256 })) {
-			this.loadTile(tile.canonical.z, tile.canonical.x, tile.canonical.y);
-			const key = `${tile.canonical.z}/${tile.canonical.x}/${tile.canonical.y}`;
-			let cachedTile = this.tiles.get(key);
-			if (cachedTile.maxVal > max) {
-				max = cachedTile.maxVal;
+			let key = tileKey(tile.canonical.z, tile.canonical.x, tile.canonical.y);
+			let cachedTile = tileCache.get(key);
+			if (!cachedTile) {
+				worker.postMessage({
+					type: "getTile",
+					z: tile.canonical.z,
+					x: tile.canonical.x,
+					y: tile.canonical.y
+				});
+				continue;
+			};
+			if (cachedTile.max > max) {
+				max = cachedTile.max;
 			}
-
 		};
 
 		gl.useProgram(this.program);
@@ -218,13 +190,33 @@ const HeatmapLayer = {
 		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 		for (const tile of map.coveringTiles({ tileSize: 256 })) {
-			const key = `${tile.canonical.z}/${tile.canonical.x}/${tile.canonical.y}`
-			let cachedTile = this.tiles.get(key);
-			if (!cachedTile.isLoaded) {
-				console.debug(`Loading: ${key}`);
+			let key = tileKey(tile.canonical.z, tile.canonical.x, tile.canonical.y);
+			let cachedTile = tileCache.get(key);
+			if (!cachedTile) {
 				continue;
 			};
-			console.debug(`Rendering: ${key}`);
+
+			if (!cachedTile.texture) {
+				const texture = gl.createTexture();
+				gl.bindTexture(gl.TEXTURE_2D, texture);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+				gl.texImage2D(
+					gl.TEXTURE_2D,
+					0,
+					gl.R32F,
+					this.tileSize,
+					this.tileSize,
+					0,
+					gl.RED,
+					gl.FLOAT,
+					cachedTile.data
+				);
+				cachedTile.texture = texture;
+				tileCache.set(key, cachedTile);
+			}
 
 			const projection = map.transform.getProjectionData({
 				overscaledTileID: tile,
