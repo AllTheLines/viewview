@@ -34,6 +34,15 @@ We could just cover the world with hundreds of 670km x 670km squares and calcula
 
 So can we strike an optimal balance? This is what the `Packer` in this repo tries to do.
 
+> [!NOTE]  
+> The packer only works between ±85° latitude:
+>
+> We don't go all the way to ±90 because the current (October 2025) implementation doesn't
+> work well when a tile crosses the North or South poles. 85°N is roughly the
+> northern-most part of Greenland, beyond which there isn't really any more land. And we
+> assume that beyond 85°S, which is solely in Antartica, doesn't have the longest line of
+> sight on the planet.
+
 ### Steps
 1. Create a "lower" resolution version of the global elevation data that for every N degrees (I chose 0.1°, or ~11km at the equator) there's a _sub_-tile that captures the highest point within itself. So it is lower resolution but it hasn't lost any critical data via the typical side effects of interpolation. These subtiles are like an accelerating data structure for all the lookups we'll be doing to find TVS tiles.
 2. For each subtile on a popable stack:
@@ -52,7 +61,12 @@ So can we strike an optimal balance? This is what the `Packer` in this repo trie
 
 Creates arbitrary tiles out of the global DEM data.
 
-`cargo run --bin tasks -- stitch --dems /publicish/dems --centre -3.049208402633667,53.24937438964844 --width 366610.1875`
+```
+cargo run --bin tasks -- stitch \
+  --dems /publicish/dems \
+  --centre -3.049208402633667,53.24937438964844 \
+  --width 366610.1875
+```
 
 ## Calculate Total Viewsheds
 
@@ -63,31 +77,13 @@ Outputs `.bt` heatmap.
 ## Prepare For Cloud
 
 ```
-# pip install rio-tiler rio-pmtiles
-gdal_translate -of COG -co COMPRESS=DEFLATE -co ZLEVEL=9 -co BIGTIFF=YES ../total-viewsheds/output/total_surfaces.bt output/cardiff_cog.tiff
-gdalwarp -t_srs EPSG:3857 output/cardiff_cog.tiff output/cardiff_cog_3857.tiff
-
-gdal_translate -expand rgb output/cardiff_cog_3857.tiff output/cardiff_cog_3857_3band.tiff -ot Byte -co COMPRESS=DEFLATE
-
-rio pmtiles output/cardiff_cog_3857.tiff output/cardiff_cog_3857.pmtiles \
---format WEBP \
---resampling bilinear \
---zoom-levels 0..14
-
-gdal_translate output/cardiff_cog_3857.tiff output/cardiff_cog_3857.pmtiles \
--of PMTiles \
--co TILING_SCHEME=GoogleMapsCompatible \
--co TILE_FORMAT=WEBP \
--co COMPRESS=DEFLATE \
--co TARGET_ZLEVEL=14
+# Note that this depends on output/archives/*.tiff paths to include previous tiles in the
+# updated .pmtile
+./ctl.sh make_pmtiles \
+  ../total-viewsheds/output/total_surfaces.bt \
+  assets/europe.pmtiles
 ```
-
-Aggregate `.bt` heatmap into COG. One COG per continent?
-
-How long does it take to regenerate a COG?
-
-Upload/update COG onto S3.
 
 ## Website
 
-Slippy map of all heatmaps
+https://allthelines.github.io/viewview/heatmap_viewer.html?source=https://viewview.nyc3.cdn.digitaloceanspaces.com/world.pmtiles

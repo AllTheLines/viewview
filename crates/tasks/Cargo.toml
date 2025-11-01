@@ -7,6 +7,7 @@ edition = "2024"
 bytemuck = { version = "1.23.2", features = ["derive"] }
 clap = { version = "4.5.47", features = ["derive"] }
 color-eyre = "0.6.5"
+gdal = "0.18.0"
 geo = "0.31.0"
 geojson = { version = "0.24.2", features = ["geo-types"] }
 proj4rs = { version = "0.1.9", features = ["aeqd"] }

@@ -7,11 +7,15 @@ use color_eyre::Result;
 /// A virtual DEM that represents _all_ the DEM data for the planet.
 const VIRTUAL_DEM_FILE: &str = "./output/srtm.vrt";
 
+/// How we mark points as containing no data.
+const NODATA_VALUE: &str = "-32768";
+
 /// Entrypoint.
 pub fn make_tile(config: &crate::config::Stitch) -> Result<()> {
     build_virtual_dem(config)?;
-    let tile = stitch(config)?;
-    set_centre_as_extent(config, &tile)?;
+    let filename = stitch(config)?;
+    fill_nodata(&filename)?;
+    set_centre_as_extent(config, &filename)?;
 
     Ok(())
 }
@@ -55,17 +59,33 @@ fn build_virtual_dem(config: &crate::config::Stitch) -> Result<()> {
 
 /// Call `gdalwarp` to construct a new stitched tile. Data will also be interpolated to metric.
 fn stitch(config: &crate::config::Stitch) -> Result<String> {
-    let resolution = "100";
+    let resolution = 100.0;
+    let resolution_string = resolution.to_string();
     let aeqd = format!(
         "+proj=aeqd +lat_0={} +lon_0={} +units=m +datum=WGS84 +no_defs",
         config.centre.1, config.centre.0
     );
     let output = format!("./output/{:.3},{:.3}.bt", config.centre.0, config.centre.1);
-    let half_width = (config.width * 3.0) / 2.0;
+
+    // We align to 24 because we need to align the TVS to 8, which gives the possiblity of aligning
+    // to both 4 and 8 in the SIMD algorithm.
+    let align = 24.0;
+
+    let full_width_as_points = ((config.width * 3.0) / resolution).ceil();
+    let full_width_aligned = (full_width_as_points / align).ceil() * align;
+    let half_width = (full_width_aligned * resolution) / 2.0;
+    tracing::debug!(
+        "Original TVS width: {}. Aligned TVS width: {}",
+        config.width,
+        (half_width * 2.0) / 3.0
+    );
+
     let min = format!("-{half_width}");
     let max = format!("{half_width}");
     let arguments = vec![
         "-overwrite",
+        "-dstnodata",
+        NODATA_VALUE,
         "-t_srs",
         aeqd.as_str(),
         "-te",
@@ -74,8 +94,8 @@ fn stitch(config: &crate::config::Stitch) -> Result<String> {
         max.as_str(),
         max.as_str(),
         "-tr",
-        resolution,
-        resolution,
+        &resolution_string,
+        &resolution_string,
         "-r",
         "bilinear",
         "-of",
@@ -93,6 +113,28 @@ fn stitch(config: &crate::config::Stitch) -> Result<String> {
     }
 
     Ok(output)
+}
+
+/// Interpolate nodata values with real nearby data.
+fn fill_nodata(input: &str) -> Result<()> {
+    let output = input;
+    let arguments = vec![
+        "-overwrite",
+        "-md", // Maximum distance to sample from
+        "5",
+        input,
+        output,
+    ];
+    tracing::info!("Running `gdal_fillnodata` with args: {:?}", arguments);
+    let status = std::process::Command::new("gdal_fillnodata")
+        .args(arguments)
+        .status()?;
+
+    if !status.success() {
+        color_eyre::eyre::bail!("Non-zero `gdal_fillnodata` exit status: {status}");
+    }
+
+    Ok(())
 }
 
 /// Re-purpose the new tile's extent header to instead define its centre.
