@@ -12,17 +12,12 @@ worker.onmessage = (event) => {
 		}
 
 		tileCache.set(key, tile);
-		console.debug(`Tile loaded: ${key}`);
 	}
 };
 
 const params = new URLSearchParams(self.location.search);
 const source = params.get('source');
 worker.postMessage({ type: "init", source });
-
-function tileKey(z, x, y) {
-	return `${z}/${x}/${y}`;
-}
 
 const map = new maplibregl.Map({
 	container: "map",
@@ -76,19 +71,22 @@ const HeatmapLayer = {
 		    attribute vec2 a_pos;
 		    uniform mat4 u_projectionMatrix;
 		    uniform vec4 u_tileMatrix;
+		    uniform float u_scale;
+		    uniform vec2 u_offset;
 		    varying vec2 v_texcoord;
 		    void main() {
-		      v_texcoord = (a_pos + 1.0) / 2.0;
-					  
+					vec2 normalised_coord = a_pos / 4096.0;
+		      v_texcoord = normalised_coord / u_scale + u_offset;
+
 					// Why??
 					float magicScaler = 2.0;
 					
 					vec2 tileOrigin = u_tileMatrix.xy;
 					vec2 tileSize = u_tileMatrix.zw * magicScaler;
 					vec2 in_tile = a_pos;
-					vec4 worldPosition = vec4(tileOrigin + in_tile * tileSize, 0.0, 1.0);
+					vec4 uv = vec4(tileOrigin + in_tile * tileSize, 0.0, 1.0);
 
-					gl_Position = u_projectionMatrix * worldPosition;
+					gl_Position = u_projectionMatrix * uv;
 		    }
 		  `;
 
@@ -98,8 +96,7 @@ const HeatmapLayer = {
 		    uniform sampler2D u_data;
 		    uniform float u_max;
 		    void main() {
-		      vec2 coord = v_texcoord / 2048.0;
-		      float value = texture2D(u_data, coord).r;
+		      float value = texture2D(u_data, v_texcoord).r;
 
 					float normalized = value / u_max;
 					float normalized_v = pow(normalized, 0.5);
@@ -153,8 +150,9 @@ const HeatmapLayer = {
 		this.uProjectionMatrix = gl.getUniformLocation(program, "u_projectionMatrix");
 		this.uTileMatrix = gl.getUniformLocation(program, "u_tileMatrix");
 		this.uData = gl.getUniformLocation(program, "u_data");
-		this.uColormap = gl.getUniformLocation(program, "u_colormap");
 		this.uMax = gl.getUniformLocation(program, "u_max");
+		this.uScale = gl.getUniformLocation(program, "u_scale");
+		this.uOffset = gl.getUniformLocation(program, "u_offset");
 	},
 
 	prerender() {
@@ -174,8 +172,26 @@ const HeatmapLayer = {
 					x: tile.canonical.x,
 					y: tile.canonical.y
 				});
-				continue;
+
+				var child = tile.canonical;
+				for (let _i = tile.canonical.z; _i > 0; _i--) {
+					const parent = getParentTile(
+						child.z, child.x, child.y
+					);
+					const parentKey = tileKey(parent.z, parent.x, parent.y);
+					cachedTile = tileCache.get(parentKey);
+
+					if (cachedTile) {
+						break;
+					}
+					child = parent;
+				}
 			};
+
+			if (!cachedTile) {
+				continue;
+			}
+
 			if (cachedTile.max > max) {
 				max = cachedTile.max;
 			}
@@ -192,9 +208,34 @@ const HeatmapLayer = {
 		for (const tile of map.coveringTiles({ tileSize: 256 })) {
 			let key = tileKey(tile.canonical.z, tile.canonical.x, tile.canonical.y);
 			let cachedTile = tileCache.get(key);
+
+			var scaleIfParent = 1.0;
+			var offsetIfParentX = 0.0;
+			var offsetIfParentY = 0.0;
+			if (!cachedTile) {
+				var child = tile.canonical;
+				for (let _i = tile.canonical.z; _i > 0; _i--) {
+					const parent = getParentTile(
+						child.z, child.x, child.y
+					);
+					const parentKey = tileKey(parent.z, parent.x, parent.y);
+					cachedTile = tileCache.get(parentKey);
+
+					if (cachedTile) {
+						let zoomDifference = tile.canonical.z - parent.z;
+						scaleIfParent = Math.pow(2, zoomDifference);
+						offsetIfParentX = (tile.canonical.x / scaleIfParent - parent.x);
+						offsetIfParentY = (tile.canonical.y / scaleIfParent - parent.y);
+						break;
+					}
+
+					child = parent;
+				}
+			};
+
 			if (!cachedTile) {
 				continue;
-			};
+			}
 
 			if (!cachedTile.texture) {
 				const texture = gl.createTexture();
@@ -226,9 +267,11 @@ const HeatmapLayer = {
 			gl.bindTexture(gl.TEXTURE_2D, cachedTile.texture);
 			gl.uniform1i(this.uData, 0);
 
-			gl.uniform1f(this.uMax, max);
 			gl.uniformMatrix4fv(this.uProjectionMatrix, false, matrix.defaultProjectionData.mainMatrix);
 			gl.uniform4f(this.uTileMatrix, ...projection.tileMercatorCoords);
+			gl.uniform1f(this.uMax, max);
+			gl.uniform1f(this.uScale, scaleIfParent);
+			gl.uniform2f(this.uOffset, offsetIfParentX, offsetIfParentY);
 
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 		}
@@ -238,3 +281,18 @@ const HeatmapLayer = {
 map.on("load", () => {
 	map.addLayer(HeatmapLayer);
 });
+
+function tileKey(z, x, y) {
+	return `${z}/${x}/${y}`;
+}
+
+function getParentTile(z, x, y) {
+	if (z === 0) {
+		return null;
+	}
+
+	const parentZ = z - 1;
+	const parentX = Math.floor(x / 2);
+	const parentY = Math.floor(y / 2);
+	return { z: parentZ, x: parentX, y: parentY };
+}
