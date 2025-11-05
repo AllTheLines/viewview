@@ -3,4 +3,4 @@
 /scratch
 /*.bin
 /static
-assets/*.pmtiles
+*.pmtiles
