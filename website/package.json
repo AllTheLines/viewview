@@ -1,0 +1,26 @@
+{
+	"name": "viewview",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "rsbuild build",
+		"check": "biome check --write",
+		"dev": "rsbuild dev --open",
+		"format": "biome format --write",
+		"preview": "rsbuild preview",
+		"svelte-check": "svelte-check --tsconfig ./tsconfig.json"
+	},
+	"dependencies": {
+		"maplibre-gl": "^5.11.0",
+		"pmtiles": "^4.3.0",
+		"svelte": "^5.42.2"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.3.4",
+		"@rsbuild/core": "^1.6.0",
+		"@rsbuild/plugin-svelte": "^1.0.11",
+		"svelte-check": "^4.3.3",
+		"typescript": "^5.9.3"
+	}
+}
