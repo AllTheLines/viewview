@@ -36,7 +36,11 @@ jobs:
 
       - name: Build
         working-directory: website
-        run: npm run build
+        run: |
+          npm run build
+          # Horrible hack to get SPA routin working.
+          # See: https://github.com/isaacs/github/issues/408
+          mv dist/index.html dist/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

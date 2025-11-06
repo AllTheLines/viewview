@@ -6,7 +6,7 @@
   "scripts": {
     "build": "rsbuild build",
     "check": "biome check --write",
-    "dev": "rsbuild dev --open",
+    "dev": "rsbuild dev",
     "format": "biome format --write",
     "preview": "rsbuild preview",
     "svelte-check": "svelte-check --tsconfig ./tsconfig.json"
@@ -14,7 +14,8 @@
   "dependencies": {
     "maplibre-gl": "^5.11.0",
     "pmtiles": "^4.3.0",
-    "svelte": "^5.42.2"
+    "svelte": "^5.42.2",
+    "svelte5-router": "^3.0.2"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.4",

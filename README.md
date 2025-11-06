@@ -10,7 +10,7 @@ The raw elevation data is, as of writing (October 2025), from https://www.viewfi
 
 I wrote an in-depth blog post about the Packer https://tombh.co.uk/packing-world-lines-of-sight
 
-![Map of all the longest line of sight tiles in the world](/assets/world_packed.webp)
+![Map of all the longest line of sight tiles in the world](https://alltheviews.world/world_packed.webp)
 
 This map shows a not-terrible packing of the minimum tiles needed to guarantee searching every line of sight on the planet.
 
