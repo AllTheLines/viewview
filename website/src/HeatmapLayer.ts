@@ -50,7 +50,10 @@ function initialise() {
   }
 
   const params = new URLSearchParams(self.location.search);
-  const source = params.get('source');
+  let source = params.get('source');
+  if (!source) {
+    source = 'https://viewview.nyc3.cdn.digitaloceanspaces.com/world.pmtiles';
+  }
   state.worker.postMessage({ type: 'init', source });
   state.worker.onmessage = onWorkerMessage;
 }
