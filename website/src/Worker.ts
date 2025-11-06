@@ -1,10 +1,10 @@
 import { PMTiles } from 'pmtiles';
 import type { TileGL } from './HeatmapLayer';
-import { tileKey } from './utils';
+import { tileKey, tileToLatLonBounds } from './utils';
 
 export type WorkerEvent =
   | { type: 'init'; source: string }
-  | ({ type: 'tile' } & TileGL & { data: Float32Array })
+  | ({ type: 'tile' } & Omit<TileGL, 'texture'> & { data: Float32Array })
   | { type: 'getTile'; z: number; x: number; y: number };
 
 let heatmapTiles: PMTiles;
@@ -44,8 +44,17 @@ self.onmessage = async (event: MessageEvent<WorkerEvent>) => {
     const tvs_surfaces = new Float32Array(arrayBuffer);
     const min = Math.min(...tvs_surfaces);
     const max = Math.max(...tvs_surfaces);
+    const bounds = tileToLatLonBounds(z, x, y);
 
-    self.postMessage({ type: 'tile', key, data: tvs_surfaces, min, max });
+    const message: WorkerEvent = {
+      type: 'tile',
+      key,
+      data: tvs_surfaces,
+      min,
+      max,
+      bounds,
+    };
+    self.postMessage(message);
     loading.set(key, false);
   }
 };
