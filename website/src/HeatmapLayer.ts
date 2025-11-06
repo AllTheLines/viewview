@@ -1,6 +1,10 @@
-import type { CustomLayerInterface, Map as MapLibre } from 'maplibre-gl';
+import type {
+  CustomLayerInterface,
+  LngLatBounds,
+  Map as MapLibre,
+} from 'maplibre-gl';
 import fragment from './fragment.glsl?raw';
-import { getParentTile, tileKey } from './utils';
+import { getParentTile, isTileIntersectingBounds, tileKey } from './utils';
 import vertex from './vertex.glsl?raw';
 import type { WorkerEvent } from './Worker';
 
@@ -9,6 +13,7 @@ export type TileGL = {
   texture: WebGLTexture;
   min: number;
   max: number;
+  bounds: LngLatBounds;
 };
 
 type Uniforms = {
@@ -29,6 +34,7 @@ type State =
       tileCache: Map<string, TileGL>;
       uniforms: Uniforms;
       worker: Worker;
+      lastGC: number;
     }
   | undefined;
 
@@ -55,7 +61,7 @@ function onWorkerMessage(event: MessageEvent<WorkerEvent>) {
   }
 
   if (event.data.type === 'tile') {
-    const { key, data, min, max } = event.data;
+    const { key, data, min, max, bounds } = event.data;
     const texture = state.gl.createTexture();
     state.gl.bindTexture(state.gl.TEXTURE_2D, texture);
     state.gl.texParameteri(
@@ -92,6 +98,7 @@ function onWorkerMessage(event: MessageEvent<WorkerEvent>) {
 
     const tile: TileGL = {
       key,
+      bounds,
       min,
       max,
       texture,
@@ -158,13 +165,31 @@ const HeatmapLayer: CustomLayerInterface = {
       uniforms,
       tileCache: new Map(),
       worker: new Worker(new URL('./Worker.js', import.meta.url)),
+      lastGC: Date.now(),
     };
 
     initialise();
   },
 
   prerender() {
-    // TODO: Delete unused cached tiles.
+    if (state === undefined) {
+      return;
+    }
+
+    if (Date.now() - state.lastGC < 1000) {
+      return;
+    }
+
+    const mapBounds = state.map.getBounds();
+
+    for (const [key, tile] of state.tileCache.entries()) {
+      if (isTileIntersectingBounds(tile.bounds, mapBounds)) {
+      } else {
+        state.tileCache.delete(key);
+      }
+    }
+
+    state.lastGC = Date.now();
   },
 
   async render(gl, matrix) {
