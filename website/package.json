@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "rsbuild build",
+    "analyze": "BUNDLE_ANALYZE=true rsbuild build",
     "check": "biome check --write",
     "dev": "rsbuild dev",
     "format": "biome format --write",
@@ -12,15 +13,21 @@
     "svelte-check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
+    "@lucide/svelte": "^0.554.0",
+    "accessible-nprogress": "^2.1.2",
+    "geotiff": "^2.1.4-beta.1",
     "maplibre-gl": "^5.11.0",
     "pmtiles": "^4.3.0",
+    "proj4": "^2.20.2",
     "svelte": "^5.42.2",
     "svelte5-router": "^3.0.2"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.4",
     "@rsbuild/core": "^1.6.0",
+    "@rsbuild/plugin-sass": "^1.4.0",
     "@rsbuild/plugin-svelte": "^1.0.11",
+    "prettier": "^3.6.2",
     "svelte-check": "^4.3.3",
     "typescript": "^5.9.3"
   }

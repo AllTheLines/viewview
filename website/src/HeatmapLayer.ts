@@ -4,7 +4,12 @@ import type {
   Map as MapLibre,
 } from 'maplibre-gl';
 import fragment from './fragment.glsl?raw';
-import { getParentTile, isTileIntersectingBounds, tileKey } from './utils';
+import {
+  BUCKET,
+  getParentTile,
+  isTileIntersectingBounds,
+  tileKey,
+} from './utils';
 import vertex from './vertex.glsl?raw';
 import type { WorkerEvent } from './Worker';
 
@@ -49,10 +54,17 @@ function initialise() {
     return;
   }
 
+  const PMTILES = `${BUCKET}/pmtiles`;
+  const WORLD_PMTILES = 'world.pmtiles';
+
   const params = new URLSearchParams(self.location.search);
-  let source = params.get('source');
+  let source = params.get('pmtiles');
   if (!source) {
-    source = 'https://viewview.nyc3.cdn.digitaloceanspaces.com/world.pmtiles';
+    if (import.meta.env.DEV) {
+      source = `/${WORLD_PMTILES}`;
+    } else {
+      source = `${PMTILES}/${WORLD_PMTILES}`;
+    }
   }
   state.worker.postMessage({ type: 'init', source });
   state.worker.onmessage = onWorkerMessage;

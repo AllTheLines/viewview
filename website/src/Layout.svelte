@@ -1,35 +1,18 @@
 <script lang="ts">
-  import { Map as MapLibre } from 'maplibre-gl';
+  import { Map as MapLibre, type StyleSpecification } from 'maplibre-gl';
   import { onDestroy, onMount } from 'svelte';
   import 'maplibre-gl/dist/maplibre-gl.css';
+  import 'accessible-nprogress/src/styles.css';
+  import map_vector from './map_vector.styles.json';
+  import Sidebar from './Sidebar.svelte';
   import { state } from './state.svelte.ts';
 
   onMount(() => {
     state.map = new MapLibre({
       container: 'map',
-      zoom: 1,
+      zoom: 6,
       center: [-3, 53],
-      style: {
-        version: 8,
-        sources: {
-          osm: {
-            type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            attribution:
-              '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          },
-        },
-        layers: [
-          {
-            id: 'osm-layer',
-            type: 'raster',
-            source: 'osm',
-            minzoom: 0,
-            maxzoom: 14,
-          },
-        ],
-      },
+      style: map_vector as StyleSpecification,
     });
   });
 
@@ -37,10 +20,15 @@
     state.map?.remove();
   });
 </script>
- 
+
+<svelte:head>
+	<title>All The Views</title>
+</svelte:head>
+
 <div id="map"></div>
+<Sidebar />
 <main>
-  <slot />
+	<slot />
 </main>
 
 <style>

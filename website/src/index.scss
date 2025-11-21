@@ -1,0 +1,22 @@
+@use "sass:color";
+
+$red: #ff0000;
+
+body {
+  margin: 0;
+}
+
+#nprogress .bar {
+  background: rgba(red, 0.88);
+}
+
+#nprogress .peg {
+  box-shadow:
+    0 0 10px color.adjust($red, $lightness: -25%),
+    0 0 5px color.adjust($red, $lightness: -25%);
+}
+
+#nprogress .spinner-icon {
+  border-top-color: rgba($red, 0.88);
+  border-left-color: rgba($red, 0.88);
+}

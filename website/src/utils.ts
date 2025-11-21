@@ -1,5 +1,7 @@
 import { LngLat, LngLatBounds } from 'maplibre-gl';
 
+export const BUCKET = 'https://viewview.nyc3.cdn.digitaloceanspaces.com';
+
 export function tileKey(z: number, x: number, y: number) {
   return `${z}/${x}/${y}`;
 }
@@ -39,4 +41,22 @@ export function isTileIntersectingBounds(
   if (tile._ne.lat < bounds._sw.lat) return false;
   if (tile._sw.lat > bounds._ne.lat) return false;
   return true;
+}
+
+export function aeqdProjectionString(longitude: number, latitude: number) {
+  return (
+    `+proj=aeqd ` +
+    `+lon_0=${longitude} ` +
+    `+lat_0=${latitude} ` +
+    `+x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs`
+  );
+}
+
+export function toRadians(degrees: number) {
+  return degrees * (Math.PI / 180);
+}
+
+export function lonLatRound(lonlat: LngLat) {
+  const precision = 6;
+  return [lonlat.lng.toPrecision(precision), lonlat.lat.toPrecision(precision)];
 }

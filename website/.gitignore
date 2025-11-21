@@ -1,3 +1,5 @@
+public/*.tiff
+
 # Local
 .DS_Store
 *.local

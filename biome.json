@@ -43,6 +43,9 @@
         "rules": {
           "correctness": {
             "noUnusedImports": "off"
+          },
+          "style": {
+            "useConst": "off"
           }
         }
       }

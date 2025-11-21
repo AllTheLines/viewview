@@ -24,32 +24,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
-          node-version: 22
-
+          version: 10
       - name: Install dependencies
         working-directory: website
-        run: npm install
+        run: pnpm install
 
       - name: Build
         working-directory: website
         run: |
-          npm run build
-          # Horrible hack to get SPA routin working.
+          pnpm run build
+          # Horrible hack to get SPA routing working.
           # See: https://github.com/isaacs/github/issues/408
           mv dist/index.html dist/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: './website/dist'
-
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
