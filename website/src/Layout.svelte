@@ -10,8 +10,8 @@
   onMount(() => {
     state.map = new MapLibre({
       container: 'map',
-      zoom: 6,
-      center: [-3, 53],
+      zoom: 5.5,
+      center: [-3, 54],
       style: map_vector as StyleSpecification,
     });
   });
@@ -26,7 +26,9 @@
 </svelte:head>
 
 <div id="map"></div>
+
 <Sidebar />
+
 <main>
 	<slot />
 </main>

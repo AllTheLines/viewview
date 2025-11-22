@@ -1,4 +1,5 @@
-public/*.tiff
+public/longest_lines
+public/**/*.tiff
 
 # Local
 .DS_Store

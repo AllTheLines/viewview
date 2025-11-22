@@ -120,6 +120,9 @@ function onWorkerMessage(event: MessageEvent<WorkerEvent>) {
     };
 
     state.tileCache.set(key, tile);
+
+    // Should these be throttled?
+    state.map?.redraw();
   }
 }
 

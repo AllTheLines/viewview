@@ -7,13 +7,10 @@ import {
 import proj4 from 'proj4';
 import { getLongestLine } from './getLongestLine.ts';
 import { state } from './state.svelte.ts';
-import { aeqdProjectionString, BUCKET, toRadians } from './utils.ts';
+import { aeqdProjectionString, toRadians } from './utils.ts';
 
 // Inherited from the TVS algorithm. It's to counter unfavourable floating point rounding.
 const ANGLE_SHIFT = 0.0001;
-
-// Source of the longest lines COGs.
-const LONGEST_LINES_COGS = getLongestLinesSource();
 
 export function setup() {
   state.map?.addSource('longest-line', {
@@ -45,9 +42,7 @@ export function setup() {
 }
 
 async function render(event: MapMouseEvent) {
-  // const url = '/-3.123_51.4898.tiff';
-  const url = `${LONGEST_LINES_COGS}/-3.049208402633667_53.2493743896484375.tiff`;
-  const longest_line = await getLongestLine(url, event.lngLat);
+  const longest_line = await getLongestLine(event.lngLat);
   if (longest_line === undefined) {
     return;
   }
@@ -107,12 +102,4 @@ function rotate(x: number, y: number, degrees: number) {
   const cos = Math.cos(θ);
   const sin = Math.sin(θ);
   return [x * cos - y * sin, x * sin + y * cos];
-}
-
-function getLongestLinesSource() {
-  if (!import.meta.env.DEV) {
-    return `${BUCKET}/longest_lines`;
-  } else {
-    return ``;
-  }
 }

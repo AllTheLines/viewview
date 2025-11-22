@@ -2,6 +2,22 @@ import { LngLat, LngLatBounds } from 'maplibre-gl';
 
 export const BUCKET = 'https://viewview.nyc3.cdn.digitaloceanspaces.com';
 
+export const Log = {
+  // biome-ignore lint/suspicious/noExplicitAny: needed for debugging.
+  debug: (...data: any[]) => {
+    if (import.meta.env.DEV) {
+      console.debug(...data);
+    }
+  },
+
+  // biome-ignore lint/suspicious/noExplicitAny: needed for debugging.
+  trace: (...data: any[]) => {
+    if (import.meta.env.DEV) {
+      console.trace(...data);
+    }
+  },
+};
+
 export function tileKey(z: number, x: number, y: number) {
   return `${z}/${x}/${y}`;
 }
