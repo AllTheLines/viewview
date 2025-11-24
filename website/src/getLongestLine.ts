@@ -117,7 +117,7 @@ async function findNearestCOGURL(coordinate: LngLat) {
         parseFloat(lonLatParts[0]),
         parseFloat(lonLatParts[1]),
       );
-      const width = parseInt(lineParts[1], 10) * 100;
+      const width = parseInt(lineParts[1], 10);
       cogsIndex.set(filename, { centre, width });
     }
   }

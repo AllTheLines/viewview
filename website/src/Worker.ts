@@ -36,14 +36,15 @@ self.onmessage = async (event: MessageEvent<WorkerEvent>) => {
 
     const compressed = new Uint8Array(tile.data);
     const stream = new DecompressionStream('deflate');
-    const decompressedResp = new Response(
+    const decompressedResponse = new Response(
       new Blob([compressed]).stream().pipeThrough(stream),
     );
-    const arrayBuffer = await decompressedResp.arrayBuffer();
+    const arrayBuffer = await decompressedResponse.arrayBuffer();
 
     const tvs_surfaces = new Float32Array(arrayBuffer);
     const min = Math.min(...tvs_surfaces);
     const max = Math.max(...tvs_surfaces);
+
     const bounds = tileToLatLonBounds(z, x, y);
 
     const message: WorkerEvent = {

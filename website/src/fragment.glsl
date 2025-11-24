@@ -2,8 +2,15 @@ precision highp float;
 varying vec2 v_texcoord;
 uniform sampler2D u_data;
 uniform float u_max;
+uniform float u_averageSurfaceVisibility;
+
 void main() {
     float value = texture2D(u_data, v_texcoord).r;
+
+    // Handle "nodata"
+    if (value == 0.0) {
+        value = u_averageSurfaceVisibility;
+    }
 
     float normalized = value / u_max;
     float normalized_v = pow(normalized, 0.5);
@@ -22,9 +29,5 @@ void main() {
         final_color = mix(color_mid, color_max, half_normalized);
     }
 
-    float alpha = 1.0;
-    if (normalized <= 0.0) {
-        alpha = 0.0;
-    }
-    gl_FragColor = vec4(final_color, alpha);
+    gl_FragColor = vec4(final_color, 1.0);
 }

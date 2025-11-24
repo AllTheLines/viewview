@@ -1,13 +1,14 @@
-import type {
-  CustomLayerInterface,
+import {
+  type CustomLayerInterface,
   LngLatBounds,
-  Map as MapLibre,
+  type Map as MapLibre,
 } from 'maplibre-gl';
 import fragment from './fragment.glsl?raw';
 import {
   BUCKET,
   getParentTile,
   isTileIntersectingBounds,
+  Log,
   tileKey,
 } from './utils';
 import vertex from './vertex.glsl?raw';
@@ -28,6 +29,7 @@ type Uniforms = {
   uMax: WebGLUniformLocation | null;
   uScale: WebGLUniformLocation | null;
   uOffset: WebGLUniformLocation | null;
+  uAverageSurfaceVisibility: WebGLUniformLocation | null;
 };
 
 type State =
@@ -46,6 +48,12 @@ type State =
 const config: { tileSize: number } = {
   tileSize: 256,
 };
+
+// The average surface area visibile from a point far out at sea, where it can only see sea.
+// This is used to fill regions for which there is no elevation data.
+const AVERAGE_SURFACE_VISIBILITY = 57585104.0;
+
+let fillerTile: TileGL;
 
 let state: State;
 
@@ -68,6 +76,8 @@ function initialise() {
   }
   state.worker.postMessage({ type: 'init', source });
   state.worker.onmessage = onWorkerMessage;
+
+  makeFillerTile();
 }
 
 function onWorkerMessage(event: MessageEvent<WorkerEvent>) {
@@ -77,47 +87,10 @@ function onWorkerMessage(event: MessageEvent<WorkerEvent>) {
 
   if (event.data.type === 'tile') {
     const { key, data, min, max, bounds } = event.data;
-    const texture = state.gl.createTexture();
-    state.gl.bindTexture(state.gl.TEXTURE_2D, texture);
-    state.gl.texParameteri(
-      state.gl.TEXTURE_2D,
-      state.gl.TEXTURE_MIN_FILTER,
-      state.gl.LINEAR,
-    );
-    state.gl.texParameteri(
-      state.gl.TEXTURE_2D,
-      state.gl.TEXTURE_MAG_FILTER,
-      state.gl.LINEAR,
-    );
-    state.gl.texParameteri(
-      state.gl.TEXTURE_2D,
-      state.gl.TEXTURE_WRAP_S,
-      state.gl.CLAMP_TO_EDGE,
-    );
-    state.gl.texParameteri(
-      state.gl.TEXTURE_2D,
-      state.gl.TEXTURE_WRAP_T,
-      state.gl.CLAMP_TO_EDGE,
-    );
-    state.gl.texImage2D(
-      state.gl.TEXTURE_2D,
-      0,
-      state.gl.R32F,
-      config.tileSize,
-      config.tileSize,
-      0,
-      state.gl.RED,
-      state.gl.FLOAT,
-      data,
-    );
-
-    const tile: TileGL = {
-      key,
-      bounds,
-      min,
-      max,
-      texture,
-    };
+    const tile = makeTile(key, min, max, bounds, data);
+    if (tile === undefined) {
+      return;
+    }
 
     state.tileCache.set(key, tile);
 
@@ -173,6 +146,10 @@ const HeatmapLayer: CustomLayerInterface = {
       uMax: gl.getUniformLocation(program, 'u_max'),
       uScale: gl.getUniformLocation(program, 'u_scale'),
       uOffset: gl.getUniformLocation(program, 'u_offset'),
+      uAverageSurfaceVisibility: gl.getUniformLocation(
+        program,
+        'u_averageSurfaceVisibility',
+      ),
     };
 
     state = {
@@ -217,6 +194,7 @@ const HeatmapLayer: CustomLayerInterface = {
       return;
     }
 
+    let isSomethingToRender = false;
     for (const tile of state.map.coveringTiles({ tileSize: 256 })) {
       const key = tileKey(tile.canonical.z, tile.canonical.x, tile.canonical.y);
       let cachedTile = state.tileCache.get(key);
@@ -249,12 +227,19 @@ const HeatmapLayer: CustomLayerInterface = {
       }
 
       if (!cachedTile) {
-        continue;
+        cachedTile = fillerTile;
+      } else {
+        isSomethingToRender = true;
       }
 
       if (cachedTile.max > max) {
         max = cachedTile.max;
       }
+    }
+
+    if (!isSomethingToRender) {
+      // Don't render if all we have is filler tiles. They flash bang white.
+      return;
     }
 
     gl.useProgram(state.program);
@@ -300,7 +285,7 @@ const HeatmapLayer: CustomLayerInterface = {
       }
 
       if (!cachedTile) {
-        continue;
+        cachedTile = fillerTile;
       }
 
       const projection = state.map.transform.getProjectionData({
@@ -323,10 +308,90 @@ const HeatmapLayer: CustomLayerInterface = {
       gl.uniform1f(state.uniforms.uMax, max);
       gl.uniform1f(state.uniforms.uScale, scaleIfParent);
       gl.uniform2f(state.uniforms.uOffset, offsetIfParentX, offsetIfParentY);
+      gl.uniform1f(
+        state.uniforms.uAverageSurfaceVisibility,
+        AVERAGE_SURFACE_VISIBILITY,
+      );
 
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
   },
 };
+
+function makeTile(
+  key: string,
+  min: number,
+  max: number,
+  bounds: LngLatBounds,
+  data: Float32Array,
+) {
+  if (state?.gl === undefined) {
+    console.warn("No GL context, couldn't make tile");
+    return;
+  }
+
+  const texture = state.gl.createTexture();
+  state.gl.bindTexture(state.gl.TEXTURE_2D, texture);
+  state.gl.texParameteri(
+    state.gl.TEXTURE_2D,
+    state.gl.TEXTURE_MIN_FILTER,
+    state.gl.LINEAR,
+  );
+  state.gl.texParameteri(
+    state.gl.TEXTURE_2D,
+    state.gl.TEXTURE_MAG_FILTER,
+    state.gl.LINEAR,
+  );
+  state.gl.texParameteri(
+    state.gl.TEXTURE_2D,
+    state.gl.TEXTURE_WRAP_S,
+    state.gl.CLAMP_TO_EDGE,
+  );
+  state.gl.texParameteri(
+    state.gl.TEXTURE_2D,
+    state.gl.TEXTURE_WRAP_T,
+    state.gl.CLAMP_TO_EDGE,
+  );
+  state.gl.texImage2D(
+    state.gl.TEXTURE_2D,
+    0,
+    state.gl.R32F,
+    config.tileSize,
+    config.tileSize,
+    0,
+    state.gl.RED,
+    state.gl.FLOAT,
+    data,
+  );
+
+  return {
+    key,
+    bounds,
+    min,
+    max,
+    texture,
+  } as TileGL;
+}
+
+function makeFillerTile() {
+  const data = new Float32Array(config.tileSize ** 2);
+  data.fill(AVERAGE_SURFACE_VISIBILITY);
+
+  const tile = makeTile(
+    'filler',
+    AVERAGE_SURFACE_VISIBILITY,
+    AVERAGE_SURFACE_VISIBILITY,
+    new LngLatBounds(),
+    data,
+  );
+
+  if (tile === undefined) {
+    return;
+  }
+
+  Log.debug('Filler tile created');
+
+  fillerTile = tile;
+}
 
 export { HeatmapLayer };
