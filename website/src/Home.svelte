@@ -1,5 +1,6 @@
 <script lang="ts">
   import { DraftingCompass, Info } from '@lucide/svelte';
+  import { Map as MapLibre, type StyleSpecification } from 'maplibre-gl';
   import { onMount } from 'svelte';
   import CollapsableModal from './components/CollapsableModal.svelte';
   import LayerToggle from './components/LayerToggle.svelte';
@@ -8,11 +9,19 @@
   import mountain_peak from './images/mountain_peak.png';
   import vector_layer from './images/vector_layer.png';
   import Layout from './Layout.svelte';
+  import map_vector from './map_vector.styles.json';
   import { setup } from './renderLongestLine.ts';
   import { state } from './state.svelte.ts';
   import { lonLatRound } from './utils.ts';
 
   onMount(() => {
+    state.map = new MapLibre({
+      container: 'map',
+      zoom: 5.5,
+      center: [-3, 54],
+      style: map_vector as StyleSpecification,
+    });
+
     state.map?.on('load', () => {
       // 'mountain_peaks' is used here to mean, mountain peaks and every other layer after it.
       state.map?.addLayer(HeatmapLayer, 'mountain_peaks');

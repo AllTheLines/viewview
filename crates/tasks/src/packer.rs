@@ -15,7 +15,7 @@ use rstar::PointDistance as _;
 use crate::projector::LonLatCoord;
 
 /// Where to save the final packed tiles output.
-const TILES_OUTPUT: &str = "assets/tiles.json";
+const TILES_OUTPUT: &str = "output/tiles.csv";
 
 /// The minimum elevation inside a tile to start considering larger tiles from. Another way of
 /// looking at this is rather the minimum _width_ of tile, as tile widths are primarilly dictated
@@ -40,7 +40,7 @@ const WINDOW_STEP: f64 = WINDOW_RADIUS / 2.0f64;
 /// the point. The resolution is defined by another process, `max_subtile.rs`.
 type PointRstar = rstar::primitives::GeomWithData<LonLatCoord, i32>;
 /// How we store tiles for fast lookups.
-type TileRstar = rstar::primitives::GeomWithData<LonLatCoord, crate::tile::Tile>;
+pub type TileRstar = rstar::primitives::GeomWithData<LonLatCoord, crate::tile::Tile>;
 
 /// A packer of tiles.
 pub struct Packer {
@@ -117,7 +117,7 @@ impl Packer {
                 self.run_one(centre)?;
                 self.nudge_extend_window_tiles()?;
                 self.remove_inefficient_tiles()?;
-                self.save_tiles_as_geojson()?;
+                self.save_tiles_as_csv()?;
                 if is_last_longitude {
                     break;
                 }
@@ -171,7 +171,7 @@ impl Packer {
         if self.config.one.is_some() {
             self.nudge_extend_window_tiles()?;
             self.remove_inefficient_tiles()?;
-            self.save_tiles_as_geojson()?;
+            self.save_tiles_as_csv()?;
         }
 
         Ok(())
@@ -291,7 +291,7 @@ impl Packer {
                 );
                 highest = candidate;
             } else {
-                let overlap_amount = self.calculate_overlap_amount(&tile)?;
+                let overlap_amount = self.calculate_overlap_amount(&tile);
                 if overlap_amount == 0.0 {
                     self.add_tile(tile, &covered_points)?;
                     return Ok(());
@@ -333,7 +333,7 @@ impl Packer {
 
     /// Find all the points in a tile.
     fn find_points_in_tile(&self, tile: &crate::tile::Tile) -> Result<Vec<PointRstar>> {
-        let tile_polygon = tile.to_polygon_lonlat()?;
+        let tile_polygon = tile.to_polygon_lonlat();
         let mut covered_points: Vec<PointRstar> = self
             .canonical
             .locate_in_envelope_intersecting(&tile.to_aabb_lonlat()?)
@@ -344,8 +344,8 @@ impl Packer {
     }
 
     /// Calculate how much a tile overlaps with its neighbours.
-    fn calculate_overlap_amount(&self, tile: &crate::tile::Tile) -> Result<f64> {
-        let candidate_polygon = tile.to_polygon_lonlat()?;
+    fn calculate_overlap_amount(&self, tile: &crate::tile::Tile) -> f64 {
+        let candidate_polygon = tile.to_polygon_lonlat();
         let area = candidate_polygon.unsigned_area();
         let mut searched = 0usize;
         let mut super_tile = geo::MultiPolygon::empty();
@@ -354,7 +354,7 @@ impl Packer {
             if &neighbour.data == tile {
                 continue;
             }
-            let neighbour_polygon = neighbour.data.to_polygon_lonlat()?;
+            let neighbour_polygon = neighbour.data.to_polygon_lonlat();
             if neighbour_polygon.intersects(&candidate_polygon) {
                 super_tile = super_tile.union(&neighbour_polygon);
             }
@@ -365,7 +365,7 @@ impl Packer {
         }
 
         let overlap = candidate_polygon.intersection(&super_tile).unsigned_area();
-        Ok(overlap / area)
+        overlap / area
     }
 
     /// Find points that have not yet been associated with a tile.
@@ -430,7 +430,7 @@ impl Packer {
         let nearest_tile_starting_surface_area = nearest_tile.data.surface_area()?;
         tracing::trace!("🏝️ Nearest tile for underlapping point ({point:?}): {nearest_tile:?}");
 
-        Self::shrink_wrap_tile_to_point(&mut nearest_tile, point)?;
+        Self::shrink_wrap_tile_to_point(&mut nearest_tile, point);
         let nearest_tile_covered_points = self.ensure_tile_is_big_enough(&nearest_tile)?;
 
         let nearest_tile_surface_increase =
@@ -483,7 +483,7 @@ impl Packer {
             return Ok(None);
         }
         let lonlat = point.geom().0;
-        if !lonlat.is_within(&nearest_tile.data.to_polygon_lonlat()?) {
+        if !lonlat.is_within(&nearest_tile.data.to_polygon_lonlat()) {
             tracing::warn!("Nearest tile {nearest_tile:?} can't be fit over point {point:?}");
             return Ok(None);
         }
@@ -500,11 +500,11 @@ impl Packer {
 
     /// Slowly shrink a tile until we find the last size within which `is_within()` returns true
     /// for the given point.
-    fn shrink_wrap_tile_to_point(tile: &mut TileRstar, point: PointRstar) -> Result<()> {
+    fn shrink_wrap_tile_to_point(tile: &mut TileRstar, point: PointRstar) {
         let first_width = tile.data.width;
         let step = 100.0;
         loop {
-            let polygon = tile.data.to_polygon_lonlat()?;
+            let polygon = tile.data.to_polygon_lonlat();
             if !point.geom().0.is_within(&polygon) {
                 #[expect(
                     clippy::float_cmp,
@@ -526,8 +526,6 @@ impl Packer {
             "New width required for nearest tile to contain point: {}",
             tile.data.width
         );
-
-        Ok(())
     }
 
     /// When a tile is resized after its initial creation, we need to check that the new size
@@ -576,7 +574,7 @@ impl Packer {
         tracing::info!("Added tile: {tile:?}");
 
         if self.config.one.is_some() {
-            self.save_tiles_as_geojson()?;
+            self.save_tiles_as_csv()?;
         }
 
         let before = self.stack.len();
@@ -639,21 +637,32 @@ impl Packer {
         let mut highest = None;
         let mut covered_points = Vec::new();
 
-        // The AABB is quicker to search within but is also slightly skewed in lon/lat
-        // projections so we need a second step to clip points outside of the tile's real
-        // extent.
-        let tile_aabb = tile.to_aabb_lonlat()?;
+        // In the compute kernel we actually need an auxiliary region of elevation data around the
+        // main tile so that lines of sight on the edge of the main tile have data to calculate
+        // visibility for. This auxiliary region is the same width as the tile itself.
+        let tile_and_auxiliary = crate::tile::Tile {
+            centre: tile.centre,
+            width: tile.width * 3.0,
+        };
+
+        // The AABB is nothing like a circle, but is quicker to search within, so we need a second step
+        // to clip points outside of the tile's real extent.
+        let tile_aabb = tile_and_auxiliary.to_aabb_lonlat()?;
         let aabb_points = self.canonical.locate_in_envelope_intersecting(&tile_aabb);
 
-        let covered_points_polygon = tile.to_polygon_lonlat()?;
+        let tile_polygon = tile.to_polygon_lonlat();
+        let tile_and_auxiliary_polygon = tile_and_auxiliary.to_polygon_lonlat();
 
         let mut current_highest = i32::MIN;
         let mut is_non_zero_detected = false;
 
         for point in aabb_points {
-            if !point.geom().0.is_within(&covered_points_polygon) {
+            if !point.geom().0.is_within(&tile_and_auxiliary_polygon) {
                 continue;
             }
+
+            // We're in the circle of the tile and its auxiliary region now...
+
             if point.data != 0i32 {
                 is_non_zero_detected = true;
             }
@@ -661,7 +670,12 @@ impl Packer {
                 current_highest = point.data;
                 highest = Some(*point);
             }
-            covered_points.push(*point);
+
+            // We only want to keep track of the points that the _main_ tile, without the auxiliary
+            // region, covers.
+            if point.geom().0.is_within(&tile_polygon) {
+                covered_points.push(*point);
+            }
         }
 
         if !is_non_zero_detected {
@@ -697,7 +711,7 @@ impl Packer {
                 continue;
             }
 
-            if Self::is_tile_nested(&tile, &cleaned)? {
+            if Self::is_tile_nested(&tile, &cleaned) {
                 cleaned.remove(&tile);
                 continue;
             }
@@ -713,8 +727,8 @@ impl Packer {
     }
 
     /// Is the tile completely inside another tile?
-    fn is_tile_nested(tile: &TileRstar, cleaned: &rstar::RTree<TileRstar>) -> Result<bool> {
-        let polygon = tile.data.to_polygon_lonlat()?;
+    fn is_tile_nested(tile: &TileRstar, cleaned: &rstar::RTree<TileRstar>) -> bool {
+        let polygon = tile.data.to_polygon_lonlat();
         let mut super_tile = geo::MultiPolygon::empty();
         let iterator = cleaned.nearest_neighbor_iter(tile.geom()).enumerate();
         for (count, neighbour) in iterator {
@@ -725,13 +739,13 @@ impl Packer {
                 break;
             }
 
-            let neighbour_polygon = neighbour.data.to_polygon_lonlat()?;
+            let neighbour_polygon = neighbour.data.to_polygon_lonlat();
             if neighbour_polygon.intersects(&polygon) {
                 super_tile = super_tile.union(&neighbour_polygon);
             }
         }
 
-        Ok(super_tile.contains(&polygon))
+        super_tile.contains(&polygon)
     }
 
     /// For any tile that has over 50% overlap with other tiles, search to find a nearby tile that
@@ -744,7 +758,7 @@ impl Packer {
     ) -> Result<()> {
         let minimum_overlap = 0.5f64;
         let allowed_surface_increase = 1.5;
-        let overlap = self.calculate_overlap_amount(&tile.data)?;
+        let overlap = self.calculate_overlap_amount(&tile.data);
         if overlap < minimum_overlap {
             return Ok(());
         }
@@ -791,7 +805,7 @@ impl Packer {
     ) -> Result<Option<TileRstar>> {
         let mut candidates = Vec::new();
         let iterator = tiles.nearest_neighbor_iter(tile.geom()).enumerate();
-        let polygon = tile.data.to_polygon_lonlat()?;
+        let polygon = tile.data.to_polygon_lonlat();
         for (count, neighbour) in iterator {
             if neighbour == tile {
                 continue;
@@ -819,7 +833,7 @@ impl Packer {
                 if bigger.data.width > 700_000.0 {
                     break;
                 }
-                if bigger.data.to_polygon_lonlat()?.contains(&polygon) {
+                if bigger.data.to_polygon_lonlat().contains(&polygon) {
                     candidates.push(bigger);
                     break;
                 }
@@ -904,30 +918,17 @@ impl Packer {
         Ok(())
     }
 
-    /// Save the tiles to [`GeoJSON`].
-    fn save_tiles_as_geojson(&self) -> Result<()> {
-        let mut features: Vec<geojson::Feature> = Vec::new();
+    /// Save the tiles to CSV file. Used by `atlas` and to render the tiles for debugging.
+    fn save_tiles_as_csv(&self) -> Result<()> {
+        let mut tiles = Vec::new();
         for tile in &self.tiles {
-            let geometry: geo::Geometry = tile.data.to_polygon_lonlat()?.into();
-            let json: geojson::Geometry = geojson::Geometry::from(&geometry);
-            let mut properties = geojson::JsonObject::new();
-            let point: geojson::Value = (&geo::Point::from(tile.geom().0)).into();
-            properties.insert("centre".into(), (&point).into());
-            properties.insert("width".into(), tile.data.width.into());
-            let feature = geojson::Feature {
-                bbox: None,
-                geometry: Some(json),
-                id: None,
-                properties: Some(properties),
-                foreign_members: None,
-            };
-
-            features.push(feature);
+            let centre = tile.data.centre.0;
+            let line = format!("{},{},{}", centre.x, centre.y, tile.data.width);
+            tiles.push(line);
         }
 
         tracing::info!("Saving {} tiles to: {TILES_OUTPUT}", self.tiles.size());
-        let json = geojson::GeoJson::from(features);
-        std::fs::write(TILES_OUTPUT, json.to_string())?;
+        std::fs::write(TILES_OUTPUT, tiles.join("\n"))?;
 
         Ok(())
     }
@@ -938,7 +939,7 @@ impl Packer {
         let mut features: Vec<geo::Geometry> = Vec::new();
 
         for tile in tiles {
-            let geojson_tile = tile.to_polygon_lonlat()?;
+            let geojson_tile = tile.to_polygon_lonlat();
             features.push(geojson_tile.into());
         }
 

@@ -1,6 +1,7 @@
 import { LngLat, LngLatBounds } from 'maplibre-gl';
 
 export const BUCKET = 'https://viewview.nyc3.cdn.digitaloceanspaces.com';
+export const EARTH_RADIUS = 6371_000.0;
 
 export const Log = {
   // biome-ignore lint/suspicious/noExplicitAny: needed for debugging.
@@ -70,6 +71,10 @@ export function aeqdProjectionString(longitude: number, latitude: number) {
 
 export function toRadians(degrees: number) {
   return degrees * (Math.PI / 180);
+}
+
+export function toDegrees(radians: number) {
+  return radians * (180 / Math.PI);
 }
 
 export function lonLatRound(lonlat: LngLat) {
