@@ -23,6 +23,8 @@ pub enum Commands {
     MaxSubTiles(MaxSubTiles),
     /// Create tiles identifited by the packer.
     Stitch(Stitch),
+    /// Run and manage all the tasks for processing the entire planet.
+    Atlas(Atlas),
 }
 
 /// `cargo run packer` arguments.
@@ -74,6 +76,44 @@ pub struct Stitch {
     /// The width of the tile in meters.
     #[arg(long, value_name = "Tile width")]
     pub width: f32,
+}
+
+/// `cargo run stitch` arguments.
+#[derive(clap::Parser, Debug, Clone)]
+pub struct Atlas {
+    /// The ID of the run. So that we can process the world without affecting the current live
+    /// assets. Set to "local" for running everything locally on your machine.
+    #[arg(long, value_name = "Versioned ID for run")]
+    pub run_id: String,
+
+    /// Master tile list produced by the Packer.
+    #[arg(long, value_name = "Path to master tiles list")]
+    pub master: std::path::PathBuf,
+
+    /// Status of crunched tiles.
+    #[arg(long, value_name = "Path to status file")]
+    pub status: std::path::PathBuf,
+
+    /// The lon/lat coord from which to start processing
+    #[arg(
+        long,
+        allow_hyphen_values(true),
+        value_parser = parse_coord,
+        value_name = "Starting coordinate")
+    ]
+    pub centre: (f64, f64),
+
+    /// Source of all the DEM files.
+    #[arg(long, value_name = "Path to DEMs folder")]
+    pub dems: std::path::PathBuf,
+
+    /// Path to TVS executable.
+    #[arg(long, value_name = "TVS executable")]
+    pub tvs_executable: std::path::PathBuf,
+
+    /// Where to save longest lines COGs.
+    #[arg(long, value_name = "Longest lines COGs directory")]
+    pub longest_lines_cogs: std::path::PathBuf,
 }
 
 /// Parse a single coordinate.

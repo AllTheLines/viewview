@@ -1,5 +1,6 @@
 #!/bin/bash
 
+export PROJECT_ROOT
 PROJECT_ROOT=$(dirname "$(readlink -f "$0")")
 
 export GDAL_NUM_THREADS=ALL_CPUS
@@ -12,6 +13,7 @@ function _load_includes {
 }
 
 _load_includes
+_load_env
 
 subcommand=$1
 shift

@@ -13,6 +13,12 @@
     )
 )]
 
+/// The code for processing the entire world.
+mod atlas {
+    pub mod run;
+    pub mod status;
+}
+
 mod config;
 mod max_subtile;
 mod packer;
@@ -26,10 +32,8 @@ use tracing_subscriber::{Layer as _, layer::SubscriberExt as _, util::Subscriber
 
 use crate::projector::LonLatCoord;
 
-/// The file name for the max subtiles data.
-const SUBTILES_FILE: &str = "max_subtiles.bin";
-
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     setup_logging()?;
 
     // Safety: We're just some adhoc tasks code, so not running anywhere vulnerbale.
@@ -51,8 +55,13 @@ fn main() -> Result<()> {
                 None => packer.run_all()?,
             }
         }
-        crate::config::Commands::MaxSubTiles(_) => max_subtiles()?,
-        crate::config::Commands::Stitch(stitch_config) => stitch::make_tile(stitch_config)?,
+        crate::config::Commands::MaxSubTiles(_) => max_subtile::run()?,
+        crate::config::Commands::Stitch(stitch_config) => {
+            stitch::make_tile(stitch_config).await?;
+        }
+        crate::config::Commands::Atlas(atlas_config) => {
+            atlas::run::Atlas::run_all(atlas_config).await?;
+        }
     }
 
     Ok(())
@@ -66,41 +75,6 @@ fn setup_logging() -> Result<()> {
     let filter_layer = tracing_subscriber::fmt::layer().with_filter(filters);
     let tracing_setup = tracing_subscriber::registry().with(filter_layer);
     tracing_setup.init();
-
-    Ok(())
-}
-
-/// Create the max subtiles acceleration structure.
-fn max_subtiles() -> Result<()> {
-    let mut subtiler = max_subtile::Subtiler::new(10, srtm_reader::Resolution::SRTM3.extent());
-    let mut count = 0u32;
-    let dir = std::path::Path::new("/publicish/dems");
-    let entries = std::fs::read_dir(dir)?;
-    let total = std::fs::read_dir(dir)?.count();
-    for entry in entries {
-        let path = entry?.path();
-        if path.extension().and_then(|string| string.to_str()) == Some("hgt") {
-            tracing::debug!("Loading {path:?}");
-            let tile = srtm_reader::Tile::from_file(&path).map_err(|error| {
-                color_eyre::eyre::eyre!("Couldn't load SRTM tile ({path:?}): {error:?}")
-            })?;
-            subtiler.make_all_subtiles(&tile);
-            count += 1;
-            #[expect(
-                clippy::as_conversions,
-                clippy::cast_precision_loss,
-                reason = "Just for logging"
-            )]
-            let percentage = (count as f32 / total as f32) * 100.0;
-            tracing::info!("{}%", percentage);
-        }
-    }
-
-    if subtiler.invalid_count > 0 {
-        tracing::warn!("{} invalid subtiles", subtiler.invalid_count);
-    }
-
-    subtiler.save(SUBTILES_FILE)?;
 
     Ok(())
 }

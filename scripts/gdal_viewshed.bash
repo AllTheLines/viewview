@@ -1,4 +1,5 @@
-function create_viewshed {
+# These don't seem as detailed as ours. But at least it's a different source to compare against.
+function create_gdal_viewshed {
 	gdal_viewshed \
 		-ox 13210.5375624321 \
 		-oy -14580.0434395845 \

@@ -77,12 +77,34 @@ Outputs `.bt` heatmap.
 ## Prepare For Cloud
 
 ```
-# Note that this depends on output/archives/*.tiff paths to include previous tiles in the
-# updated .pmtile
-./ctl.sh make_pmtiles \
-  ../total-viewsheds/output/total_surfaces.bt \
-  assets/europe.pmtiles
+# Note that all these depend on a `./output` path existing.
+./ctl.sh prepare_for_cloud ../total-viewsheds/output/total_surfaces.bt
+./ctl.sh prepare_for_cloud ../total-viewsheds/output/longest_lines.bt
+./ctl.sh make_pmtiles website/public/world.pmtiles
 ```
+
+## Atlas
+
+Process all the tiles for the entire planet. It manages the "Stitcher", "Total Viewsheds" and "Prepare For Cloud" steps above.
+
+```
+RUST_LOG=trace cargo run --bin tasks -- atlas \
+  --run-id 0.1 \
+  --master website/public/tiles.csv \
+  --status output/status.json \
+  --centre -4.549624919891357,47.44954299926758 \
+  --dems /publicish/dems \
+  --tvs-executable ../total-viewsheds/target/release/total-viewsheds \
+  --longest-lines-cogs website/public/longest_lines
+```
+
+Though it doesn't run this command, you'll want to manually run it after a
+bunch of tiles have been processed:
+```
+./ctl.sh make_pmtiles latest website/public/world.pmtiles
+```
+
+Replace `latest` with `local` to skip syncing files to S3.
 
 ## Website
 
