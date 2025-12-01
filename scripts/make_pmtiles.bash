@@ -1,3 +1,4 @@
+# Create the single global `.pmtile` for the whole world
 function make_pmtiles {
 	set -e
 	set -x
@@ -12,11 +13,11 @@ function make_pmtiles {
 
 	rm "$output" || true
 	rm -f "$TMP_DIR/"*
-	cog=$TMP_DIR/cog.tif
 	merged=$TMP_DIR/merged.tif
 
 	echo "Using archive at $ARCHIVE_DIR"
 
+	# Merge all the heatmap GeoTiffs into one big GeoTiff.
 	gdal_merge \
 		-n 0 \
 		-a_nodata 0 \
@@ -24,14 +25,8 @@ function make_pmtiles {
 		-o "$merged" \
 		"$ARCHIVE_DIR"/*.tiff
 
-	gdal_translate \
-		-of COG \
-		-co PREDICTOR=3 \
-		-co RESAMPLING=AVERAGE \
-		"$merged" \
-		"$cog"
-
-	uv run scripts/cog_to_pmtiles.py "$cog" "$output" \
+	# Create the global `.pmtile`
+	uv run scripts/to_pmtiles.py "$merged" "$output" \
 		--min_zoom 0 \
 		--max_zoom 11
 
