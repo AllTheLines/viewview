@@ -3,6 +3,7 @@
 /scratch
 /*.bin
 /static
+/state
 *.pmtiles
 .env
 /state

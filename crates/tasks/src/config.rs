@@ -2,6 +2,9 @@
 
 use color_eyre::Result;
 
+/// The marker to indicate that this is a local, non-production run.
+const RUN_ID_LOCAL: &str = "local";
+
 /// `Config`
 #[derive(clap::Parser, Debug)]
 #[clap(author, version)]
@@ -24,7 +27,13 @@ pub enum Commands {
     /// Create tiles identifited by the packer.
     Stitch(Stitch),
     /// Run and manage all the tasks for processing the entire planet.
+    Worker(Worker),
+    /// Run and manage all the tasks for processing the entire planet.
     Atlas(Atlas),
+    /// Create the longest lines index and sync it.
+    LongestLinesIndex(LongestLinesIndex),
+    /// Output the current run's config.
+    CurrentRunConfig(CurrentRunConfig),
 }
 
 /// `cargo run packer` arguments.
@@ -78,8 +87,12 @@ pub struct Stitch {
     pub width: f32,
 }
 
-/// `cargo run stitch` arguments.
+/// Worker daemon to run Atlas jobs.
 #[derive(clap::Parser, Debug, Clone)]
+pub struct Worker;
+
+/// `cargo run atlas` arguments.
+#[derive(clap::Parser, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Atlas {
     /// The ID of the run. So that we can process the world without affecting the current live
     /// assets. Set to "local" for running everything locally on your machine.
@@ -114,7 +127,38 @@ pub struct Atlas {
     /// Where to save longest lines COGs.
     #[arg(long, value_name = "Longest lines COGs directory")]
     pub longest_lines_cogs: std::path::PathBuf,
+
+    /// Where to run the computations, locally or on a cloud provider.
+    #[arg(
+        long,
+        value_enum,
+        value_name = "Compute provider",
+        default_value_t = ComputeProvider::Local
+    )]
+    pub provider: ComputeProvider,
 }
+
+impl Atlas {
+    /// Is this a local, non-production run?
+    pub fn is_local_run(&self) -> bool {
+        self.run_id == RUN_ID_LOCAL
+    }
+}
+
+/// Where to run the computations, locally or on a cloud provider.
+#[derive(clap::ValueEnum, Clone, Debug, Copy, serde::Serialize, serde::Deserialize)]
+pub enum ComputeProvider {
+    /// Run everything locally.
+    Local,
+}
+
+/// Create the longest lines index and sync it.
+#[derive(clap::Parser, Debug, Clone)]
+pub struct LongestLinesIndex;
+
+/// Get the current run's config.
+#[derive(clap::Parser, Debug, Clone)]
+pub struct CurrentRunConfig;
 
 /// Parse a single coordinate.
 fn parse_coord(string: &str) -> Result<(f64, f64)> {

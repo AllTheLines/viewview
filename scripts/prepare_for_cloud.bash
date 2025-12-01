@@ -72,5 +72,6 @@ function prepare_for_cloud {
 }
 
 function get_current_run_id {
-	jq --raw-output '.run_id' "$PROJECT_ROOT"/output/status.json
+	json=$(RUST_LOG=off cargo run --bin tasks -- current-run-config)
+	echo "$json" | jq --raw-output '.run_id'
 }

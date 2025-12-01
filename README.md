@@ -80,6 +80,7 @@ Outputs `.bt` heatmap.
 # Note that all these depend on a `./output` path existing.
 ./ctl.sh prepare_for_cloud ../total-viewsheds/output/total_surfaces.bt
 ./ctl.sh prepare_for_cloud ../total-viewsheds/output/longest_lines.bt
+
 ./ctl.sh make_pmtiles website/public/world.pmtiles
 ```
 
@@ -98,9 +99,10 @@ RUST_LOG=trace cargo run --bin tasks -- atlas \
   --longest-lines-cogs website/public/longest_lines
 ```
 
-Though it doesn't run this command, you'll want to manually run it after a
+Though it doesn't run these commands, you'll want to manually run them after a
 bunch of tiles have been processed:
 ```
+RUST_LOG=off,tasks=trace cargo run --bin tasks -- longest-lines-index
 ./ctl.sh make_pmtiles latest website/public/world.pmtiles
 ```
 

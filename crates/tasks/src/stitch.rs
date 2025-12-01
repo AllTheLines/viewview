@@ -11,17 +11,23 @@ const VIRTUAL_DEM_FILE: &str = "index.vrt";
 const NODATA_VALUE: &str = "-32768";
 
 /// Entrypoint.
-pub async fn make_tile(config: &crate::config::Stitch) -> Result<String> {
-    build_virtual_dem(config).await?;
-    let filename = stitch(config).await?;
-    set_centre_as_extent(config, &filename).await?;
+pub async fn make_tile<T: crate::atlas::machines::machine::Machine>(
+    machine: &T,
+    config: &crate::config::Stitch,
+) -> Result<String> {
+    build_virtual_dem(machine, config).await?;
+    let filename = stitch(machine, config).await?;
+    set_centre_as_extent(machine, config, &filename).await?;
 
     Ok(filename)
 }
 
 /// Build the virtual "DEM" file that represents all the DEM data for the planet. Saves having to
 /// scan and parse the header for every single `.hgt` file every time we make a tile.
-async fn build_virtual_dem(config: &crate::config::Stitch) -> Result<()> {
+async fn build_virtual_dem(
+    machine: &impl crate::atlas::machines::machine::Machine,
+    config: &crate::config::Stitch,
+) -> Result<()> {
     let vrt_path = std::path::Path::new(&config.dems).join(VIRTUAL_DEM_FILE);
     if vrt_path.exists() {
         tracing::info!("Not recreating already existing VRT index: {vrt_path:?}");
@@ -40,15 +46,15 @@ async fn build_virtual_dem(config: &crate::config::Stitch) -> Result<()> {
     let mut hgts_args: Vec<&str> = hgts.iter().map(std::string::String::as_str).collect();
     tracing::info!("Adding {} `.hgt`s to {vrt_path:?}", hgts_args.len());
     arguments.append(&mut hgts_args);
-    let status = tokio::process::Command::new("gdalbuildvrt")
-        .current_dir(&config.dems)
-        .args(arguments)
-        .status()
-        .await?;
 
-    if !status.success() {
-        color_eyre::eyre::bail!("Non-zero `gdal` exit status: {status}");
-    }
+    machine
+        .command(crate::atlas::machines::machine::Command {
+            executable: "gdalbuildvrt".into(),
+            args: arguments,
+            env: vec![],
+            current_dir: Some(config.dems.clone()),
+        })
+        .await?;
 
     Ok(())
 }
@@ -73,7 +79,10 @@ fn find_all_hgts(config: &crate::config::Stitch) -> Result<Vec<String>> {
 }
 
 /// Call `gdalwarp` to construct a new stitched tile. Data will also be interpolated to metric.
-async fn stitch(config: &crate::config::Stitch) -> Result<String> {
+async fn stitch(
+    machine: &impl crate::atlas::machines::machine::Machine,
+    config: &crate::config::Stitch,
+) -> Result<String> {
     let resolution = 100.0;
     let resolution_string = resolution.to_string();
     let aeqd = format!(
@@ -119,25 +128,26 @@ async fn stitch(config: &crate::config::Stitch) -> Result<String> {
         &hgt_index,
         output.as_str(),
     ];
-    tracing::info!("Running `gdalwarp` with args: {:?}", arguments);
-    let status = tokio::process::Command::new("gdalwarp")
-        .args(arguments)
-        .status()
+    machine
+        .command(crate::atlas::machines::machine::Command {
+            executable: "gdalwarp".into(),
+            args: arguments,
+            ..Default::default()
+        })
         .await?;
-    tracing::trace!("`gdalwarp` done.");
-
-    if !status.success() {
-        color_eyre::eyre::bail!("Non-zero `gdalwarp` exit status: {status}");
-    }
 
     Ok(output)
 }
 
 /// Re-purpose the new tile's extent header to instead define its centre.
-async fn set_centre_as_extent(config: &crate::config::Stitch, file: &str) -> Result<()> {
+async fn set_centre_as_extent(
+    machine: &impl crate::atlas::machines::machine::Machine,
+    config: &crate::config::Stitch,
+    file: &str,
+) -> Result<()> {
     let lon = config.centre.0.to_string();
     let lat = config.centre.1.to_string();
-    let arguments = [
+    let arguments = vec![
         "-a_ullr",
         lon.as_str(),
         lat.as_str(),
@@ -145,15 +155,14 @@ async fn set_centre_as_extent(config: &crate::config::Stitch, file: &str) -> Res
         lat.as_str(),
         file,
     ];
-    tracing::info!("Running `gdal_edit` with args: {:?}", arguments);
-    let status = tokio::process::Command::new("gdal_edit")
-        .args(arguments)
-        .status()
-        .await?;
 
-    if !status.success() {
-        color_eyre::eyre::bail!("Non-zero `gdal_edit` exit status: {status}");
-    }
+    machine
+        .command(crate::atlas::machines::machine::Command {
+            executable: "gdal_edit".into(),
+            args: arguments,
+            ..Default::default()
+        })
+        .await?;
 
     Ok(())
 }

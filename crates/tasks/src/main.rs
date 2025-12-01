@@ -15,8 +15,19 @@
 
 /// The code for processing the entire world.
 mod atlas {
+    pub mod db;
+    pub mod longest_lines_index;
     pub mod run;
-    pub mod status;
+    pub mod s3;
+    pub mod tile_job;
+
+    /// Providers of compute resources.
+    pub mod machines {
+        pub mod local;
+        pub mod machine;
+    }
+
+    pub mod workers;
 }
 
 mod config;
@@ -30,11 +41,12 @@ use clap::Parser as _;
 use color_eyre::Result;
 use tracing_subscriber::{Layer as _, layer::SubscriberExt as _, util::SubscriberInitExt as _};
 
-use crate::projector::LonLatCoord;
+use crate::{atlas::machines::machine::Machine as _, projector::LonLatCoord};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    setup_logging()?;
+    let broadcaster = apalis_board_api::sse::TracingBroadcaster::create();
+    setup_logging(&broadcaster)?;
 
     // Safety: We're just some adhoc tasks code, so not running anywhere vulnerbale.
     unsafe {
@@ -57,10 +69,23 @@ async fn main() -> Result<()> {
         }
         crate::config::Commands::MaxSubTiles(_) => max_subtile::run()?,
         crate::config::Commands::Stitch(stitch_config) => {
-            stitch::make_tile(stitch_config).await?;
+            stitch::make_tile(
+                &crate::atlas::machines::local::Machine::new(),
+                stitch_config,
+            )
+            .await?;
+        }
+        crate::config::Commands::Worker(worker_config) => {
+            atlas::workers::daemon(worker_config, broadcaster).await?;
         }
         crate::config::Commands::Atlas(atlas_config) => {
             atlas::run::Atlas::run_all(atlas_config).await?;
+        }
+        crate::config::Commands::LongestLinesIndex(_) => {
+            atlas::longest_lines_index::save_longest_lines_cogs_index().await?;
+        }
+        crate::config::Commands::CurrentRunConfig(_) => {
+            atlas::db::print_current_run_config_as_json().await?;
         }
     }
 
@@ -68,13 +93,27 @@ async fn main() -> Result<()> {
 }
 
 /// Setup logging.
-fn setup_logging() -> Result<()> {
-    let filters = tracing_subscriber::EnvFilter::builder()
+fn setup_logging(
+    worker_broadcaster: &std::sync::Arc<
+        std::sync::Mutex<apalis_board_api::sse::TracingBroadcaster>,
+    >,
+) -> Result<()> {
+    let worker_subsriber = apalis_board_api::sse::TracingSubscriber::new(worker_broadcaster);
+
+    let main_filters = tracing_subscriber::EnvFilter::builder()
         .with_default_directive("info".parse()?)
         .from_env_lossy();
-    let filter_layer = tracing_subscriber::fmt::layer().with_filter(filters);
-    let tracing_setup = tracing_subscriber::registry().with(filter_layer);
-    tracing_setup.init();
+    let main_filter_layer = tracing_subscriber::fmt::layer().with_filter(main_filters);
+
+    let worker_filters = tracing_subscriber::EnvFilter::builder()
+        .with_default_directive("info".parse()?)
+        .from_env_lossy();
+    let worker_filter_layer = worker_subsriber.layer().with_filter(worker_filters);
+
+    tracing_subscriber::registry()
+        .with(main_filter_layer)
+        .with(worker_filter_layer)
+        .init();
 
     Ok(())
 }
