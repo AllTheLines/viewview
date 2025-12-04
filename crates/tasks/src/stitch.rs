@@ -2,6 +2,8 @@
 //!
 //! The tiles created will most likely have been indentified by the "Packer", also in this repo.
 
+use std::sync::Arc;
+
 use color_eyre::{Result, eyre::ContextCompat as _};
 
 /// A virtual DEM that represents _all_ the DEM data for the planet.
@@ -11,8 +13,8 @@ const VIRTUAL_DEM_FILE: &str = "index.vrt";
 const NODATA_VALUE: &str = "-32768";
 
 /// Entrypoint.
-pub async fn make_tile<T: crate::atlas::machines::machine::Machine>(
-    machine: &T,
+pub async fn make_tile(
+    machine: &Arc<crate::atlas::machines::connection::Connection>,
     config: &crate::config::Stitch,
 ) -> Result<String> {
     build_virtual_dem(machine, config).await?;
@@ -25,7 +27,7 @@ pub async fn make_tile<T: crate::atlas::machines::machine::Machine>(
 /// Build the virtual "DEM" file that represents all the DEM data for the planet. Saves having to
 /// scan and parse the header for every single `.hgt` file every time we make a tile.
 async fn build_virtual_dem(
-    machine: &impl crate::atlas::machines::machine::Machine,
+    machine: &Arc<crate::atlas::machines::connection::Connection>,
     config: &crate::config::Stitch,
 ) -> Result<()> {
     let vrt_path = std::path::Path::new(&config.dems).join(VIRTUAL_DEM_FILE);
@@ -48,7 +50,7 @@ async fn build_virtual_dem(
     arguments.append(&mut hgts_args);
 
     machine
-        .command(crate::atlas::machines::machine::Command {
+        .command(crate::atlas::machines::connection::Command {
             executable: "gdalbuildvrt".into(),
             args: arguments,
             env: vec![],
@@ -80,7 +82,7 @@ fn find_all_hgts(config: &crate::config::Stitch) -> Result<Vec<String>> {
 
 /// Call `gdalwarp` to construct a new stitched tile. Data will also be interpolated to metric.
 async fn stitch(
-    machine: &impl crate::atlas::machines::machine::Machine,
+    machine: &Arc<crate::atlas::machines::connection::Connection>,
     config: &crate::config::Stitch,
 ) -> Result<String> {
     let resolution = 100.0;
@@ -129,7 +131,7 @@ async fn stitch(
         output.as_str(),
     ];
     machine
-        .command(crate::atlas::machines::machine::Command {
+        .command(crate::atlas::machines::connection::Command {
             executable: "gdalwarp".into(),
             args: arguments,
             ..Default::default()
@@ -141,7 +143,7 @@ async fn stitch(
 
 /// Re-purpose the new tile's extent header to instead define its centre.
 async fn set_centre_as_extent(
-    machine: &impl crate::atlas::machines::machine::Machine,
+    machine: &Arc<crate::atlas::machines::connection::Connection>,
     config: &crate::config::Stitch,
     file: &str,
 ) -> Result<()> {
@@ -157,7 +159,7 @@ async fn set_centre_as_extent(
     ];
 
     machine
-        .command(crate::atlas::machines::machine::Command {
+        .command(crate::atlas::machines::connection::Command {
             executable: "gdal_edit".into(),
             args: arguments,
             ..Default::default()

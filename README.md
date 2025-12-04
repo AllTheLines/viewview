@@ -89,14 +89,25 @@ Outputs `.bt` heatmap.
 Process all the tiles for the entire planet. It manages the "Stitcher", "Total Viewsheds" and "Prepare For Cloud" steps above.
 
 ```
-RUST_LOG=trace cargo run --bin tasks -- atlas \
+# Saving data locally, useful for development:
+RUST_LOG=trace cargo run --bin tasks -- atlas run \
+  --provider local \
   --run-id 0.1 \
   --master website/public/tiles.csv \
-  --status output/status.json \
   --centre -4.549624919891357,47.44954299926758 \
   --dems /publicish/dems \
   --tvs-executable ../total-viewsheds/target/release/total-viewsheds \
   --longest-lines-cogs website/public/longest_lines
+
+# Saving data on remote machines and S3, used for production:
+RUST_LOG=off,tasks=trace cargo run --bin tasks -- atlas run \
+  --provider digital-ocean \
+  --run-id 0.1 \
+  --master website/public/tiles.csv \
+  --centre -13.949958801269531,57.94995880126953 \
+  --dems /publicish/dems \
+  --tvs-executable /root/tvs/target/release/total-viewsheds \
+  --longest-lines-cogs output/longest_lines
 ```
 
 Though it doesn't run these commands, you'll want to manually run them after a

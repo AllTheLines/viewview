@@ -11,11 +11,16 @@ function make_pmtiles {
 
 	ensure_tiles_env
 
+	if [[ $version == "latest" ]]; then
+		version=$(get_current_run_id)
+	fi
+
 	rm "$output" || true
 	rm -f "$TMP_DIR/"*
 	merged=$TMP_DIR/merged.tif
+	archive="$ARCHIVE_DIR/$version"
 
-	echo "Using archive at $ARCHIVE_DIR"
+	echo "Using archive at $archive"
 
 	# Merge all the heatmap GeoTiffs into one big GeoTiff.
 	gdal_merge \
@@ -23,16 +28,12 @@ function make_pmtiles {
 		-a_nodata 0 \
 		-co ALPHA=YES \
 		-o "$merged" \
-		"$ARCHIVE_DIR"/*.tiff
+		"$archive"/*.tiff
 
 	# Create the global `.pmtile`
 	uv run scripts/to_pmtiles.py "$merged" "$output" \
 		--min_zoom 0 \
 		--max_zoom 11
-
-	if [[ $version == "latest" ]]; then
-		version=$(get_current_run_id)
-	fi
 
 	if [[ $version != "local" ]]; then
 		s3 put "$output" s3://viewview/runs/"$version"/pmtiles/world.pmtiles

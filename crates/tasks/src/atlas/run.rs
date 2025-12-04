@@ -66,9 +66,25 @@ impl Atlas {
 
     /// Process all the tiles.
     pub async fn run_all(config: &crate::config::Atlas) -> Result<()> {
-        let atlas = Self::new(config)?;
+        #[expect(clippy::collapsible_if, reason = "I prefer it like this")]
+        if let Some(existing_config) = crate::atlas::db::get_current_run_config().await? {
+            if existing_config.run_id != config.run_id {
+                color_eyre::eyre::bail!(
+                    "Can't start a new run with old run data in the DB. Reset the DB."
+                );
+            }
+        }
 
-        let mut tile_store = super::workers::worker_store().await?;
+        let atlas = Self::new(config)?;
+        let mut tile_store = super::db::worker_store().await?;
+
+        if matches!(config.provider, crate::config::ComputeProvider::Local) {
+            crate::atlas::machines::cli::new_machine(&crate::config::NewMachine {
+                provider: crate::config::ComputeProvider::Local,
+                ssh_key_id: "noop".to_owned(),
+            })
+            .await?;
+        }
 
         tracing::debug!("Adding tile jobs to worker...");
         let start_from = crate::projector::LonLatCoord(config.centre.into());

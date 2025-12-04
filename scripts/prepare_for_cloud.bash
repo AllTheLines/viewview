@@ -44,7 +44,7 @@ function prepare_for_cloud {
 	# The `.bt` format only has minimal support for georeferencing, so here we edit
 	# the GeoTiff's projection and extent. This is merely updating header metadata,
 	# it's not actually interpolating or anything like that.
-	gdal_edit \
+	gdal_edit.py \
 		-a_ullr "-$width" "$width" "$width" "-$width" \
 		-a_srs "+proj=aeqd +lat_0=$latitude +lon_0=$longitude +datum=WGS84" \
 		"$plain_tif"
@@ -85,6 +85,6 @@ function prepare_for_cloud {
 
 # Get the current run ID via the latest successful tile job in the DB.
 function get_current_run_id {
-	json=$(RUST_LOG=off cargo run --bin tasks -- current-run-config)
+	json=$(RUST_LOG=off cargo run --bin tasks -- atlas current-run-config)
 	echo "$json" | jq --raw-output '.run_id'
 }

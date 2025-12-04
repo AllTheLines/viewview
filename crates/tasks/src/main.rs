@@ -15,19 +15,22 @@
 
 /// The code for processing the entire world.
 mod atlas {
+    pub mod daemon;
     pub mod db;
     pub mod longest_lines_index;
     pub mod run;
-    pub mod s3;
     pub mod tile_job;
 
     /// Providers of compute resources.
     pub mod machines {
+        pub mod cli;
+        pub mod connection;
+        pub mod digital_ocean;
         pub mod local;
         pub mod machine;
+        pub mod new_machine_job;
+        pub mod worker;
     }
-
-    pub mod workers;
 }
 
 mod config;
@@ -41,7 +44,7 @@ use clap::Parser as _;
 use color_eyre::Result;
 use tracing_subscriber::{Layer as _, layer::SubscriberExt as _, util::SubscriberInitExt as _};
 
-use crate::{atlas::machines::machine::Machine as _, projector::LonLatCoord};
+use crate::projector::LonLatCoord;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -57,7 +60,7 @@ async fn main() -> Result<()> {
     tracing::info!("Initialising with config: {config:?}",);
 
     match &config.command {
-        crate::config::Commands::Packer(packer_config) => {
+        config::Commands::Packer(packer_config) => {
             let mut packer = packer::Packer::new(packer_config.clone())?;
             match packer_config.one {
                 Some(coordinate) => packer.run_one(LonLatCoord(geo::coord! {
@@ -67,26 +70,31 @@ async fn main() -> Result<()> {
                 None => packer.run_all()?,
             }
         }
-        crate::config::Commands::MaxSubTiles(_) => max_subtile::run()?,
-        crate::config::Commands::Stitch(stitch_config) => {
+        config::Commands::MaxSubTiles(_) => max_subtile::run()?,
+        config::Commands::Stitch(stitch_config) => {
             stitch::make_tile(
-                &crate::atlas::machines::local::Machine::new(),
+                &crate::atlas::machines::local::Machine::connection().into(),
                 stitch_config,
             )
             .await?;
         }
-        crate::config::Commands::Worker(worker_config) => {
-            atlas::workers::daemon(worker_config, broadcaster).await?;
-        }
-        crate::config::Commands::Atlas(atlas_config) => {
-            atlas::run::Atlas::run_all(atlas_config).await?;
-        }
-        crate::config::Commands::LongestLinesIndex(_) => {
-            atlas::longest_lines_index::save_longest_lines_cogs_index().await?;
-        }
-        crate::config::Commands::CurrentRunConfig(_) => {
-            atlas::db::print_current_run_config_as_json().await?;
-        }
+        config::Commands::Atlas(atlas_config) => match atlas_config {
+            config::AtlasCommands::Worker(worker_config) => {
+                atlas::daemon::start_all(worker_config, broadcaster).await?;
+            }
+            config::AtlasCommands::NewMachine(new_machine_config) => {
+                atlas::machines::cli::new_machine(new_machine_config).await?;
+            }
+            config::AtlasCommands::Run(atlas_run_config) => {
+                atlas::run::Atlas::run_all(atlas_run_config).await?;
+            }
+            config::AtlasCommands::LongestLinesIndex(_) => {
+                atlas::longest_lines_index::save_longest_lines_cogs_index().await?;
+            }
+            config::AtlasCommands::CurrentRunConfig(_) => {
+                atlas::db::print_current_run_config_as_json().await?;
+            }
+        },
     }
 
     Ok(())

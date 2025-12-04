@@ -4,6 +4,10 @@ members = [ "crates/server",
     "crates/tasks",
 ]
 
+[patch.crates-io]
+# Just waiting for any release after v0.54.6 and for `async-ssh2-tokio` to update from 0.12.0.
+russh = { git = "https://github.com/Eugeny/russh", rev = "258c6bbb2877fd8d5295e2bd406fac334890083c" }
+
 # Canonical lints for whole crate
 #
 # Official docs:

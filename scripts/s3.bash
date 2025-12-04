@@ -1,7 +1,7 @@
 R2_HOST=364f498af774cadc655afe7f4ef9b8b5.r2.cloudflarestorage.com
 
 function s3 {
-	uvx s3cmd \
+	/root/.local/bin/uvx s3cmd \
 		--host https://$R2_HOST \
 		--host-bucket="%(bucket)s.$R2_HOST" \
 		--access_key="$VIEWVIEW_S3_ACCESS_KEY" \

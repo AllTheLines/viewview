@@ -16,7 +16,7 @@ pub struct Config {
     pub command: Commands,
 }
 
-/// CLI subcommand.
+/// CLI subcommands.
 #[derive(clap::Subcommand, Debug)]
 pub enum Commands {
     /// Find a not-terrible packing of Total Viewshed tiles across the planet.
@@ -26,10 +26,21 @@ pub enum Commands {
     MaxSubTiles(MaxSubTiles),
     /// Create tiles identifited by the packer.
     Stitch(Stitch),
+
+    #[command(subcommand)]
+    /// Run and manage all the tasks for processing the entire planet.
+    Atlas(AtlasCommands),
+}
+
+/// `atlas` subcommands.
+#[derive(clap::Subcommand, Debug)]
+pub enum AtlasCommands {
+    /// Create a new machine
+    NewMachine(NewMachine),
+    /// Run
+    Run(Atlas),
     /// Run and manage all the tasks for processing the entire planet.
     Worker(Worker),
-    /// Run and manage all the tasks for processing the entire planet.
-    Atlas(Atlas),
     /// Create the longest lines index and sync it.
     LongestLinesIndex(LongestLinesIndex),
     /// Output the current run's config.
@@ -103,10 +114,6 @@ pub struct Atlas {
     #[arg(long, value_name = "Path to master tiles list")]
     pub master: std::path::PathBuf,
 
-    /// Status of crunched tiles.
-    #[arg(long, value_name = "Path to status file")]
-    pub status: std::path::PathBuf,
-
     /// The lon/lat coord from which to start processing
     #[arg(
         long,
@@ -138,6 +145,19 @@ pub struct Atlas {
     pub provider: ComputeProvider,
 }
 
+/// Create a new machine for Atlas.
+#[derive(clap::Parser, Debug, Clone)]
+pub struct NewMachine {
+    /// Where to create the machine.
+    #[arg(long, value_enum, value_name = "Compute provider")]
+    pub provider: ComputeProvider,
+
+    /// The SSH key to access the new machine with. It likely already needs to be associated with
+    /// your cloud account.
+    #[arg(long, value_enum, value_name = "SSH key ID")]
+    pub ssh_key_id: String,
+}
+
 impl Atlas {
     /// Is this a local, non-production run?
     pub fn is_local_run(&self) -> bool {
@@ -150,6 +170,8 @@ impl Atlas {
 pub enum ComputeProvider {
     /// Run everything locally.
     Local,
+    /// Run on Digital Ocean compute. Requires an already authed `doctl`.
+    DigitalOcean,
 }
 
 /// Create the longest lines index and sync it.
