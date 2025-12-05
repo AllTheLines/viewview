@@ -88,7 +88,11 @@ impl Atlas {
 
         tracing::debug!("Adding tile jobs to worker...");
         let start_from = crate::projector::LonLatCoord(config.centre.into());
-        for master_tile in atlas.tiles.nearest_neighbor_iter(&start_from) {
+        for master_tile in atlas
+            .tiles
+            .nearest_neighbor_iter(&start_from)
+            .take(config.amount.unwrap_or_else(|| atlas.tiles.size()))
+        {
             tile_store
                 .push(super::tile_job::TileJob {
                     config: config.clone(),

@@ -46,7 +46,7 @@ impl TileRunner {
             machine: connection.clone(),
         };
 
-        let bt_filepath = runner.stitch().await?;
+        let bt_filepath = runner.download_bt_file().await?;
         runner.compute(&bt_filepath).await?;
         runner.assets().await?;
 
@@ -55,40 +55,16 @@ impl TileRunner {
         Ok(())
     }
 
-    /// Create the custom DEM tile from the SRTM data.
-    async fn stitch(&self) -> Result<String> {
-        let local_machine = Arc::new(super::machines::local::Machine::connection());
-        let bt_filepath = crate::stitch::make_tile(
-            &local_machine,
-            &crate::config::Stitch {
-                dems: self.job.config.dems.clone(),
-                centre: self.job.tile.centre.0.into(),
-                width: self.job.tile.width,
-            },
-        )
-        .await?;
+    // TODO: Make this its own job so it can be parallelised.
+    /// Download the packer-found, pre-stitched `.bt` DEM tile data.
+    async fn download_bt_file(&self) -> Result<String> {
+        let bt_filename =
+            crate::stitch::canonical_filename(self.job.tile.centre.0.x, self.job.tile.centre.0.y);
+        let from = format!("s3://viewview/stitched/{bt_filename}");
+        let to = format!("output/{bt_filename}");
+        self.machine.sync_file_from_s3(&from, &to).await?;
 
-        if !self.job.config.is_local_run() {
-            self.copy_stitched_bt_to_remote(&bt_filepath).await?;
-        }
-
-        Ok(bt_filepath)
-    }
-
-    /// Copy the stitched `.bt` file to the remote machine.
-    async fn copy_stitched_bt_to_remote(&self, bt_filepath: &str) -> Result<()> {
-        let (address, port) = self.machine.get_rsync_details();
-        let destination_path = format!("{address}:/root/viewview/{bt_filepath}");
-
-        tracing::debug!(
-            "Uploading {bt_filepath} to {:?} {}",
-            self.machine.provider,
-            destination_path
-        );
-
-        crate::atlas::machines::local::Machine::rsync(bt_filepath, &destination_path, port).await?;
-
-        Ok(())
+        Ok(to)
     }
 
     /// Run the TVS kernel on a single tile.
@@ -127,7 +103,7 @@ impl TileRunner {
         .await?;
 
         if !self.job.config.is_local_run() {
-            self.download_tvs_tiff().await?;
+            self.s3_put_tvs_tiff().await?;
         }
 
         self.prepare_for_cloud(
@@ -137,13 +113,14 @@ impl TileRunner {
         .await?;
 
         if !self.job.config.is_local_run() {
-            self.sync_longest_lines_cog(&self.job.tile.cog_filename())
+            self.s3_put_longest_lines_cog(&self.job.tile.cog_filename())
                 .await?;
         }
 
         Ok(())
     }
 
+    // TODO: Make this its own job so it can be parallelised.
     /// Prepare a processed tile for the website UI.
     async fn prepare_for_cloud(&self, input: &str, output: &str) -> Result<()> {
         let arguments = vec!["prepare_for_cloud", input, output];
@@ -163,31 +140,23 @@ impl TileRunner {
     }
 
     // TODO: Make this its own job so it can be parallelised.
-    /// Download the finished heatmap for the tile.
-    async fn download_tvs_tiff(&self) -> Result<()> {
-        let (address, port) = self.machine.get_rsync_details();
-        let heatmap_tiff = self.job.tile.cog_filename();
-        let heatmap_path = format!("{address}:/root/viewview/output/archive/{heatmap_tiff}");
-        let archive_directory = std::path::Path::new("output")
-            .join("archive")
-            .join(self.job.config.run_id.clone());
-        tokio::fs::create_dir_all(archive_directory.clone()).await?;
-        let destination_path = archive_directory.join(&heatmap_tiff).display().to_string();
-
-        tracing::debug!(
-            "Downloading {heatmap_path:?} from {:?} to {:?}",
-            self.machine.provider,
-            destination_path
+    /// Sync the finished heatmap for the tile to our S3 bucket.
+    async fn s3_put_tvs_tiff(&self) -> Result<()> {
+        let tvs_tiff = self.job.tile.cog_filename();
+        let source = format!("output/archive/{tvs_tiff}");
+        let destination = format!(
+            "s3://viewview/runs/{}/tvs/{tvs_tiff}",
+            self.job.config.run_id
         );
 
-        crate::atlas::machines::local::Machine::rsync(&heatmap_path, &destination_path, port)
-            .await?;
+        self.machine.sync_file_to_s3(&source, &destination).await?;
 
         Ok(())
     }
 
+    // TODO: Make this its own job so it can be parallelised.
     /// Sync a longest lines COG to our S3 bucket.
-    async fn sync_longest_lines_cog(&self, filename: &str) -> Result<()> {
+    async fn s3_put_longest_lines_cog(&self, filename: &str) -> Result<()> {
         let source = self
             .job
             .config

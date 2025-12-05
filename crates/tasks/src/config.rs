@@ -141,9 +141,9 @@ pub struct Atlas {
     ]
     pub centre: (f64, f64),
 
-    /// Source of all the DEM files.
-    #[arg(long, value_name = "Path to DEMs folder")]
-    pub dems: std::path::PathBuf,
+    /// How many tiles to process.
+    #[arg(long, value_name = "Amount of tiles to process")]
+    pub amount: Option<usize>,
 
     /// Path to TVS executable.
     #[arg(long, value_name = "TVS executable")]

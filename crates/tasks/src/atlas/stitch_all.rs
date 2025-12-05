@@ -24,11 +24,11 @@ pub async fn run(config: &crate::config::StitchAll) -> Result<()> {
         let mut stitch_store =
             crate::atlas::db::worker_store::<StitchJob>(STITCH_ALL_DB_PATH).await?;
 
-        for master_tile in master_tiles.iter().skip(500) {
+        for master_tile in master_tiles {
             stitch_store
                 .push(StitchJob {
                     config: config.clone(),
-                    tile: *master_tile,
+                    tile: master_tile,
                 })
                 .await?;
         }

@@ -108,22 +108,6 @@ impl Connection {
         Ok(())
     }
 
-    /// Get the SSH address details needed to do an `rsync`.
-    pub fn get_rsync_details(&self) -> (String, u16) {
-        let Some(ssh) = self.ssh.as_ref() else {
-            #[expect(
-                clippy::unreachable,
-                reason = "If we're syncing to/from a machine then there has to be an SSH connection"
-            )]
-            {
-                unreachable!();
-            }
-        };
-        let address = *ssh.get_connection_address();
-        let user_and_address = format!("root@{}", address.ip());
-        (user_and_address, address.port())
-    }
-
     /// Sync a file to our S3 bucket.
     pub async fn sync_file_to_s3(&self, source: &str, destination: &str) -> Result<()> {
         tracing::info!(
@@ -136,6 +120,19 @@ impl Connection {
         let command = Command {
             executable: "./ctl.sh".into(),
             args: vec!["s3", "put", &source, &destination],
+            ..Default::default()
+        };
+
+        self.command(command).await
+    }
+
+    /// Sync a file from our S3 bucket.
+    pub async fn sync_file_from_s3(&self, from: &str, to: &str) -> Result<()> {
+        tracing::info!("Syncing file {} from {} on {:?}", from, to, self.provider);
+
+        let command = Command {
+            executable: "./ctl.sh".into(),
+            args: vec!["s3", "get", "--force", &from, &to],
             ..Default::default()
         };
 

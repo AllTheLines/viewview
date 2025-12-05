@@ -71,17 +71,4 @@ impl Machine {
 
         Ok(())
     }
-
-    /// Copy a file between the local and remote machine.
-    pub async fn rsync(source: &str, destination: &str, port: u16) -> Result<String> {
-        tracing::info!("Copying {source} to {destination}");
-        let port_arg = format!("ssh -p {port}");
-        let command = super::connection::Command {
-            executable: "rsync".into(),
-            args: vec!["-avP", "-e", &port_arg, &source, &destination],
-            ..Default::default()
-        };
-
-        Self::command(command).await
-    }
 }

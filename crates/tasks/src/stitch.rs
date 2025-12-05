@@ -73,11 +73,22 @@ fn find_all_hgts(config: &crate::config::Stitch) -> Result<Vec<String>> {
         if let Some(extension) = file.extension()
             && extension == "hgt"
         {
-            hgts.push(file.file_name().context("")?.display().to_string());
+            hgts.push(
+                file.file_name()
+                    .context("Couldn't get `.hgt` filename")?
+                    .display()
+                    .to_string(),
+            );
         }
     }
 
     Ok(hgts)
+}
+
+/// The canonical name for the stitched file. It's needed to be able to put and get the file from
+/// the S3 bucket.
+pub fn canonical_filename(lon: f64, lat: f64) -> String {
+    format!("{lon},{lat}.bt")
 }
 
 /// Call `gdalwarp` to construct a new stitched tile. Data will also be interpolated to metric.
@@ -91,7 +102,10 @@ async fn stitch(
         "+proj=aeqd +lat_0={} +lon_0={} +units=m +datum=WGS84 +no_defs",
         config.centre.1, config.centre.0
     );
-    let output = format!("./output/{},{}.bt", config.centre.0, config.centre.1);
+    let output = format!(
+        "./output/{}",
+        canonical_filename(config.centre.0, config.centre.1)
+    );
     let hgt_index = config.dems.join(VIRTUAL_DEM_FILE).display().to_string();
 
     // We align to 24 because we need to align the TVS to 8, which gives the possiblity of aligning
