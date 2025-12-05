@@ -45,6 +45,8 @@ pub enum AtlasCommands {
     LongestLinesIndex(LongestLinesIndex),
     /// Output the current run's config.
     CurrentRunConfig(CurrentRunConfig),
+    /// Stitch the entire world's `.bt` files and save them to S3.
+    StitchAll(StitchAll),
 }
 
 /// `cargo run packer` arguments.
@@ -96,6 +98,22 @@ pub struct Stitch {
     /// The width of the tile in meters.
     #[arg(long, value_name = "Tile width")]
     pub width: f32,
+}
+
+/// `cargo run atlas stitch-all` arguments.
+#[derive(clap::Parser, Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct StitchAll {
+    /// Source of all the DEM files.
+    #[arg(long, value_name = "Path to DEMs folder")]
+    pub dems: Option<std::path::PathBuf>,
+
+    /// Master tile list produced by the Packer.
+    #[arg(long, value_name = "Path to master tiles list")]
+    pub master: Option<std::path::PathBuf>,
+
+    /// Number of CPUS to use,
+    #[arg(long, value_name = "Number of cpus", default_value_t = number_of_cpus_on_machine())]
+    pub num_cpus: usize,
 }
 
 /// Worker daemon to run Atlas jobs.
@@ -199,4 +217,18 @@ fn parse_coord(string: &str) -> Result<(f64, f64)> {
         reason = "We already proved that the length is 2"
     )]
     Ok((coordinates[0], coordinates[1]))
+}
+
+/// Get the number of CPUs on the machine.
+fn number_of_cpus_on_machine() -> usize {
+    std::fs::read_to_string("/proc/cpuinfo")
+        .ok()
+        .map(|section| {
+            section
+                .lines()
+                .filter(|line| line.starts_with("processor"))
+                .count()
+        })
+        .filter(|cpu| *cpu > 0)
+        .unwrap_or(1)
 }

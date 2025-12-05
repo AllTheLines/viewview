@@ -28,10 +28,12 @@ pub async fn start_all(
     _: &crate::config::Worker,
     broadcaster: std::sync::Arc<std::sync::Mutex<apalis_board_api::sse::TracingBroadcaster>>,
 ) -> Result<()> {
-    let tile_store = crate::atlas::db::worker_store::<crate::atlas::tile_job::TileJob>().await?;
-    let new_machine_store =
-        crate::atlas::db::worker_store::<crate::atlas::machines::new_machine_job::NewMachineJob>()
-            .await?;
+    let tile_store =
+        crate::atlas::db::atlas_worker_store::<crate::atlas::tile_job::TileJob>().await?;
+    let new_machine_store = crate::atlas::db::atlas_worker_store::<
+        crate::atlas::machines::new_machine_job::NewMachineJob,
+    >()
+    .await?;
 
     let state = Arc::new(State {
         connections: dashmap::DashMap::new().into(),
@@ -55,7 +57,7 @@ pub async fn start_all(
 
 /// Look for existing machines in the DB and open SSH connections to them.
 async fn start_existing_machines(state: Arc<State>) -> Result<()> {
-    let db = super::db::connection().await?;
+    let db = super::db::atlas_connection().await?;
     let jobs: Vec<crate::atlas::db::NewMachineJobRow> =
         sqlx::query_as(include_str!("./sql/active_machines.sql"))
             .fetch_all(&db)

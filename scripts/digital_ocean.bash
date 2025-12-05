@@ -7,7 +7,8 @@ function init_digital_ocean {
 		set -euo pipefail
 		apt install --yes \
 			libvulkan1 mesa-vulkan-drivers build-essential pkg-config \
-			libgdal-dev gdal-bin python3-gdal jq
+			libgdal-dev gdal-bin python3-gdal \
+			jq rclone tmux sqlite3
 	  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 		echo 'source ~/.cargo/env' >> ~/.bashrc
 		curl -LsSf https://astral.sh/uv/install.sh | sh

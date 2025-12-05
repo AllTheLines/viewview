@@ -42,7 +42,7 @@ pub async fn new_machine(config: &crate::config::NewMachine) -> Result<()> {
 /// Add a new machine job to the new machine worker.
 pub async fn add_new_machine_job(job: super::new_machine_job::NewMachineJob) -> Result<()> {
     let mut new_machine_store =
-        crate::atlas::db::worker_store::<super::new_machine_job::NewMachineJob>().await?;
+        crate::atlas::db::atlas_worker_store::<super::new_machine_job::NewMachineJob>().await?;
     new_machine_store.push(job).await?;
 
     Ok(())

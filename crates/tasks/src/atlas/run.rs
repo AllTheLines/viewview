@@ -38,7 +38,7 @@ impl Atlas {
 
     /// Load the master tile file created by `Packer`. This is what we iterate through to get all
     /// the tiles for the whole world.
-    fn load_master_tiles(master_path: &std::path::PathBuf) -> Result<Vec<crate::tile::Tile>> {
+    pub fn load_master_tiles(master_path: &std::path::PathBuf) -> Result<Vec<crate::tile::Tile>> {
         let mut tiles = Vec::new();
         let master_file = std::fs::read_to_string(master_path)?;
 
@@ -76,7 +76,7 @@ impl Atlas {
         }
 
         let atlas = Self::new(config)?;
-        let mut tile_store = super::db::worker_store().await?;
+        let mut tile_store = super::db::atlas_worker_store().await?;
 
         if matches!(config.provider, crate::config::ComputeProvider::Local) {
             crate::atlas::machines::cli::new_machine(&crate::config::NewMachine {

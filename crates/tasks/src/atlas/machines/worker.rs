@@ -13,7 +13,8 @@ pub async fn tile_processor(
     state: apalis::prelude::Data<Arc<crate::atlas::daemon::State>>,
     task_id: String,
 ) -> Result<()> {
-    let tile_store = crate::atlas::db::worker_store::<crate::atlas::tile_job::TileJob>().await?;
+    let tile_store =
+        crate::atlas::db::atlas_worker_store::<crate::atlas::tile_job::TileJob>().await?;
     let tile_worker_name = job.tile_worker_name();
 
     // We need to deref `apalis::prelude::Data<T>` so that the `T`'s type signature is saved in the

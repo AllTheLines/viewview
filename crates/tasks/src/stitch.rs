@@ -91,7 +91,7 @@ async fn stitch(
         "+proj=aeqd +lat_0={} +lon_0={} +units=m +datum=WGS84 +no_defs",
         config.centre.1, config.centre.0
     );
-    let output = format!("./output/{:.3},{:.3}.bt", config.centre.0, config.centre.1);
+    let output = format!("./output/{},{}.bt", config.centre.0, config.centre.1);
     let hgt_index = config.dems.join(VIRTUAL_DEM_FILE).display().to_string();
 
     // We align to 24 because we need to align the TVS to 8, which gives the possiblity of aligning
@@ -160,7 +160,7 @@ async fn set_centre_as_extent(
 
     machine
         .command(crate::atlas::machines::connection::Command {
-            executable: "gdal_edit".into(),
+            executable: "gdal_edit.py".into(),
             args: arguments,
             ..Default::default()
         })

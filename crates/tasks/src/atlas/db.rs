@@ -3,7 +3,7 @@
 use color_eyre::Result;
 
 /// The path to the `SQLite` database file.
-const DB_PATH: &str = "state/atlas.db";
+const ATLAS_DB_PATH: &str = "state/atlas.db";
 
 /// A `TileJob` as represented in the DB.
 #[derive(Debug, sqlx::FromRow)]
@@ -21,18 +21,23 @@ pub struct NewMachineJobRow {
     pub machine: sqlx::types::Json<super::machines::new_machine_job::NewMachineJob>,
 }
 
-/// Get a conneciton to the database.
-pub async fn connection() -> Result<sqlx::SqlitePool> {
+/// Get a connection to the database.
+pub async fn connection(db_path: &str) -> Result<sqlx::SqlitePool> {
     std::fs::create_dir_all("state")?;
     let options = apalis_sqlite::SqliteConnectOptions::new()
-        .filename(DB_PATH)
+        .filename(db_path)
         .create_if_missing(true);
     Ok(sqlx::SqlitePool::connect_with(options).await?)
 }
 
+/// Get a connection to the Atlas database.
+pub async fn atlas_connection() -> Result<sqlx::SqlitePool> {
+    connection(ATLAS_DB_PATH).await
+}
+
 /// Get the current run ID via the most recent successfully completed tile job.
 pub async fn get_current_run_config() -> Result<Option<crate::config::Atlas>> {
-    let db = super::db::connection().await?;
+    let db = atlas_connection().await?;
     let jobs: Vec<TileJobRow> = sqlx::query_as(include_str!("./sql/completed_tiles.sql"))
         .fetch_all(&db)
         .await?;
@@ -61,7 +66,7 @@ pub async fn get_completed_tiles() -> Result<Vec<crate::tile::Tile>> {
         return Ok(Vec::new());
     };
 
-    let db = super::db::connection().await?;
+    let db = atlas_connection().await?;
     let jobs: Vec<TileJobRow> = sqlx::query_as(include_str!("./sql/completed_tiles.sql"))
         .fetch_all(&db)
         .await?;
@@ -86,9 +91,14 @@ pub type WorkerStore<T> = apalis_sqlite::SqliteStorage<
 
 /// An Apalis worker store. A store stores worker jobs. This function connects to the database and
 /// creates a table for the provided type `T`.
-pub async fn worker_store<T>() -> Result<WorkerStore<T>> {
-    let db = super::db::connection().await?;
+pub async fn worker_store<T>(db_path: &str) -> Result<WorkerStore<T>> {
+    let db = super::db::connection(db_path).await?;
     apalis_sqlite::SqliteStorage::setup(&db).await?;
     let store = apalis_sqlite::SqliteStorage::<T, _, _>::new(&db);
     Ok(store)
+}
+
+/// An Atlas Apalis worker.
+pub async fn atlas_worker_store<T>() -> Result<WorkerStore<T>> {
+    worker_store(ATLAS_DB_PATH).await
 }

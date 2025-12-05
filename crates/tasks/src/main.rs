@@ -19,6 +19,7 @@ mod atlas {
     pub mod db;
     pub mod longest_lines_index;
     pub mod run;
+    pub mod stitch_all;
     pub mod tile_job;
 
     /// Providers of compute resources.
@@ -93,6 +94,9 @@ async fn main() -> Result<()> {
             }
             config::AtlasCommands::CurrentRunConfig(_) => {
                 atlas::db::print_current_run_config_as_json().await?;
+            }
+            config::AtlasCommands::StitchAll(stitch_all_config) => {
+                atlas::stitch_all::run(stitch_all_config).await?;
             }
         },
     }

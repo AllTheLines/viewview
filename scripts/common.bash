@@ -44,3 +44,12 @@ function _load_env {
 	source "$PROJECT_ROOT"/.env
 	set +a
 }
+
+function _uvx {
+	if type -P uvx >/dev/null 2>&1; then
+		uvx "$@"
+	else
+		# Likely what's need on a remote machine over a non-interactive SSH connection.
+		/root/.local/bin/uvx "$@"
+	fi
+}

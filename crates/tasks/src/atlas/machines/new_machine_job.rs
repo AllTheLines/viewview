@@ -42,7 +42,7 @@ pub async fn new_machine_handler(
 async fn get_machine_task_id_hack(
     job_to_find: super::new_machine_job::NewMachineJob,
 ) -> Result<String> {
-    let db = crate::atlas::db::connection().await?;
+    let db = crate::atlas::db::atlas_connection().await?;
     let jobs: Vec<crate::atlas::db::NewMachineJobRow> = sqlx::query_as(
         "
             SELECT
@@ -68,7 +68,7 @@ async fn get_machine_task_id_hack(
 /// Manually set a new machine job to failed. We most likely do this when we try to connect to it
 /// over SSH and it fails.
 pub async fn set_machine_failed(id: &str, error: &str) -> Result<()> {
-    let db = crate::atlas::db::connection().await?;
+    let db = crate::atlas::db::atlas_connection().await?;
     sqlx::query(include_str!("../sql/fail_machine_job.sql"))
         .bind(error)
         .bind(id)

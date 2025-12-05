@@ -1,7 +1,7 @@
 R2_HOST=364f498af774cadc655afe7f4ef9b8b5.r2.cloudflarestorage.com
 
 function s3 {
-	/root/.local/bin/uvx s3cmd \
+	_uvx s3cmd \
 		--host https://$R2_HOST \
 		--host-bucket="%(bucket)s.$R2_HOST" \
 		--access_key="$VIEWVIEW_S3_ACCESS_KEY" \
@@ -34,4 +34,18 @@ function put_srtm_folder {
 		--multi-thread-cutoff=0 \
 		--s3-chunk-size=64M \
 		--s3-upload-concurrency=16
+}
+
+function get_srtm_folder {
+	local destination=$1
+
+	rclone copy :s3:viewview/SRTM "$destination" \
+		--s3-endpoint=https://$R2_HOST \
+		--s3-provider=Cloudflare \
+		--s3-access-key-id="$VIEWVIEW_S3_ACCESS_KEY" \
+		--s3-secret-access-key="$VIEWVIEW_S3_SECRET" \
+		--progress \
+		--transfers=16 \
+		--checkers=16 \
+		--multi-thread-streams=16
 }
