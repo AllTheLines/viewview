@@ -5,11 +5,13 @@ import {
 } from 'maplibre-gl';
 import fragment from './fragment.glsl?raw';
 import {
-  BUCKET,
   getParentTile,
   isTileIntersectingBounds,
   Log,
+  PMTILES_SERVER,
+  packFloatToU16s,
   tileKey,
+  WORLD_PMTILES,
 } from './utils';
 import vertex from './vertex.glsl?raw';
 import type { WorkerEvent } from './Worker';
@@ -17,7 +19,6 @@ import type { WorkerEvent } from './Worker';
 export type TileGL = {
   key: string;
   texture: WebGLTexture;
-  min: number;
   max: number;
   bounds: LngLatBounds;
 };
@@ -51,7 +52,7 @@ const config: { tileSize: number } = {
 
 // The average surface area visibile from a point far out at sea, where it can only see sea.
 // This is used to fill regions for which there is no elevation data.
-const AVERAGE_SURFACE_VISIBILITY = 57585104.0;
+const AVERAGE_SURFACE_VISIBILITY = 63500000.0;
 
 let fillerTile: TileGL;
 
@@ -62,16 +63,13 @@ function initialise() {
     return;
   }
 
-  const PMTILES = `${BUCKET}/pmtiles`;
-  const WORLD_PMTILES = 'world.pmtiles';
-
   const params = new URLSearchParams(self.location.search);
   let source = params.get('pmtiles');
   if (!source) {
     if (import.meta.env.DEV) {
-      source = `/${WORLD_PMTILES}`;
+      source = `/${WORLD_PMTILES}.pmtiles`;
     } else {
-      source = `${PMTILES}/${WORLD_PMTILES}`;
+      source = PMTILES_SERVER;
     }
   }
   state.worker.postMessage({ type: 'init', source });
@@ -86,8 +84,8 @@ function onWorkerMessage(event: MessageEvent<WorkerEvent>) {
   }
 
   if (event.data.type === 'tile') {
-    const { key, data, min, max, bounds } = event.data;
-    const tile = makeTile(key, min, max, bounds, data);
+    const { key, data, max, bounds } = event.data;
+    const tile = makeTile(key, max, bounds, data);
     if (tile === undefined) {
       return;
     }
@@ -108,9 +106,6 @@ const HeatmapLayer: CustomLayerInterface = {
     if (!(gl instanceof WebGL2RenderingContext)) {
       console.error('Need WebGL2 for R32F textures.');
     }
-
-    gl.getExtension('EXT_color_buffer_float');
-    gl.getExtension('OES_texture_float_linear');
 
     const compile = (source: string, type: GLenum) => {
       const shader = gl.createShader(type);
@@ -247,8 +242,6 @@ const HeatmapLayer: CustomLayerInterface = {
     const positionLocation = gl.getAttribLocation(state.program, 'a_pos');
     gl.enableVertexAttribArray(positionLocation);
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
     for (const tile of state.map.coveringTiles({ tileSize: 256 })) {
       let scaleIfParent = 1.0;
@@ -320,10 +313,9 @@ const HeatmapLayer: CustomLayerInterface = {
 
 function makeTile(
   key: string,
-  min: number,
   max: number,
   bounds: LngLatBounds,
-  data: Float32Array,
+  data: Uint16Array,
 ) {
   if (state?.gl === undefined) {
     console.warn("No GL context, couldn't make tile");
@@ -335,12 +327,12 @@ function makeTile(
   state.gl.texParameteri(
     state.gl.TEXTURE_2D,
     state.gl.TEXTURE_MIN_FILTER,
-    state.gl.LINEAR,
+    state.gl.NEAREST,
   );
   state.gl.texParameteri(
     state.gl.TEXTURE_2D,
     state.gl.TEXTURE_MAG_FILTER,
-    state.gl.LINEAR,
+    state.gl.NEAREST,
   );
   state.gl.texParameteri(
     state.gl.TEXTURE_2D,
@@ -355,31 +347,29 @@ function makeTile(
   state.gl.texImage2D(
     state.gl.TEXTURE_2D,
     0,
-    state.gl.R32F,
+    state.gl.RG16UI,
     config.tileSize,
     config.tileSize,
     0,
-    state.gl.RED,
-    state.gl.FLOAT,
+    state.gl.RG_INTEGER,
+    state.gl.UNSIGNED_SHORT,
     data,
   );
 
   return {
     key,
     bounds,
-    min,
     max,
     texture,
   } as TileGL;
 }
 
 function makeFillerTile() {
-  const data = new Float32Array(config.tileSize ** 2);
-  data.fill(AVERAGE_SURFACE_VISIBILITY);
+  const data = new Uint16Array(config.tileSize ** 2 * 4);
+  data.set(packFloatToU16s(AVERAGE_SURFACE_VISIBILITY));
 
   const tile = makeTile(
     'filler',
-    AVERAGE_SURFACE_VISIBILITY,
     AVERAGE_SURFACE_VISIBILITY,
     new LngLatBounds(),
     data,

@@ -1,10 +1,14 @@
+#version 300 es
 precision highp float;
-attribute vec2 a_pos;
+
+in vec2 a_pos;
+out vec2 v_texcoord;
+
 uniform mat4 u_projectionMatrix;
 uniform vec4 u_tileMatrix;
 uniform float u_scale;
 uniform vec2 u_offset;
-varying vec2 v_texcoord;
+
 void main() {
     vec2 normalised_coord = a_pos / 4096.0;
     v_texcoord = normalised_coord / u_scale + u_offset;

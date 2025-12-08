@@ -1,6 +1,11 @@
 import { LngLat, LngLatBounds } from 'maplibre-gl';
 
-export const BUCKET = 'https://viewview.nyc3.cdn.digitaloceanspaces.com';
+export const CDN_BUCKET = 'https://cdn.alltheviews.world';
+export const MAP_SERVER = 'https://map.alltheviews.world';
+export const WORLD_PMTILES = 'world';
+export const PMTILES_SERVER = `${MAP_SERVER}/runs/0.1/pmtiles/${WORLD_PMTILES}`;
+
+export const VERSION = '0.1';
 export const EARTH_RADIUS = 6371_000.0;
 
 export const Log = {
@@ -80,4 +85,11 @@ export function toDegrees(radians: number) {
 export function lonLatRound(lonlat: LngLat) {
   const precision = 6;
   return [lonlat.lng.toPrecision(precision), lonlat.lat.toPrecision(precision)];
+}
+
+export function packFloatToU16s(float: number) {
+  const buffer = new ArrayBuffer(4);
+  new Float32Array(buffer)[0] = float;
+  const u16s = new Uint16Array(buffer);
+  return u16s;
 }

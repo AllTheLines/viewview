@@ -17,7 +17,6 @@
     "accessible-nprogress": "^2.1.2",
     "geotiff": "^2.1.4-beta.1",
     "maplibre-gl": "^5.11.0",
-    "pmtiles": "^4.3.0",
     "proj4": "^2.20.2",
     "svelte": "^5.42.2",
     "svelte5-router": "^3.0.2"
@@ -27,6 +26,7 @@
     "@rsbuild/core": "^1.6.0",
     "@rsbuild/plugin-sass": "^1.4.0",
     "@rsbuild/plugin-svelte": "^1.0.11",
+    "pmtiles": "^4.3.0",
     "prettier": "^3.6.2",
     "svelte-check": "^4.3.3",
     "typescript": "^5.9.3"

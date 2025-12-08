@@ -3,7 +3,7 @@ import type { GeoTIFFImage } from 'geotiff';
 import { fromUrl as geotiffFromURL } from 'geotiff';
 import { LngLat } from 'maplibre-gl';
 import proj4 from 'proj4';
-import { aeqdProjectionString, BUCKET, Log } from './utils';
+import { aeqdProjectionString, CDN_BUCKET, Log, VERSION } from './utils';
 
 // Masks for unpacking bit-packed line of sight data.
 const U22_MASK = (1 << 22) - 1;
@@ -122,9 +122,17 @@ async function findNearestCOGURL(coordinate: LngLat) {
     }
   }
 
+  Log.debug('Longest Lines index', cogsIndex);
+
   for (const [filename, cog] of cogsIndex) {
     const distance = coordinate.distanceTo(cog.centre);
-    const radius = cog.width / 2;
+    const scale = 100; // TODO: I thought we decided to set this in the indexer?
+    const radius = cog.width / 2 / scale;
+    Log.debug(
+      `Checking Longest Line COG: ${filename}`,
+      `with centre: ${cog.centre} and radius ${radius}`,
+      `Distance from click: ${distance}`,
+    );
     if (distance < radius) {
       const url = `${LONGEST_LINES_COGS}/${filename}`;
       Log.debug(`Longest Line COG found: ${url}`);
@@ -167,10 +175,16 @@ function getPointCoordinate(image: GeoTIFFImage, coordinate: LngLat) {
 }
 
 function getLongestLinesSource() {
-  if (!import.meta.env.DEV) {
-    return `${BUCKET}/longest_lines`;
+  const params = new URLSearchParams(self.location.search);
+  const source = params.get('longest_lines');
+  if (!source) {
+    if (!import.meta.env.DEV) {
+      return `${CDN_BUCKET}/runs/${VERSION}/longest_lines_cogs`;
+    } else {
+      return `/longest_lines`;
+    }
   } else {
-    return `/longest_lines`;
+    return source;
   }
 }
 

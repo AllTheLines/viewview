@@ -42,6 +42,10 @@
 				The lines are the theoretical ideals. They rely on perfect weather
 				conditions and favourable refraction.
 			</p>
+			<p>
+				Heatmap colours: the brighter the more and further you can see. The
+				darker the less you can see.
+			</p>
 		</CollapsableModal>
 
 		{#if state.longest_line}

@@ -1,20 +1,27 @@
 import { PMTiles } from 'pmtiles';
 import type { TileGL } from './HeatmapLayer';
-import { tileKey, tileToLatLonBounds } from './utils';
+import {
+  MAP_SERVER,
+  PMTILES_SERVER,
+  tileKey,
+  tileToLatLonBounds,
+} from './utils';
 
 export type WorkerEvent =
   | { type: 'init'; source: string }
-  | ({ type: 'tile' } & Omit<TileGL, 'texture'> & { data: Float32Array })
+  | ({ type: 'tile' } & Omit<TileGL, 'texture'> & { data: Uint16Array })
   | { type: 'getTile'; z: number; x: number; y: number };
 
-let heatmapTiles: PMTiles;
+let localTiler: PMTiles;
 
 const loading = new Map();
 
 self.onmessage = async (event: MessageEvent<WorkerEvent>) => {
   if (event.data.type === 'init') {
     const { source } = event.data;
-    heatmapTiles = new PMTiles(source);
+    if (import.meta.env.DEV) {
+      localTiler = new PMTiles(source);
+    }
     console.debug('Tile worker ready for:', source);
   }
 
@@ -27,14 +34,25 @@ self.onmessage = async (event: MessageEvent<WorkerEvent>) => {
       loading.set(key, true);
     }
 
-    const tile = await heatmapTiles.getZxy(z, x, y);
-    if (!tile) {
-      // This is normal. We don't have tiles that cover the sea for example.
-      // TODO: also cache this so we don't keep trying to fetch tiles that don't exist.
-      return;
+    let bytes: Uint8Array<ArrayBufferLike> | ArrayBuffer;
+
+    const isProductionMapServer =
+      !import.meta.env.DEV || localTiler.source.getKey().includes(MAP_SERVER);
+    if (isProductionMapServer) {
+      const tile = await fetch(`${PMTILES_SERVER}/${z}/${x}/${y}.bin`);
+      if (tile.status === 404) {
+        // This is normal. We don't have tiles that cover the sea for example.
+        // TODO: also cache this so we don't keep trying to fetch tiles that don't exist.
+        return;
+      }
+      bytes = await tile.bytes();
+    } else {
+      const response = await localTiler.getZxy(z, x, y);
+      if (!response) return;
+      bytes = response.data;
     }
 
-    const compressed = new Uint8Array(tile.data);
+    const compressed = new Uint8Array(bytes);
     const stream = new DecompressionStream('deflate');
     const decompressedResponse = new Response(
       new Blob([compressed]).stream().pipeThrough(stream),
@@ -42,16 +60,22 @@ self.onmessage = async (event: MessageEvent<WorkerEvent>) => {
     const arrayBuffer = await decompressedResponse.arrayBuffer();
 
     const tvs_surfaces = new Float32Array(arrayBuffer);
-    const min = Math.min(...tvs_surfaces);
-    const max = Math.max(...tvs_surfaces);
+    const packed = new Uint16Array(arrayBuffer);
+
+    // Find the greatest point of visibility. This is used to calibrate the heatmap
+    // colour range for every viewport and zoom level.
+    let max = -Infinity;
+    for (let i = 0; i < tvs_surfaces.length; i++) {
+      const value = tvs_surfaces[i];
+      if (value > max) max = value;
+    }
 
     const bounds = tileToLatLonBounds(z, x, y);
 
     const message: WorkerEvent = {
       type: 'tile',
       key,
-      data: tvs_surfaces,
-      min,
+      data: packed,
       max,
       bounds,
     };

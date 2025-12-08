@@ -1,0 +1,8 @@
+{
+  "name": "viewview",
+  "compatibility_date": "2025-12-05",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
