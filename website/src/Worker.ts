@@ -12,6 +12,8 @@ export type WorkerEvent =
   | ({ type: 'tile' } & Omit<TileGL, 'texture'> & { data: Uint16Array })
   | { type: 'getTile'; z: number; x: number; y: number };
 
+const CACHE_BUSTER = '?buster=9/12/2025';
+
 let localTiler: PMTiles;
 
 const loading = new Map();
@@ -39,7 +41,9 @@ self.onmessage = async (event: MessageEvent<WorkerEvent>) => {
     const isProductionMapServer =
       !import.meta.env.DEV || localTiler.source.getKey().includes(MAP_SERVER);
     if (isProductionMapServer) {
-      const tile = await fetch(`${PMTILES_SERVER}/${z}/${x}/${y}.bin`);
+      const tile = await fetch(
+        `${PMTILES_SERVER}/${z}/${x}/${y}.bin${CACHE_BUSTER}`,
+      );
       if (tile.status === 404) {
         // This is normal. We don't have tiles that cover the sea for example.
         // TODO: also cache this so we don't keep trying to fetch tiles that don't exist.

@@ -93,3 +93,20 @@ export function packFloatToU16s(float: number) {
   const u16s = new Uint16Array(buffer);
   return u16s;
 }
+
+export function computeBBox(coordinates: number[][]) {
+  let minLng = Infinity,
+    minLat = Infinity;
+  let maxLng = -Infinity,
+    maxLat = -Infinity;
+
+  for (const coordinate of coordinates) {
+    const lngLat = new LngLat(coordinate[0], coordinate[1]);
+    minLng = Math.min(minLng, lngLat.lng);
+    minLat = Math.min(minLat, lngLat.lat);
+    maxLng = Math.max(maxLng, lngLat.lng);
+    maxLat = Math.max(maxLat, lngLat.lat);
+  }
+
+  return new LngLatBounds([minLng, minLat, maxLng, maxLat]);
+}

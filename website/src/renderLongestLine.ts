@@ -7,7 +7,7 @@ import {
 import proj4 from 'proj4';
 import { getLongestLine } from './getLongestLine.ts';
 import { state } from './state.svelte.ts';
-import { aeqdProjectionString, toRadians } from './utils.ts';
+import { aeqdProjectionString, computeBBox, toRadians } from './utils.ts';
 
 // Inherited from the TVS algorithm. It's to counter unfavourable floating point rounding.
 const ANGLE_SHIFT = 0.0001;
@@ -47,7 +47,7 @@ async function render(event: MapMouseEvent) {
     return;
   }
 
-  state.longest_line = longest_line;
+  state.longestLine = longest_line;
 
   if (import.meta.env.DEV) {
     console.log(longest_line);
@@ -67,7 +67,7 @@ async function render(event: MapMouseEvent) {
   const unrotated = proj4(aeqd, proj4.WGS84, [dx, dy]);
   longest_line.from = event.lngLat;
   longest_line.to = new LngLat(unrotated[0], unrotated[1]);
-  state.longest_line = longest_line;
+  state.longestLine = longest_line;
 
   const rotatedClockwiseLonLat = proj4(aeqd, proj4.WGS84, rotatedClockwiseAEQD);
   const rotatedAntiLonLat = proj4(
@@ -94,6 +94,11 @@ async function render(event: MapMouseEvent) {
   const source = state.map?.getSource('longest-line') as GeoJSONSource;
 
   source?.setData(longestLineGeoJSON);
+
+  state.map?.fitBounds(computeBBox(viewCoordinates), {
+    padding: 100,
+    duration: 1000,
+  });
 }
 
 // Rotate a coordinate around the origin.

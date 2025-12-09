@@ -11,8 +11,10 @@ out vec4 fragColor;
 
 void main() {
     vec3 final_color;
+    float tile_width = 256.0;
+    float normalisation_factor = 0.4;
 
-    uvec2 rg = texelFetch(u_data, ivec2(v_texcoord * 256.0), 0).rg;
+    uvec2 rg = texelFetch(u_data, ivec2(v_texcoord * tile_width), 0).rg;
     uint bits = (rg.g << 16) | rg.r;
     float value = uintBitsToFloat(bits);
 
@@ -22,7 +24,7 @@ void main() {
     }
 
     float normalized = value / u_max;
-    float normalized_v = pow(normalized, 0.5);
+    float normalized_v = pow(normalized, normalisation_factor);
 
     vec3 color_min = vec3(0.0, 0.0, 0.0);
     vec3 color_mid = vec3(0.5, 0.5, 0.5);

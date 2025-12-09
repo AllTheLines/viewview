@@ -166,7 +166,7 @@ const HeatmapLayer: CustomLayerInterface = {
       return;
     }
 
-    if (Date.now() - state.lastGC < 1000) {
+    if (Date.now() - state.lastGC < 60 * 1000) {
       return;
     }
 

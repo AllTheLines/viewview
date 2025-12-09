@@ -17,8 +17,8 @@
   onMount(() => {
     state.map = new MapLibre({
       container: 'map',
-      zoom: 5.5,
-      center: [-3, 54],
+      zoom: 4.0,
+      center: [11.218344, 50.025044],
       style: map_vector as StyleSpecification,
     });
 
@@ -27,12 +27,18 @@
       state.map?.addLayer(HeatmapLayer, 'mountain_peaks');
       setup();
     });
+
+    state.map?.on('movestart', () => {
+      if (!state.isFirstInteraction) {
+        state.isFirstInteraction = true;
+      }
+    });
   });
 </script>
 
 <Layout>
 	<div id="info">
-		<CollapsableModal collapsedIcon={Info}>
+		<CollapsableModal collapsedIcon={Info} isOpen={!state.isFirstInteraction}>
 			<h1>All The Views</h1>
 			<p>We've calculated all the views on the planet.</p>
 			<p>
@@ -48,21 +54,21 @@
 			</p>
 		</CollapsableModal>
 
-		{#if state.longest_line}
+		{#if state.longestLine}
 			<CollapsableModal collapsedIcon={DraftingCompass}>
 				<h2>Longest Line</h2>
 				<div id="details">
 					<div>
-						Distance: {(state.longest_line.distance || 0) / 1000}km
+						Distance: {(state.longestLine.distance || 0) / 1000}km
 					</div>
 					<div>
-						Bearing: {state.longest_line.angle}°
+						Bearing: {state.longestLine.angle}°
 					</div>
 					<div>
-						From: {lonLatRound(state.longest_line.from)}
+						From: {lonLatRound(state.longestLine.from)}
 					</div>
 					<div>
-						To: {lonLatRound(state.longest_line.to)}
+						To: {lonLatRound(state.longestLine.to)}
 					</div>
 				</div>
 			</CollapsableModal>
