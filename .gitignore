@@ -4,3 +4,5 @@
 /*.bin
 /static
 *.pmtiles
+.env
+/state
