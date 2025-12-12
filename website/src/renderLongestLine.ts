@@ -1,10 +1,6 @@
-import {
-  type GeoJSONFeature,
-  type GeoJSONSource,
-  LngLat,
-  type MapMouseEvent,
-} from 'maplibre-gl';
+import { type GeoJSONFeature, type GeoJSONSource, LngLat } from 'maplibre-gl';
 import proj4 from 'proj4';
+import { navigate } from 'svelte5-router';
 import { getLongestLine } from './getLongestLine.ts';
 import { state } from './state.svelte.ts';
 import { aeqdProjectionString, computeBBox, toRadians } from './utils.ts';
@@ -12,7 +8,7 @@ import { aeqdProjectionString, computeBBox, toRadians } from './utils.ts';
 // Inherited from the TVS algorithm. It's to counter unfavourable floating point rounding.
 const ANGLE_SHIFT = 0.0001;
 
-export function setup() {
+export function setupLongestLines(coordFromURL: string | undefined) {
   state.map?.addSource('longest-line', {
     type: 'geojson',
     data: {
@@ -37,12 +33,31 @@ export function setup() {
       return;
     }
 
-    render(event);
+    render(event.lngLat);
+    const coord = event.lngLat;
+
+    let params = window.location.search;
+    if (window.location.search) {
+      params = `${window.location.search}`;
+    }
+    navigate(`/longest/${coord.lng},${coord.lat}${params}`);
   });
+
+  if (coordFromURL?.startsWith('longest/')) {
+    const coord = extractCoordFromURL(coordFromURL);
+    render(coord);
+  }
 }
 
-async function render(event: MapMouseEvent) {
-  const longest_line = await getLongestLine(event.lngLat);
+function extractCoordFromURL(coordFromURL: string) {
+  const parts = coordFromURL.replace('longest/', '').split(',');
+  const lng = parseFloat(parts[0]);
+  const lat = parseFloat(parts[1]);
+  return new LngLat(lng, lat);
+}
+
+async function render(lngLat: LngLat) {
+  const longest_line = await getLongestLine(lngLat);
   if (longest_line === undefined) {
     return;
   }
@@ -63,9 +78,9 @@ async function render(event: MapMouseEvent) {
   const rotatedClockwiseAEQD = rotate(dx, dy, -0.5);
   const rotatedAntiAEQD = rotate(dx, dy, +0.5);
 
-  const aeqd = aeqdProjectionString(event.lngLat.lng, event.lngLat.lat);
+  const aeqd = aeqdProjectionString(lngLat.lng, lngLat.lat);
   const unrotated = proj4(aeqd, proj4.WGS84, [dx, dy]);
-  longest_line.from = event.lngLat;
+  longest_line.from = lngLat;
   longest_line.to = new LngLat(unrotated[0], unrotated[1]);
   state.longestLine = longest_line;
 
@@ -76,10 +91,10 @@ async function render(event: MapMouseEvent) {
     rotatedAntiAEQD,
   );
   const viewCoordinates = [
-    event.lngLat.toArray(),
+    lngLat.toArray(),
     rotatedClockwiseLonLat,
     rotatedAntiLonLat,
-    event.lngLat.toArray(),
+    lngLat.toArray(),
   ];
 
   const longestLineGeoJSON = {

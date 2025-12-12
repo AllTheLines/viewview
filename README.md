@@ -86,4 +86,4 @@ Outputs `.bt` heatmap.
 
 ## Website
 
-https://allthelines.github.io/viewview/heatmap_viewer.html?source=https://viewview.nyc3.cdn.digitaloceanspaces.com/world.pmtiles
+https://alltheviews.world Still in development so expect daily breakages.

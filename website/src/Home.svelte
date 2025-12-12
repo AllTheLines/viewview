@@ -10,9 +10,11 @@
   import vector_layer from './images/vector_layer.png';
   import Layout from './Layout.svelte';
   import map_vector from './map_vector.styles.json';
-  import { setup } from './renderLongestLine.ts';
+  import { setupLongestLines } from './renderLongestLine.ts';
   import { state } from './state.svelte.ts';
   import { lonLatRound } from './utils.ts';
+
+  let { longest } = $props();
 
   onMount(() => {
     state.map = new MapLibre({
@@ -25,7 +27,7 @@
     state.map?.on('load', () => {
       // 'mountain_peaks' is used here to mean, mountain peaks and every other layer after it.
       state.map?.addLayer(HeatmapLayer, 'mountain_peaks');
-      setup();
+      setupLongestLines(longest);
     });
 
     state.map?.on('movestart', () => {

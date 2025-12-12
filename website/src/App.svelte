@@ -8,7 +8,11 @@
 
 <Router {url}>
 	<div>
-		<Route path="/"><Home /></Route>
+		<Route path="/*coordinate">
+			{#snippet children(params)}
+				<Home longest={params.coordinate} />
+			{/snippet}
+		</Route>
 		<Route path="/tile-packing-the-world"><Packing /></Route>
 	</div>
 </Router>
