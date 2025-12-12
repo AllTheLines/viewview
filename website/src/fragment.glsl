@@ -1,6 +1,7 @@
 #version 300 es
 precision highp float;
 precision highp usampler2D;
+precision highp int;
 
 in vec2 v_texcoord;
 uniform usampler2D u_data;
@@ -11,11 +12,15 @@ out vec4 fragColor;
 
 void main() {
     vec3 final_color;
-    float tile_width = 256.0;
     float normalisation_factor = 0.4;
+    float tile_width = 256.0;
 
-    uvec2 rg = texelFetch(u_data, ivec2(v_texcoord * tile_width), 0).rg;
-    uint bits = (rg.g << 16) | rg.r;
+    uvec4 pixel = texelFetch(u_data, ivec2(v_texcoord * tile_width), 0);
+    uint bits =
+        (pixel.a << 24) |
+            (pixel.b << 16) |
+            (pixel.g << 8) |
+            pixel.r;
     float value = uintBitsToFloat(bits);
 
     // Handle "nodata"

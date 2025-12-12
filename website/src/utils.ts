@@ -87,11 +87,11 @@ export function lonLatRound(lonlat: LngLat) {
   return [lonlat.lng.toPrecision(precision), lonlat.lat.toPrecision(precision)];
 }
 
-export function packFloatToU16s(float: number) {
+export function packFloatToU8s(float: number) {
   const buffer = new ArrayBuffer(4);
   new Float32Array(buffer)[0] = float;
-  const u16s = new Uint16Array(buffer);
-  return u16s;
+  const u8s = new Uint8Array(buffer);
+  return u8s;
 }
 
 export function computeBBox(coordinates: number[][]) {

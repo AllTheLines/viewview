@@ -9,7 +9,7 @@ import {
   isTileIntersectingBounds,
   Log,
   PMTILES_SERVER,
-  packFloatToU16s,
+  packFloatToU8s,
   tileKey,
   WORLD_PMTILES,
 } from './utils';
@@ -315,7 +315,7 @@ function makeTile(
   key: string,
   max: number,
   bounds: LngLatBounds,
-  data: Uint16Array,
+  data: Uint8Array,
 ) {
   if (state?.gl === undefined) {
     console.warn("No GL context, couldn't make tile");
@@ -347,12 +347,12 @@ function makeTile(
   state.gl.texImage2D(
     state.gl.TEXTURE_2D,
     0,
-    state.gl.RG16UI,
+    state.gl.RGBA8UI,
     config.tileSize,
     config.tileSize,
     0,
-    state.gl.RG_INTEGER,
-    state.gl.UNSIGNED_SHORT,
+    state.gl.RGBA_INTEGER,
+    state.gl.UNSIGNED_BYTE,
     data,
   );
 
@@ -365,8 +365,8 @@ function makeTile(
 }
 
 function makeFillerTile() {
-  const data = new Uint16Array(config.tileSize ** 2 * 4);
-  data.set(packFloatToU16s(AVERAGE_SURFACE_VISIBILITY));
+  const data = new Uint8Array(config.tileSize ** 2 * 4);
+  data.set(packFloatToU8s(AVERAGE_SURFACE_VISIBILITY));
 
   const tile = makeTile(
     'filler',

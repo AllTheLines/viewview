@@ -9,7 +9,7 @@ import {
 
 export type WorkerEvent =
   | { type: 'init'; source: string }
-  | ({ type: 'tile' } & Omit<TileGL, 'texture'> & { data: Uint16Array })
+  | ({ type: 'tile' } & Omit<TileGL, 'texture'> & { data: Uint8Array })
   | { type: 'getTile'; z: number; x: number; y: number };
 
 const CACHE_BUSTER = '?buster=9/12/2025';
@@ -64,7 +64,7 @@ self.onmessage = async (event: MessageEvent<WorkerEvent>) => {
     const arrayBuffer = await decompressedResponse.arrayBuffer();
 
     const tvs_surfaces = new Float32Array(arrayBuffer);
-    const packed = new Uint16Array(arrayBuffer);
+    const packed = new Uint8Array(tvs_surfaces.buffer);
 
     // Find the greatest point of visibility. This is used to calibrate the heatmap
     // colour range for every viewport and zoom level.
