@@ -16,19 +16,15 @@ function make_pmtiles {
 	fi
 
 	rm "$output" || true
-	rm -f "$TMP_DIR/"*
-	merged=$TMP_DIR/merged.tif
-	archive="$ARCHIVE_DIR/$version"
+	archive="$ARCHIVE_DIR"
+	world_vrt="$archive"/world.vrt
+	merged=output/merged.tif
 
 	echo "Using archive at $archive"
 
 	# Merge all the heatmap GeoTiffs into one big GeoTiff.
-	gdal_merge \
-		-n 0 \
-		-a_nodata 0 \
-		-co ALPHA=YES \
-		-o "$merged" \
-		"$archive"/*.tiff
+	gdalbuildvrt "$world_vrt" "$archive"/*.tiff
+	gdal_translate "$world_vrt" "$merged"
 
 	# Create the global `.pmtile`
 	uv run scripts/to_pmtiles.py "$merged" "$output" \
@@ -36,6 +32,6 @@ function make_pmtiles {
 		--max_zoom 11
 
 	if [[ $version != "local" ]]; then
-		s3 put "$output" s3://viewview/runs/"$version"/pmtiles/world.pmtiles
+		rclone_put "$output" viewview/runs/"$version"/pmtiles/
 	fi
 }

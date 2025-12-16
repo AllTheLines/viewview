@@ -16,19 +16,26 @@ import argparse
 import numpy
 import warnings
 import zlib
+import os
+from concurrent.futures import ProcessPoolExecutor
 
 import mercantile
 import rasterio
-import itertools
 
 from rasterio.warp import transform_bounds
-from rio_tiler.io.rasterio import Reader, reader
+from rio_tiler.io.rasterio import Reader
 from pmtiles.tile import Compression
 from pmtiles.tile import TileType
 from pmtiles.tile import zxy_to_tileid
 from pmtiles.writer import Writer
 
-from tqdm.contrib.concurrent import process_map
+
+_global_cog = None
+
+
+def init_worker(input_file):
+    global _global_cog
+    _global_cog = Reader(input=input_file, options={"resampling_method": "bilinear"})
 
 
 def slice_to_pmtiles(
@@ -39,7 +46,9 @@ def slice_to_pmtiles(
 ):
     with rasterio.open(input_file) as src:
         src_crs = src.crs
-        bbox = transform_bounds(src_crs, "EPSG:4326", *list(src.bounds))
+        bbox = transform_bounds(
+            src_crs, "EPSG:4326", *list(src.bounds), densify_pts=300
+        )
 
     with open(output_file, "wb") as output_file:
         pmtiles_writer = Writer(output_file)
@@ -48,17 +57,15 @@ def slice_to_pmtiles(
             bbox[0], bbox[1], bbox[2], bbox[3], range(min_zoom, max_zoom + 1)
         )
 
-        results = process_map(
-            make_pmtile_data,
-            tiles,
-            itertools.repeat(input_file),
-            unit=" tiles",
-            desc="Processing tiles",
-        )
-
-        for item in results:
-            tile_id, data = item
-            pmtiles_writer.write_tile(tile_id, data)
+        workers = (os.cpu_count() or 2) // 2
+        with ProcessPoolExecutor(
+            max_workers=workers, initializer=init_worker, initargs=(input_file,)
+        ) as pool:
+            for result in pool.map(make_pmtile_data, tiles, chunksize=50):
+                if result is None:
+                    continue
+                tile_id, data = result
+                pmtiles_writer.write_tile(tile_id, data)
 
         pmtiles_writer.finalize(
             header={
@@ -73,27 +80,26 @@ def slice_to_pmtiles(
         )
 
 
-def make_pmtile_data(tile, input_file):
-    options: reader.Options = {
-        "resampling_method": "bilinear",
-    }
+def make_pmtile_data(tile):
+    if _global_cog is None:
+        print("Merged global COG file not opened yet.")
+        return
 
-    with Reader(input=input_file, options=options) as cog:
-        x, y, z = tile.x, tile.y, tile.z
-        try:
-            tile, _ = cog.tile(x, y, z, tilesize=256)
-        except Exception as error:
-            print(f"WARNING: Tile {z}/{x}/{y}: ", error)
-            return
-        arr = tile[0]  # single band
-        data = arr.astype(numpy.float32).flatten().tobytes()
-        if numpy.all(data == 0.0):
-            # Ignore empty tiles.
-            return
+    x, y, z = tile.x, tile.y, tile.z
+    try:
+        tile, _ = _global_cog.tile(x, y, z, tilesize=256)
+    except Exception as error:
+        print(f"WARNING: Tile {z}/{x}/{y}: ", error)
+        return
 
-        data = zlib.compress(data, level=1)
-        tile_id = zxy_to_tileid(z, x, y)
-        return (tile_id, data)
+    data = tile[0].ravel().tobytes(order="C")
+    if numpy.all(data == 0.0):
+        # Ignore empty tiles.
+        return
+
+    data = zlib.compress(data, level=1)
+    tile_id = zxy_to_tileid(z, x, y)
+    return (tile_id, data)
 
 
 def ignore_warnings():
