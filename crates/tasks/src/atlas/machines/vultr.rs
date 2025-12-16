@@ -1,64 +1,60 @@
-//! Managing Digital Ocean resources
+//! Managing Vultr resources
 
 use color_eyre::Result;
 
-/// Digital Ocean state.
+/// Vultr state.
 pub struct Machine;
 
 #[async_trait::async_trait]
 impl super::machine::Machine for Machine {
-    /// Create a new droplet.
+    /// Create a new Vultr machine.
     async fn create(ssh_key_id: &str) -> Result<std::net::IpAddr> {
-        let ip = Self::create_droplet(ssh_key_id).await?;
-        Self::wait_for_droplet_to_boot(ip).await?;
-        Self::init_droplet(ip).await?;
+        let ip = Self::create_machine(ssh_key_id).await?;
+        Self::wait_for_machine_to_boot(ip).await?;
+        Self::init_machine(ip).await?;
         Ok(ip)
     }
 }
 
 impl Machine {
-    /// Run a `doctl` command.
-    async fn doctl(args: Vec<&str>) -> Result<String> {
+    /// Run a `vultr-cli` command.
+    async fn vulr_cli(args: Vec<&str>) -> Result<String> {
         let command = super::connection::Command {
-            executable: "doctl".into(),
+            executable: "vultr-cli".into(),
             args,
             ..Default::default()
         };
         super::local::Machine::command(command).await
     }
 
-    /// Create a new droplet.
-    async fn create_droplet(ssh_key_id: &str) -> Result<std::net::IpAddr> {
+    /// Create a new Vultr machine.
+    async fn create_machine(ssh_key_id: &str) -> Result<std::net::IpAddr> {
         let args = vec![
-            "compute",
-            "droplet",
+            "bare-metal",
             "create",
-            "--image",
-            "gpu-h100x1-base",
-            "--size",
-            // "gpu-h200x1-141gb",
-            "gpu-h100x1-80gb",
             "--region",
-            "nyc2",
-            "--enable-monitoring",
-            "--tag-names",
-            "viewview",
-            "--ssh-keys",
+            "atl",
+            "--plan",
+            "vbm-72c-480gb-gh200-gpu",
+            "--os",
+            "1743",
+            "--ssh",
             ssh_key_id,
+            "--label",
             "viewview-worker",
-            "--format",
-            "PublicIPv4",
-            "--no-header",
-            "--wait",
+            "--notify",
+            "no",
         ];
 
-        let output = Self::doctl(args).await?.trim().to_owned();
+        let output = Self::vulr_cli(args).await?.trim().to_owned();
+        tracing::debug!("{output}");
+        //  | jq -r '.bare_metal.id'
         let ip_address = output.parse()?;
         Ok(ip_address)
     }
 
-    /// Wait for the droplet to boot.
-    async fn wait_for_droplet_to_boot(ip_address: std::net::IpAddr) -> Result<()> {
+    /// Wait for the machine to boot.
+    async fn wait_for_machine_to_boot(ip_address: std::net::IpAddr) -> Result<()> {
         let connect = format!("root@{ip_address}");
         let command = super::connection::Command {
             executable: "ssh".into(),
@@ -70,7 +66,7 @@ impl Machine {
         for _ in 0..60u8 {
             let result = super::local::Machine::command(command.clone()).await;
             if result.is_ok() {
-                // Wait a bit more, in case DO startup scripts are running.
+                // Wait a bit more, in case startup scripts are running.
                 tokio::time::sleep(std::time::Duration::from_secs(30)).await;
                 return Ok(());
             }
@@ -81,8 +77,8 @@ impl Machine {
         color_eyre::eyre::bail!("Timed out waiting for machine {ip_address} to boot.");
     }
 
-    /// Run all the initialisation for the droplet.
-    async fn init_droplet(ip_address: std::net::IpAddr) -> Result<String> {
+    /// Run all the initialisation for the machine.
+    async fn init_machine(ip_address: std::net::IpAddr) -> Result<String> {
         let ip_string = ip_address.to_string();
         let command = super::connection::Command {
             executable: "./ctl.sh".into(),

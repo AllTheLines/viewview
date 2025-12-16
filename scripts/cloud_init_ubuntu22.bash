@@ -1,4 +1,4 @@
-function init_digital_ocean {
+function cloud_init_ubuntu22 {
 	set -euo pipefail
 
 	local ip_address=$1
@@ -6,7 +6,8 @@ function init_digital_ocean {
 	ssh -o StrictHostKeyChecking=accept-new root@"$ip_address" "\
 		set -euo pipefail
 		apt install --yes \
-			libvulkan1 mesa-vulkan-drivers build-essential pkg-config \
+			libvulkan1 mesa-vulkan-drivers vulkan-tools \
+			build-essential pkg-config \
 			libgdal-dev gdal-bin python3-gdal \
 			jq rclone tmux sqlite3
 	  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y

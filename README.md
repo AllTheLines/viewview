@@ -81,7 +81,7 @@ Outputs `.bt` heatmap.
 ./ctl.sh prepare_for_cloud ../total-viewsheds/output/total_surfaces.bt
 ./ctl.sh prepare_for_cloud ../total-viewsheds/output/longest_lines.bt
 
-./ctl.sh make_pmtiles website/public/world.pmtiles
+./ctl.sh make_pmtiles latest website/public/world.pmtiles
 ```
 
 ## Atlas
@@ -92,7 +92,7 @@ Process all the tiles for the entire planet. It manages the "Stitcher", "Total V
 # Saving data locally, useful for development:
 RUST_LOG=trace cargo run --bin tasks -- atlas run \
   --provider local \
-  --run-id 0.1 \
+  --run-id dev \
   --master website/public/tiles.csv \
   --centre -4.549624919891357,47.44954299926758 \
   --dems /publicish/dems \
@@ -110,15 +110,24 @@ RUST_LOG=off,tasks=trace cargo run --bin tasks -- atlas run \
   --longest-lines-cogs output/longest_lines
 ```
 
-Though it doesn't run these commands, you'll want to manually run them after a
+Atlas doesn't run the following commands, you'll want to manually run them after a
 bunch of tiles have been processed:
+
 ```
-RUST_LOG=off,tasks=trace cargo run --bin tasks -- longest-lines-index
-./ctl.sh make_pmtiles latest website/public/world.pmtiles
+# Create an index of all the COG (optimised GeoTiff) files that contain all the longest
+# lines of sight for every point on the planet. Should only take seconds to run.
+RUST_LOG=off,tasks=trace cargo run --bin tasks -- atlas longest-lines-index
 ```
 
-Replace `latest` with `local` to skip syncing files to S3.
+```
+# Create the gigantic (10s of GBs) global `.pmtile` that contains the TVS heatmap for
+# the entire planet. This takes many hours even on the very biggest of Digital Ocean's
+# machines. Replace `latest` with `local` to skip syncing files to S3.
+./ctl.sh make_pmtiles latest output/world.pmtiles
+```
 
 ## Website
 
 https://alltheviews.world Still in development so expect daily breakages.
+
+`.ctl.sh website_deploy`

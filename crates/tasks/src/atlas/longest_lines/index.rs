@@ -7,12 +7,12 @@
 use color_eyre::Result;
 
 /// Update the index of all the longest lines COG files.
-pub async fn save_longest_lines_cogs_index() -> Result<()> {
-    let Some(config) = super::db::get_current_run_config().await? else {
+pub async fn compile() -> Result<()> {
+    let Some(config) = crate::atlas::db::get_current_run_config().await? else {
         color_eyre::eyre::bail!("Can't save longest lines when there's no current run config.");
     };
 
-    let tiles = super::db::get_completed_tiles().await?;
+    let tiles = crate::atlas::db::get_completed_tiles().await?;
 
     let index_path = config.longest_lines_cogs.join("index.txt");
 

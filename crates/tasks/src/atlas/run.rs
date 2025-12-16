@@ -75,9 +75,6 @@ impl Atlas {
             }
         }
 
-        let atlas = Self::new(config)?;
-        let mut tile_store = super::db::atlas_worker_store().await?;
-
         if matches!(config.provider, crate::config::ComputeProvider::Local) {
             crate::atlas::machines::cli::new_machine(&crate::config::NewMachine {
                 provider: crate::config::ComputeProvider::Local,
@@ -86,20 +83,42 @@ impl Atlas {
             .await?;
         }
 
+        Self::add_tile_jobs(config).await?;
+
+        Ok(())
+    }
+
+    /// Add tile jobs.
+    async fn add_tile_jobs(config: &crate::config::Atlas) -> Result<()> {
+        let atlas = Self::new(config)?;
+        let mut tile_store = super::db::atlas_worker_store().await?;
+
         tracing::debug!("Adding tile jobs to worker...");
         let start_from = crate::projector::LonLatCoord(config.centre.into());
+        let amount_of_tiles_to_add = config.amount.unwrap_or_else(|| atlas.tiles.size());
+        let mut count = 0;
         for master_tile in atlas
             .tiles
             .nearest_neighbor_iter(&start_from)
-            .take(config.amount.unwrap_or_else(|| atlas.tiles.size()))
+            .skip(config.skip.unwrap_or(0))
         {
+            if crate::atlas::db::is_tile_added(master_tile.data).await? {
+                continue;
+            }
+
             tile_store
                 .push(super::tile_job::TileJob {
                     config: config.clone(),
                     tile: master_tile.data,
                 })
                 .await?;
+
+            count += 1;
+            if count >= amount_of_tiles_to_add {
+                break;
+            }
         }
+
         tracing::debug!("...{:?}", tile_store);
 
         Ok(())

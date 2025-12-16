@@ -62,14 +62,28 @@ pub async fn print_current_run_config_as_json() -> Result<()> {
 
 /// Get the completed tiles for the current run.
 pub async fn get_completed_tiles() -> Result<Vec<crate::tile::Tile>> {
+    get_tiles(include_str!("./sql/completed_tiles.sql")).await
+}
+
+/// Get all added tiles.
+pub async fn get_all_tiles() -> Result<Vec<crate::tile::Tile>> {
+    get_tiles(include_str!("./sql/added_tiles.sql")).await
+}
+
+/// Does the given tile exist in the DB in any status?
+pub async fn is_tile_added(tile: crate::tile::Tile) -> Result<bool> {
+    let tiles = get_all_tiles().await?;
+    Ok(tiles.contains(&tile))
+}
+
+/// Get tiles from the DB.
+async fn get_tiles(query: &str) -> Result<Vec<crate::tile::Tile>> {
     let Some(current_run_config) = get_current_run_config().await? else {
         return Ok(Vec::new());
     };
 
     let db = atlas_connection().await?;
-    let jobs: Vec<TileJobRow> = sqlx::query_as(include_str!("./sql/completed_tiles.sql"))
-        .fetch_all(&db)
-        .await?;
+    let jobs: Vec<TileJobRow> = sqlx::query_as(query).fetch_all(&db).await?;
 
     let mut tiles = Vec::new();
 

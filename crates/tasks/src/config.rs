@@ -43,6 +43,8 @@ pub enum AtlasCommands {
     Worker(Worker),
     /// Create the longest lines index and sync it.
     LongestLinesIndex(LongestLinesIndex),
+    /// Create overviews of longest lines..
+    LongestLinesOverviews(LongestLinesOverviews),
     /// Output the current run's config.
     CurrentRunConfig(CurrentRunConfig),
     /// Stitch the entire world's `.bt` files and save them to S3.
@@ -141,6 +143,11 @@ pub struct Atlas {
     ]
     pub centre: (f64, f64),
 
+    /// How many tiles to skip. Useful for resuming from the end of a previous `--amount`-based
+    /// run.
+    #[arg(long, value_name = "Amount of tiles to skip")]
+    pub skip: Option<usize>,
+
     /// How many tiles to process.
     #[arg(long, value_name = "Amount of tiles to process")]
     pub amount: Option<usize>,
@@ -190,11 +197,21 @@ pub enum ComputeProvider {
     Local,
     /// Run on Digital Ocean compute. Requires an already authed `doctl`.
     DigitalOcean,
+    /// Run on Vultr compute. Requires an already authed `vultr-ctl`.
+    Vultr,
 }
 
 /// Create the longest lines index and sync it.
 #[derive(clap::Parser, Debug, Clone)]
 pub struct LongestLinesIndex;
+
+/// Create overviews of longest lines.
+#[derive(clap::Parser, Debug, Clone)]
+pub struct LongestLinesOverviews {
+    /// Where longest lines COGs are saved.
+    #[arg(long, value_name = "Longest lines COGs directory")]
+    pub tiffs: std::path::PathBuf,
+}
 
 /// Get the current run's config.
 #[derive(clap::Parser, Debug, Clone)]

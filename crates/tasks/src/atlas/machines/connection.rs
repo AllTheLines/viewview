@@ -68,8 +68,16 @@ impl Connection {
             color_eyre::eyre::bail!("No SSH connection on `Connection`, this should be impossible");
         };
 
+        let env = command
+            .env
+            .iter()
+            .map(|env| format!("{}={}", env.0, env.1))
+            .collect::<Vec<String>>()
+            .join(" ");
+
         let command_string = format!(
-            "cd /root/viewview && {} {}",
+            "cd /root/viewview && {} {} {}",
+            env,
             command.executable.display(),
             command.args.join(" ")
         );

@@ -17,11 +17,14 @@
 mod atlas {
     pub mod daemon;
     pub mod db;
-    pub mod longest_lines_index;
     pub mod run;
     pub mod stitch_all;
     pub mod tile_job;
 
+    // All the code for handling longest lines.
+    pub mod longest_lines {
+        pub mod index;
+    }
     /// Providers of compute resources.
     pub mod machines {
         pub mod cli;
@@ -30,6 +33,7 @@ mod atlas {
         pub mod local;
         pub mod machine;
         pub mod new_machine_job;
+        pub mod vultr;
         pub mod worker;
     }
 }
@@ -90,7 +94,10 @@ async fn main() -> Result<()> {
                 atlas::run::Atlas::run_all(atlas_run_config).await?;
             }
             config::AtlasCommands::LongestLinesIndex(_) => {
-                atlas::longest_lines_index::save_longest_lines_cogs_index().await?;
+                atlas::longest_lines::index::compile().await?;
+            }
+            config::AtlasCommands::LongestLinesOverviews(_) => {
+                todo!();
             }
             config::AtlasCommands::CurrentRunConfig(_) => {
                 atlas::db::print_current_run_config_as_json().await?;

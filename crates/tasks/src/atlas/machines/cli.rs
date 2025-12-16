@@ -26,6 +26,14 @@ pub async fn new_machine(config: &crate::config::NewMachine) -> Result<()> {
                 provider: crate::config::ComputeProvider::DigitalOcean,
             }
         }
+        crate::config::ComputeProvider::Vultr => {
+            let ip_address =
+                crate::atlas::machines::vultr::Machine::create(&config.ssh_key_id).await?;
+            crate::atlas::machines::new_machine_job::NewMachineJob {
+                ip_address,
+                provider: crate::config::ComputeProvider::Vultr,
+            }
+        }
     };
 
     add_new_machine_job(job.clone()).await?;
