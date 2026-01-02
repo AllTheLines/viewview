@@ -54,8 +54,8 @@ So can we strike an optimal balance? This is what the `Packer` in this repo trie
 4. Once all subtiles are covered, run some cleanup, like removing tiles that are already encompassed by larger tiles.
 
 ### Usage
-1. `cargo run --bin tasks -- max-sub-tiles`. Creates `./max_subtiles.bin`.
-2. `cargo run --bin tasks -- packer`. Creates a `static/tiles.json`.
+1. `cargo run --release --bin tasks -- max-sub-tiles`. Creates `./max_subtiles.bin`.
+2. `cargo run --release --bin tasks -- packer`. Creates a `static/tiles.json`.
 
 ## Stitcher
 
@@ -121,8 +121,10 @@ RUST_LOG=off,tasks=trace cargo run --bin tasks -- atlas longest-lines-index
 
 ```
 # Create the gigantic (10s of GBs) global `.pmtile` that contains the TVS heatmap for
-# the entire planet. This takes many hours even on the very biggest of Digital Ocean's
-# machines. Replace `latest` with `local` to skip syncing files to S3.
+# the entire planet. This requires a machine with a lot of RAM and CPU. As of writing, with
+# a ~10% world run, an 80Gb machine with 48 cores, took around 20 minutes.
+#
+# Replace `latest` with `local` to skip syncing files to S3.
 ./ctl.sh make_pmtiles latest output/world.pmtiles
 ```
 

@@ -108,9 +108,8 @@ async fn stitch(
     );
     let hgt_index = config.dems.join(VIRTUAL_DEM_FILE).display().to_string();
 
-    // We align to 24 because we need to align the TVS to 8, which gives the possiblity of aligning
-    // to both 4 and 8 in the SIMD algorithm.
-    let align = 24.0;
+    // We align to 48 for the vectorising CPU kernel.
+    let align = 48.0;
 
     let full_width_as_points = ((config.width * 3.0) / resolution).ceil();
     let full_width_aligned = (full_width_as_points / align).ceil() * align;

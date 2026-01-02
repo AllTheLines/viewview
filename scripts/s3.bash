@@ -80,9 +80,3 @@ function download_all_tvs_tiffs {
 
 	get_s3_folder viewview/runs/"$version"/tvs output/archive
 }
-
-function make_prod_pmtiles {
-	local version=$1
-
-	make_pmtiles "$version" website/public/world.pmtiles
-}
