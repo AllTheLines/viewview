@@ -211,6 +211,10 @@ pub struct LongestLinesOverviews {
     /// Where longest lines COGs are saved.
     #[arg(long, value_name = "Longest lines COGs directory")]
     pub tiffs: std::path::PathBuf,
+
+    /// The ID of the world run.
+    #[arg(long, value_name = "Versioned ID for run")]
+    pub run_id: String,
 }
 
 /// Get the current run's config.
@@ -237,7 +241,7 @@ fn parse_coord(string: &str) -> Result<(f64, f64)> {
 }
 
 /// Get the number of CPUs on the machine.
-fn number_of_cpus_on_machine() -> usize {
+pub fn number_of_cpus_on_machine() -> usize {
     std::fs::read_to_string("/proc/cpuinfo")
         .ok()
         .map(|section| {

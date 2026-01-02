@@ -36,11 +36,7 @@ export function setupLongestLines(coordFromURL: string | undefined) {
     render(event.lngLat);
     const coord = event.lngLat;
 
-    let params = window.location.search;
-    if (window.location.search) {
-      params = `${window.location.search}`;
-    }
-    navigate(`/longest/${coord.lng},${coord.lat}${params}`);
+    navigate(`/longest/${coord.lng},${coord.lat}${window.location.search}`);
   });
 
   if (coordFromURL?.startsWith('longest/')) {
@@ -53,10 +49,11 @@ function extractCoordFromURL(coordFromURL: string) {
   const parts = coordFromURL.replace('longest/', '').split(',');
   const lng = parseFloat(parts[0]);
   const lat = parseFloat(parts[1]);
-  return new LngLat(lng, lat);
+  const coord = new LngLat(lng, lat);
+  return coord;
 }
 
-async function render(lngLat: LngLat) {
+export async function render(lngLat: LngLat) {
   const longest_line = await getLongestLine(lngLat);
   if (longest_line === undefined) {
     return;

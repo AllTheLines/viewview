@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { DraftingCompass, Info } from '@lucide/svelte';
+  import { DraftingCompass, Info, TrophyIcon } from '@lucide/svelte';
   import { Map as MapLibre, type StyleSpecification } from 'maplibre-gl';
   import { onMount } from 'svelte';
+  import { navigate } from 'svelte5-router';
   import CollapsableModal from './components/CollapsableModal.svelte';
   import LayerToggle from './components/LayerToggle.svelte';
   import { HeatmapLayer } from './HeatmapLayer.ts';
@@ -10,22 +11,24 @@
   import vector_layer from './images/vector_layer.png';
   import Layout from './Layout.svelte';
   import map_vector from './map_vector.styles.json';
-  import { setupLongestLines } from './renderLongestLine.ts';
+  import { render, setupLongestLines } from './renderLongestLine.ts';
   import { state } from './state.svelte.ts';
   import { lonLatRound } from './utils.ts';
+  import { findLongestLineInBounds } from './worldLines.ts';
 
   let { longest } = $props();
 
   onMount(() => {
     state.map = new MapLibre({
       container: 'map',
-      zoom: 4.0,
-      center: [11.218344, 50.025044],
+      zoom: 2.5,
+      center: [-30.0, 34.11871197394943],
       style: map_vector as StyleSpecification,
     });
 
     state.map?.on('load', () => {
       // 'mountain_peaks' is used here to mean, mountain peaks and every other layer after it.
+      // This allows the heatmap to always appear below everything else.
       state.map?.addLayer(HeatmapLayer, 'mountain_peaks');
       setupLongestLines(longest);
     });
@@ -33,6 +36,14 @@
     state.map?.on('movestart', () => {
       if (!state.isFirstInteraction) {
         state.isFirstInteraction = true;
+      }
+    });
+
+    state.map?.on('moveend', async () => {
+      const bounds = state.map?.getBounds();
+      if (bounds !== undefined) {
+        const longest = await findLongestLineInBounds(bounds);
+        state.longestLineInViewport = longest;
       }
     });
   });
@@ -56,9 +67,41 @@
 			</p>
 		</CollapsableModal>
 
+		<CollapsableModal collapsedIcon={TrophyIcon} isOpen={false}>
+			<h2>Longest Lines</h2>
+			<ol>
+				{#each state.worldLongestLines?.slice(0, 10) as line}
+					<li>
+						<a
+							href={line.toURL()}
+							onclick={(event) => {
+								event.preventDefault();
+								if (line !== undefined) {
+									const url = line.toURL();
+									render(line.coordinate);
+									navigate(url);
+								}
+							}}>{line.toDistance()}</a
+						>
+					</li>
+				{/each}
+			</ol>
+			<a
+				href={state.longestLineInViewport?.toURL()}
+				onclick={(event) => {
+					event.preventDefault();
+					if (state.longestLineInViewport !== undefined) {
+						const url = state.longestLineInViewport?.toURL();
+						render(state.longestLineInViewport.coordinate);
+						navigate(url);
+					}
+				}}>In viewport ({state.longestLineInViewport?.toDistance()})</a
+			>
+		</CollapsableModal>
+
 		{#if state.longestLine}
 			<CollapsableModal collapsedIcon={DraftingCompass}>
-				<h2>Longest Line</h2>
+				<h2>Current line of sight</h2>
 				<div id="details">
 					<div>
 						Distance: {(state.longestLine.distance || 0) / 1000}km

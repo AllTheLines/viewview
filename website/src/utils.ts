@@ -1,11 +1,12 @@
 import { LngLat, LngLatBounds } from 'maplibre-gl';
 
+export const VERSION = '0.1';
 export const CDN_BUCKET = 'https://cdn.alltheviews.world';
 export const MAP_SERVER = 'https://map.alltheviews.world';
 export const WORLD_PMTILES = 'world';
-export const PMTILES_SERVER = `${MAP_SERVER}/runs/0.1/pmtiles/${WORLD_PMTILES}`;
+export const PMTILES_SERVER = `${MAP_SERVER}/runs/${VERSION}/pmtiles/${WORLD_PMTILES}`;
+export const CACHE_BUSTER = '?buster=21:30-17/12/2025';
 
-export const VERSION = '0.1';
 export const EARTH_RADIUS = 6371_000.0;
 
 export const Log = {

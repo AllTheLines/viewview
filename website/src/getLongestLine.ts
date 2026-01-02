@@ -3,7 +3,13 @@ import type { GeoTIFFImage } from 'geotiff';
 import { fromUrl as geotiffFromURL } from 'geotiff';
 import { LngLat } from 'maplibre-gl';
 import proj4 from 'proj4';
-import { aeqdProjectionString, CDN_BUCKET, Log, VERSION } from './utils';
+import {
+  aeqdProjectionString,
+  CACHE_BUSTER,
+  CDN_BUCKET,
+  Log,
+  VERSION,
+} from './utils';
 
 // Masks for unpacking bit-packed line of sight data.
 const U22_MASK = (1 << 22) - 1;
@@ -30,81 +36,124 @@ const cogs: Map<string, GeoTIFFImage> = new Map();
 
 // Given a lon/lat coordinate, get the nearest actual COG point to it.
 export async function getLongestLine(coordinate: LngLat) {
-  const cog = await getCOG(coordinate);
-  if (cog === undefined) {
-    return;
-  }
-
-  const result = getPointCoordinate(cog, coordinate);
-  if (result === undefined) {
-    return;
-  }
-  const { x_point, y_point } = result;
-
   nprogress.start();
-  const raster = (await cog.readRasters({
-    window: [x_point, y_point, x_point + 1, y_point + 1],
-    width: 1,
-    height: 1,
-  })) as Float32Array[];
+  const candidates = await getLongestLines(coordinate);
   nprogress.done();
 
-  const packed = raster[0][0];
-  const packed_u32 = f32ToU32(packed);
-  const distance = (packed_u32 >>> 10) & U22_MASK;
-  const angle = packed_u32 & U10_MASK;
-
-  if (import.meta.env.DEV) {
-    console.log('clicked at', coordinate);
-    console.log('coordinate in raster', [x_point, y_point]);
-    console.log('packed:', packed_u32, u32BitsToString(packed_u32));
-    console.log('distance:', distance, u32BitsToString(distance));
-    console.log('angle:', angle, u32BitsToString(angle));
-  }
-
-  if (distance === 0 && angle === 0) {
-    if (import.meta.env.DEV) {
-      console.log('distance and angle are both 0');
-    }
+  if (candidates === undefined || candidates.length === 0) {
     return;
   }
 
-  return { distance, angle } as LongestLine;
+  let longest: LongestLine | undefined;
+  for (const candidate of candidates) {
+    if (longest === undefined) {
+      longest = candidate;
+      continue;
+    }
+    if (candidate.distance > longest?.distance) {
+      longest = candidate;
+    }
+  }
+
+  Log.debug(`Using longest line: `, longest);
+
+  return longest;
 }
 
-async function getCOG(coordinate: LngLat) {
-  const url = await findNearestCOGURL(coordinate);
-  if (url === undefined) {
+async function getLongestLines(coordinate: LngLat) {
+  const urls = await findNearestCOGURLs(coordinate);
+  if (urls.length === 0) {
     console.warn(
       `${coordinate} is not within the radius of any Longest Line COGs`,
     );
     return;
   }
 
+  const candidates: LongestLine[] = [];
+  for (const url of urls) {
+    const cog = await getCOG(url);
+    if (cog === undefined) {
+      continue;
+    }
+    const candidate = await getLongestLineCandidate(cog, coordinate);
+    if (candidate) {
+      candidates.push(candidate);
+    }
+  }
+
+  return candidates;
+}
+
+async function getLongestLineCandidate(cog: GeoTIFFImage, coordinate: LngLat) {
+  const result = getPointCoordinate(cog, coordinate);
+  if (result === undefined) {
+    return;
+  }
+  const { x_point, y_point } = result;
+  const flipper = cog.getWidth() - 1.0;
+  const y_flipped = flipper - y_point;
+
+  const { distance, angle } = await getPointFromRaster(cog, x_point, y_flipped);
+
+  Log.debug('clicked at', coordinate);
+  Log.debug('coordinate in raster', [x_point, y_flipped]);
+  Log.debug('distance:', distance, u32BitsToString(distance));
+  Log.debug('angle:', angle, u32BitsToString(angle));
+
+  if (distance === 0 && angle === 0) {
+    Log.debug('distance and angle are both 0');
+    return;
+  }
+
+  return { distance, angle } as LongestLine;
+}
+
+async function getPointFromRaster(cog: GeoTIFFImage, x: number, y: number) {
+  // We need to find the longest line in a 5x5 grid to get around precision loss.
+  const around = 2;
+
+  const raster = (await cog.readRasters({
+    window: [x - around, y - around, x + around, y + around],
+    width: around * 2 + 1,
+    height: around * 2 + 1,
+  })) as Float32Array[];
+
+  let max = { distance: 0, angle: 0 };
+  for (const row of raster) {
+    for (const packed of row) {
+      const packed_u32 = f32ToU32(packed);
+      const distance = (packed_u32 >>> 10) & U22_MASK;
+      const angle = packed_u32 & U10_MASK;
+      if (distance > max.distance) {
+        max = { distance, angle };
+      }
+    }
+  }
+
+  return max;
+}
+
+async function getCOG(url: string) {
   let cog = cogs.get(url);
 
   if (cog === undefined) {
-    nprogress.start();
     const tiff = await geotiffFromURL(url);
     const image = await tiff.getImage();
     cog = image;
     cogs.set(url, image);
-    nprogress.done();
   }
 
   return cog;
 }
 
-async function findNearestCOGURL(coordinate: LngLat) {
-  const indexURL = `${LONGEST_LINES_COGS}/index.txt`;
+async function findNearestCOGURLs(coordinate: LngLat) {
+  const indexURL = `${LONGEST_LINES_COGS}/index.txt${CACHE_BUSTER}`;
   if (cogsIndex.size === 0) {
     Log.debug(`Fetching Longest Line COGs file: ${indexURL}`);
 
-    nprogress.start();
     const result = await fetch(indexURL);
     if (!result.ok) throw new Error(result.status.toString());
     const contents = await result.text();
-    nprogress.done();
 
     for (const line of contents.split('\n')) {
       const lineParts = line.split(' ');
@@ -124,21 +173,23 @@ async function findNearestCOGURL(coordinate: LngLat) {
 
   Log.debug('Longest Lines index', cogsIndex);
 
+  const urls = [];
   for (const [filename, cog] of cogsIndex) {
     const distance = coordinate.distanceTo(cog.centre);
     const scale = 100; // TODO: I thought we decided to set this in the indexer?
     const radius = cog.width / 2 / scale;
     Log.debug(
-      `Checking Longest Line COG: ${filename}`,
+      `👀 Checking Longest Line COG: ${filename}`,
       `with centre: ${cog.centre} and radius ${radius}`,
       `Distance from click: ${distance}`,
     );
     if (distance < radius) {
-      const url = `${LONGEST_LINES_COGS}/${filename}`;
-      Log.debug(`Longest Line COG found: ${url}`);
-      return url;
+      urls.push(`${LONGEST_LINES_COGS}/${filename}`);
+      Log.debug(`✅ Longest Line COG found: ${urls}`);
     }
   }
+
+  return urls;
 }
 
 // Convert lon/lat to COG-relative point.
@@ -154,9 +205,10 @@ function getPointCoordinate(image: GeoTIFFImage, coordinate: LngLat) {
     coordinate.lng,
     coordinate.lat,
   ]);
-  const offset = image.getWidth() / 2;
-  const x_point = Math.floor(x_metres / resolution[0]) + offset;
-  const y_point = Math.floor(y_metres / resolution[1]) + offset;
+  const offset = image.getWidth() / 2.0;
+  const scale = Math.abs(resolution[0]);
+  const x_point = Math.floor(x_metres / scale) + offset;
+  const y_point = Math.floor(y_metres / scale) + offset;
 
   // TODO: update this to check outside the circle of the tile?
   if (

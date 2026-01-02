@@ -21,9 +21,12 @@ mod atlas {
     pub mod stitch_all;
     pub mod tile_job;
 
-    // All the code for handling longest lines.
+    /// All the code for handling longest lines.
     pub mod longest_lines {
+        pub mod grided;
         pub mod index;
+        pub mod overview;
+        pub mod packed;
     }
     /// Providers of compute resources.
     pub mod machines {
@@ -96,8 +99,8 @@ async fn main() -> Result<()> {
             config::AtlasCommands::LongestLinesIndex(_) => {
                 atlas::longest_lines::index::compile().await?;
             }
-            config::AtlasCommands::LongestLinesOverviews(_) => {
-                todo!();
+            config::AtlasCommands::LongestLinesOverviews(longest_overviews_config) => {
+                atlas::longest_lines::overview::run(longest_overviews_config).await?;
             }
             config::AtlasCommands::CurrentRunConfig(_) => {
                 atlas::db::print_current_run_config_as_json().await?;

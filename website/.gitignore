@@ -1,6 +1,7 @@
 public/longest_lines
 public/scratch
 public/**/*.tiff
+public/longest_lines_grided.bin
 
 # Local
 .DS_Store
