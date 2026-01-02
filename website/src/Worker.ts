@@ -1,6 +1,7 @@
 import { PMTiles } from 'pmtiles';
 import type { TileGL } from './HeatmapLayer';
 import {
+  CACHE_BUSTER,
   MAP_SERVER,
   PMTILES_SERVER,
   tileKey,
@@ -11,8 +12,6 @@ export type WorkerEvent =
   | { type: 'init'; source: string }
   | ({ type: 'tile' } & Omit<TileGL, 'texture'> & { data: Uint8Array })
   | { type: 'getTile'; z: number; x: number; y: number };
-
-const CACHE_BUSTER = '?buster=9/12/2025';
 
 let localTiler: PMTiles;
 
@@ -37,34 +36,49 @@ self.onmessage = async (event: MessageEvent<WorkerEvent>) => {
     }
 
     let bytes: Uint8Array<ArrayBufferLike> | ArrayBuffer;
+    const url = `${PMTILES_SERVER}/${z}/${x}/${y}.bin${CACHE_BUSTER}`;
 
     const isProductionMapServer =
       !import.meta.env.DEV || localTiler.source.getKey().includes(MAP_SERVER);
     if (isProductionMapServer) {
-      const tile = await fetch(
-        `${PMTILES_SERVER}/${z}/${x}/${y}.bin${CACHE_BUSTER}`,
-      );
-      if (tile.status === 404) {
+      let tile: Response;
+      tile = await fetch(url);
+      if (tile.status === 204 || tile.status === 404) {
         // This is normal. We don't have tiles that cover the sea for example.
         // TODO: also cache this so we don't keep trying to fetch tiles that don't exist.
         return;
       }
+
+      if (!tile.ok) {
+        console.warn(`Bad tile response ${tile.status} for ${url}`);
+        return;
+      }
+
       bytes = await tile.bytes();
+
+      if (bytes.length === 0) {
+        return;
+      }
     } else {
       const response = await localTiler.getZxy(z, x, y);
       if (!response) return;
       bytes = response.data;
     }
 
+    let tvs_surfaces: Float32Array;
     const compressed = new Uint8Array(bytes);
     const stream = new DecompressionStream('deflate');
     const decompressedResponse = new Response(
       new Blob([compressed]).stream().pipeThrough(stream),
     );
-    const arrayBuffer = await decompressedResponse.arrayBuffer();
 
-    const tvs_surfaces = new Float32Array(arrayBuffer);
-    const packed = new Uint8Array(tvs_surfaces.buffer);
+    try {
+      const arrayBuffer = await decompressedResponse.arrayBuffer();
+      tvs_surfaces = new Float32Array(arrayBuffer);
+    } catch (error) {
+      console.error('Decompression failed for', url, error);
+      return;
+    }
 
     // Find the greatest point of visibility. This is used to calibrate the heatmap
     // colour range for every viewport and zoom level.
@@ -79,7 +93,7 @@ self.onmessage = async (event: MessageEvent<WorkerEvent>) => {
     const message: WorkerEvent = {
       type: 'tile',
       key,
-      data: packed,
+      data: new Uint8Array(tvs_surfaces.buffer),
       max,
       bounds,
     };
