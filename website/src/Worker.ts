@@ -1,12 +1,6 @@
 import { PMTiles } from 'pmtiles';
 import type { TileGL } from './HeatmapLayer';
-import {
-  CACHE_BUSTER,
-  MAP_SERVER,
-  PMTILES_SERVER,
-  tileKey,
-  tileToLatLonBounds,
-} from './utils';
+import { CACHE_BUSTER, MAP_SERVER, tileKey, tileToLatLonBounds } from './utils';
 
 export type WorkerEvent =
   | { type: 'init'; source: string }
@@ -14,16 +8,18 @@ export type WorkerEvent =
   | { type: 'getTile'; z: number; x: number; y: number };
 
 let localTiler: PMTiles;
+let pmtilesSource: string;
 
 const loading = new Map();
 
 self.onmessage = async (event: MessageEvent<WorkerEvent>) => {
   if (event.data.type === 'init') {
     const { source } = event.data;
+    pmtilesSource = source;
     if (import.meta.env.DEV) {
-      localTiler = new PMTiles(source);
+      localTiler = new PMTiles(pmtilesSource);
     }
-    console.debug('Tile worker ready for:', source);
+    console.debug('Tile worker ready for:', pmtilesSource);
   }
 
   if (event.data.type === 'getTile') {
@@ -36,7 +32,7 @@ self.onmessage = async (event: MessageEvent<WorkerEvent>) => {
     }
 
     let bytes: Uint8Array<ArrayBufferLike> | ArrayBuffer;
-    const url = `${PMTILES_SERVER}/${z}/${x}/${y}.bin${CACHE_BUSTER}`;
+    const url = `${pmtilesSource}/${z}/${x}/${y}.bin${CACHE_BUSTER}`;
 
     const isProductionMapServer =
       !import.meta.env.DEV || localTiler.source.getKey().includes(MAP_SERVER);
