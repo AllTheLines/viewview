@@ -8,11 +8,11 @@ pub struct Machine;
 #[async_trait::async_trait]
 impl super::machine::Machine for Machine {
     /// Create a new droplet.
-    async fn create(ssh_key_id: &str) -> Result<std::net::IpAddr> {
+    async fn create(ssh_key_id: &str) -> Result<(String, std::net::IpAddr)> {
         let ip = Self::create_droplet(ssh_key_id).await?;
         Self::wait_for_droplet_to_boot(ip).await?;
-        Self::init_droplet(ip).await?;
-        Ok(ip)
+        Self::init_droplet("root", ip).await?;
+        Ok(("root".to_owned(), ip))
     }
 }
 
@@ -82,11 +82,11 @@ impl Machine {
     }
 
     /// Run all the initialisation for the droplet.
-    async fn init_droplet(ip_address: std::net::IpAddr) -> Result<String> {
-        let ip_string = ip_address.to_string();
+    async fn init_droplet(user: &str, ip_address: std::net::IpAddr) -> Result<String> {
+        let connection = format!("{user}@{ip_address}");
         let command = super::connection::Command {
             executable: "./ctl.sh".into(),
-            args: vec!["cloud_init_ubuntu22", &ip_string],
+            args: vec!["cloud_init_ubuntu22", &connection],
             ..Default::default()
         };
         super::local::Machine::command(command).await

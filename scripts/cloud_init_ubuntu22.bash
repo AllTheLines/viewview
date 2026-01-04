@@ -16,7 +16,6 @@ function cloud_init_ubuntu22 {
 		curl -LsSf https://astral.sh/uv/install.sh | sh
 		echo 'source ~/.local/bin/env' >> ~/.bashrc
 	  mkdir -p ~/tvs/output
-	  mkdir -p ~/viewview/output/archive
 	"
 
 	_pushd "$PROJECT_ROOT/../total-viewsheds/"

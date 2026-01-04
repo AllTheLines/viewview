@@ -8,8 +8,8 @@ pub struct Machine;
 #[async_trait::async_trait]
 impl super::machine::Machine for Machine {
     /// Local machines are of course already created.
-    async fn create(_: &str) -> Result<std::net::IpAddr> {
-        Ok(std::net::Ipv4Addr::LOCALHOST.into())
+    async fn create(_: &str) -> Result<(String, std::net::IpAddr)> {
+        Ok(("noop".to_owned(), std::net::Ipv4Addr::LOCALHOST.into()))
     }
 }
 

@@ -88,6 +88,24 @@ Outputs `.bt` heatmap.
 
 Process all the tiles for the entire planet. It manages the "Stitcher", "Total Viewsheds" and "Prepare For Cloud" steps above.
 
+Start the background worker:
+```
+RUST_LOG=info,axum=trace,apalis=trace,tasks=trace \
+  cargo run --bin tasks -- atlas worker
+```
+
+Access the worker UI at http://localhost:3000
+
+Add a machine, you can add as many as you want for parallelism:
+```
+RUST_LOG=info,axum=trace,apalis=trace,tasks=trace \
+  cargo run --bin tasks -- atlas new-machine \
+  --provider digital-ocean \
+  --ssh-key-id 495019
+```
+
+Add tile jobs:
+
 ```
 # Saving data locally, useful for development:
 RUST_LOG=trace cargo run --bin tasks -- atlas run \
@@ -95,7 +113,8 @@ RUST_LOG=trace cargo run --bin tasks -- atlas run \
   --run-id dev \
   --master website/public/tiles.csv \
   --centre -4.549624919891357,47.44954299926758 \
-  --dems /publicish/dems \
+  --amount 1 \
+  --skip 10 \
   --tvs-executable ../total-viewsheds/target/release/total-viewsheds \
   --longest-lines-cogs website/public/longest_lines
 
@@ -105,7 +124,6 @@ RUST_LOG=off,tasks=trace cargo run --bin tasks -- atlas run \
   --run-id 0.1 \
   --master website/public/tiles.csv \
   --centre -13.949958801269531,57.94995880126953 \
-  --dems /publicish/dems \
   --tvs-executable /root/tvs/target/release/total-viewsheds \
   --longest-lines-cogs output/longest_lines
 ```

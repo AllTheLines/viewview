@@ -22,7 +22,7 @@ pub async fn tile_processor(
     let derefed_state = Arc::clone(&*state);
 
     if !is_machine_connected(&state, &tile_worker_name).await {
-        let result = Connection::connect(job.provider, job.ip_address).await;
+        let result = Connection::connect(job.provider, job.ip_address, &job.user).await;
         let connection = match result {
             Ok(connection) => connection,
             Err(error) => {

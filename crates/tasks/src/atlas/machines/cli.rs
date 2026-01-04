@@ -10,28 +10,31 @@ pub async fn new_machine(config: &crate::config::NewMachine) -> Result<()> {
 
     let job = match config.provider {
         crate::config::ComputeProvider::Local => {
-            let ip_address =
+            let (_, ip_address) =
                 crate::atlas::machines::local::Machine::create(&config.ssh_key_id).await?;
             crate::atlas::machines::new_machine_job::NewMachineJob {
                 ip_address,
                 provider: crate::config::ComputeProvider::Local,
+                user: "noop".to_owned(),
             }
         }
 
         crate::config::ComputeProvider::DigitalOcean => {
-            let ip_address =
+            let (user, ip_address) =
                 crate::atlas::machines::digital_ocean::Machine::create(&config.ssh_key_id).await?;
             crate::atlas::machines::new_machine_job::NewMachineJob {
                 ip_address,
                 provider: crate::config::ComputeProvider::DigitalOcean,
+                user,
             }
         }
         crate::config::ComputeProvider::Vultr => {
-            let ip_address =
+            let (user, ip_address) =
                 crate::atlas::machines::vultr::Machine::create(&config.ssh_key_id).await?;
             crate::atlas::machines::new_machine_job::NewMachineJob {
                 ip_address,
                 provider: crate::config::ComputeProvider::Vultr,
+                user,
             }
         }
     };

@@ -168,6 +168,30 @@ pub struct Atlas {
         default_value_t = ComputeProvider::Local
     )]
     pub provider: ComputeProvider,
+
+    /// How to run the kernel calculations.
+    #[arg(
+        long,
+        value_enum,
+        value_name = "The method of running the kernel",
+        default_value_t = Backend::CPU
+    )]
+    pub backend: Backend,
+
+    /// Cleanup output files after each successful tile run.
+    #[arg(long)]
+    pub enable_cleanup: bool,
+}
+
+/// Which kernel to run the computations on.
+#[derive(clap::ValueEnum, Clone, serde::Serialize, serde::Deserialize, Debug)]
+pub enum Backend {
+    /// A SPIRV shader run on the GPU via Vulkan.
+    Vulkan,
+    /// Vulkan shader but run on the CPU.
+    VulkanCPU,
+    /// Optimised cache-efficient CPU kernel
+    CPU,
 }
 
 /// Create a new machine for Atlas.

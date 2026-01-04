@@ -11,6 +11,8 @@ pub struct NewMachineJob {
     pub ip_address: std::net::IpAddr,
     /// The provider of this machine, local, digital ocean, etc.
     pub provider: crate::config::ComputeProvider,
+    /// The user to connec to the machine with.
+    pub user: String,
 }
 
 impl NewMachineJob {

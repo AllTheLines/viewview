@@ -6,7 +6,7 @@ use color_eyre::Result;
 /// A trait that represents a compute resource.
 pub trait Machine: Sync + Send {
     /// Create a machine
-    async fn create(ssh_key_id: &str) -> Result<std::net::IpAddr>
+    async fn create(ssh_key_id: &str) -> Result<(String, std::net::IpAddr)>
     where
         Self: Sized;
 }

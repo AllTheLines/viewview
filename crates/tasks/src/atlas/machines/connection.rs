@@ -29,6 +29,7 @@ impl Connection {
     pub async fn connect(
         provider: crate::config::ComputeProvider,
         ip_address: std::net::IpAddr,
+        user: &str,
     ) -> Result<Self> {
         if matches!(provider, crate::config::ComputeProvider::Local) {
             tracing::info!("Noop connected to {provider:?} machine.");
@@ -40,7 +41,7 @@ impl Connection {
 
         let ssh = async_ssh2_tokio::Client::connect(
             (ip_address, 22),
-            "root",
+            user,
             auth_method,
             async_ssh2_tokio::ServerCheckMethod::NoCheck,
         )
@@ -76,7 +77,7 @@ impl Connection {
             .join(" ");
 
         let command_string = format!(
-            "cd /root/viewview && {} {} {}",
+            "cd ~/viewview && {} {} {}",
             env,
             command.executable.display(),
             command.args.join(" ")

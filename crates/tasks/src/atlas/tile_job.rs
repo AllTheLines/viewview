@@ -2,7 +2,8 @@
 
 use std::sync::Arc;
 
-use color_eyre::Result;
+use clap::ValueEnum as _;
+use color_eyre::{Result, eyre::ContextCompat as _};
 
 /// The size of each point in the raw DEM data.
 pub const DEM_SCALE: f32 = 100.0;
@@ -46,11 +47,43 @@ impl TileRunner {
             machine: connection.clone(),
         };
 
+        runner.ensure_directories().await?;
+
         let bt_filepath = runner.download_bt_file().await?;
         runner.compute(&bt_filepath).await?;
         runner.assets().await?;
 
+        if runner.job.config.enable_cleanup {
+            runner.cleanup().await?;
+        }
+
         tracing::debug!("Tile completed: {:?}", runner.job.tile);
+
+        Ok(())
+    }
+
+    /// Create various directories needed to process tiles.
+    async fn ensure_directories(&self) -> Result<()> {
+        self.machine
+            .command(crate::atlas::machines::connection::Command {
+                executable: "mkdir".into(),
+                args: vec!["-p", "output/archive", "output/longest_lines"],
+                ..Default::default()
+            })
+            .await?;
+
+        Ok(())
+    }
+
+    /// Delete the various files output during tile processing.
+    async fn cleanup(&self) -> Result<()> {
+        self.machine
+            .command(crate::atlas::machines::connection::Command {
+                executable: "rm".into(),
+                args: vec!["-r", "output"],
+                ..Default::default()
+            })
+            .await?;
 
         Ok(())
     }
@@ -79,7 +112,12 @@ impl TileRunner {
                     "--scale",
                     &scale,
                     "--backend",
-                    "vulkan",
+                    self.job
+                        .config
+                        .backend
+                        .to_possible_value()
+                        .context("Couldn't convert backend to string")?
+                        .get_name(),
                     "--process",
                     "total-surfaces,longest-lines",
                 ],

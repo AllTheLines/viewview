@@ -8,11 +8,11 @@ pub struct Machine;
 #[async_trait::async_trait]
 impl super::machine::Machine for Machine {
     /// Create a new Vultr machine.
-    async fn create(ssh_key_id: &str) -> Result<std::net::IpAddr> {
+    async fn create(ssh_key_id: &str) -> Result<(String, std::net::IpAddr)> {
         let ip = Self::create_machine(ssh_key_id).await?;
         Self::wait_for_machine_to_boot(ip).await?;
         Self::init_machine(ip).await?;
-        Ok(ip)
+        Ok(("root".to_owned(), ip))
     }
 }
 

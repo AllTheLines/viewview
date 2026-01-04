@@ -50,6 +50,6 @@ function _uvx {
 		uvx "$@"
 	else
 		# Likely what's need on a remote machine over a non-interactive SSH connection.
-		/root/.local/bin/uvx "$@"
+		~/.local/bin/uvx "$@"
 	fi
 }
