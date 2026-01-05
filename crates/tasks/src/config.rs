@@ -223,6 +223,8 @@ pub enum ComputeProvider {
     DigitalOcean,
     /// Run on Vultr compute. Requires an already authed `vultr-ctl`.
     Vultr,
+    /// Run on Google Cloud. Requires an already authed and installed `gcloud`
+    GoogleCloud
 }
 
 /// Create the longest lines index and sync it.

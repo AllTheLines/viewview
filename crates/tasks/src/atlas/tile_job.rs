@@ -120,6 +120,8 @@ impl TileRunner {
                         .get_name(),
                     "--process",
                     "total-surfaces,longest-lines",
+                    "--thread-count",
+                    "48"
                 ],
                 env: vec![
                     ("RUST_BACKTRACE", "1"),
