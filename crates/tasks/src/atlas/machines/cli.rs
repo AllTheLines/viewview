@@ -18,7 +18,6 @@ pub async fn new_machine(config: &crate::config::NewMachine) -> Result<()> {
                 user: "noop".to_owned(),
             }
         }
-
         crate::config::ComputeProvider::DigitalOcean => {
             let (user, ip_address) =
                 crate::atlas::machines::digital_ocean::Machine::create(&config.ssh_key_id).await?;
@@ -35,6 +34,14 @@ pub async fn new_machine(config: &crate::config::NewMachine) -> Result<()> {
                 ip_address,
                 provider: crate::config::ComputeProvider::Vultr,
                 user,
+            }
+        }
+        crate::config::ComputeProvider::GoogleCloud => {
+            let ip_address =
+                crate::atlas::machines::google_cloud::Machine::create(&config.ssh_key_id).await?;
+            crate::atlas::machines::new_machine_job::NewMachineJob {
+                ip_address,
+                provider: crate::config::ComputeProvider::GoogleCloud,
             }
         }
     };

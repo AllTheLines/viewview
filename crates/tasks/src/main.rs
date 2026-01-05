@@ -32,6 +32,7 @@ mod atlas {
     pub mod machines {
         pub mod cli;
         pub mod connection;
+        pub mod google_cloud;
         pub mod digital_ocean;
         pub mod local;
         pub mod machine;

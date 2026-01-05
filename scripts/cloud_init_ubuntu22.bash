@@ -9,7 +9,7 @@ function cloud_init_ubuntu22 {
 		sudo apt install --yes \
 			libvulkan1 mesa-vulkan-drivers vulkan-tools \
 			build-essential pkg-config \
-			libgdal-dev gdal-bin python3-gdal \
+			libgdal-dev gdal-bin python3-gdal rsync \
 			jq rclone tmux sqlite3
 	  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 		echo 'source ~/.cargo/env' >> ~/.bashrc
