@@ -17,13 +17,21 @@ if __name__ == "__main__":
         reader = csv.reader(f, delimiter=",")
 
         for row in reader:
-            if int(float(row[2])) == 811280:
-                print(f"FOUND IT: {row}")
-            # if int(float(row[2])) // 100 % 8 == 0:
-            #     print(f"{row[0]},{row[1]}.bt, {row[2]}")
             max_los.append(float(row[2]))
 
     max_los = sorted(map(lambda x: x / 100.0, max_los))
+
+    total_area = sum(map(lambda x: x*x, max_los))
+
+    median_area = total_area / 2
+    area = 0.0
+    for (i, tile) in enumerate(max_los):
+        area += tile*tile
+        if area > median_area:
+            print(f"must process all tiles up to {tile}kms to get 50% of the world which is {i+1} tiles")
+            break
+
+
 
     middle = len(max_los) // 2
 

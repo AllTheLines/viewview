@@ -1,7 +1,5 @@
 //! An Apalis worker job to handle new machines.
 
-use std::sync::Arc;
-
 use color_eyre::Result;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -25,13 +23,11 @@ impl NewMachineJob {
 /// The callback to run when a new machine job is added.
 pub async fn new_machine_handler(
     job: super::new_machine_job::NewMachineJob,
-    state: apalis::prelude::Data<Arc<crate::atlas::daemon::State>>,
 ) -> Result<()> {
-    tracing::trace!("Forwarding state to worker: {state:?}");
     let machine_task_id = get_machine_task_id_hack(job.clone()).await?;
 
     tokio::spawn(async move {
-        let result = super::worker::tile_processor(job, state, machine_task_id).await;
+        let result = super::worker::tile_processor(job, machine_task_id).await;
         if let Err(error) = result {
             tracing::error!("Error starting tile worker for new machine: {error:?}");
         }

@@ -57,7 +57,7 @@ impl Connection {
     pub async fn command(&self, command: Command<'_>) -> Result<()> {
         tracing::debug!(
             "Running command on {:?} machine: {command:?}",
-            self.provider
+            self.provider,
         );
 
         if matches!(self.provider, crate::config::ComputeProvider::Local) {

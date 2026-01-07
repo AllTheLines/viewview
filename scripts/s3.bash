@@ -45,6 +45,7 @@ function rclone_put {
 		--s3-provider=Cloudflare \
 		--s3-access-key-id="$VIEWVIEW_S3_ACCESS_KEY" \
 		--s3-secret-access-key="$VIEWVIEW_S3_SECRET" \
+		--s3-no-check-bucket \
 		--progress \
 		--transfers=32 \
 		--checkers=32 \
