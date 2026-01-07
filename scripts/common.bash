@@ -1,5 +1,5 @@
 # Where to save output
-export OUTPUT_DIR=output
+export OUTPUT_DIR=${OUTPUT_DIR:-output}
 # Where to keep previous COGs so that aggregated `.pmtile`s can be rebuilt.
 export ARCHIVE_DIR=$OUTPUT_DIR/archive
 # Temp space

@@ -63,3 +63,19 @@ function restart_job {
     WHERE id = '$job'
 	"
 }
+
+function restart_failed_jobs {
+	local job=$1
+
+	atlas_query "
+	  UPDATE Jobs SET
+		  status = 'Pending',
+			run_at = strftime('%s', 'now'),
+      lock_at = NULL,
+      lock_by = NULL,
+		  done_at = NULL,
+      last_result = NULL,
+			attempts = 0
+    WHERE status='Failed'
+	"
+}

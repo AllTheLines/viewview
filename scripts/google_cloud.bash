@@ -3,7 +3,7 @@
 
 function spin_google_cloud {
   gcloud compute instances create "$1" --format="json" \
-      --zone=us-central1-a \
+      --zone=us-central1-c \
       --machine-type=c4d-highcpu-96 \
       --network-interface=network-tier=PREMIUM,nic-type=GVNIC,stack-type=IPV4_ONLY,subnet=default \
       --metadata=ssh-keys=atlas:"$2"\
@@ -15,7 +15,6 @@ function spin_google_cloud {
       --min-cpu-platform=AMD\ \
 Turin \
       --create-disk=auto-delete=yes,boot=yes,device-name="$1",disk-resource-policy=projects/viewshed-474722/regions/us-central1/resourcePolicies/default-schedule-1,image=projects/debian-cloud/global/images/debian-12-bookworm-v20251209,mode=rw,provisioned-iops=3060,provisioned-throughput=155,size=10,type=hyperdisk-balanced \
-      --create-disk=auto-delete=yes,device-name=data-disk-"$1",disk-resource-policy=projects/viewshed-474722/regions/us-central1/resourcePolicies/default-schedule-1,mode=rw,name=data-disk-"$1",provisioned-iops=5400,provisioned-throughput=740,size=200,type=hyperdisk-balanced \
       --no-shielded-secure-boot \
       --shielded-vtpm \
       --shielded-integrity-monitoring \

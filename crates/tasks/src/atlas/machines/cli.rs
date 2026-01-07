@@ -37,9 +37,10 @@ pub async fn new_machine(config: &crate::config::NewMachine) -> Result<()> {
             }
         }
         crate::config::ComputeProvider::GoogleCloud => {
-            let ip_address =
+            let (user, ip_address) =
                 crate::atlas::machines::google_cloud::Machine::create(&config.ssh_key_id).await?;
             crate::atlas::machines::new_machine_job::NewMachineJob {
+                user,
                 ip_address,
                 provider: crate::config::ComputeProvider::GoogleCloud,
             }
