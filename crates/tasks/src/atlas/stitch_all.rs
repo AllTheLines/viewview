@@ -17,21 +17,16 @@ pub struct StitchJob {
 
 /// Entrypoint.
 pub async fn run(config: &crate::config::StitchAll) -> Result<()> {
-    if let Some(master) = config.clone().master
-        && config.clone().dems.is_some()
-    {
-        let master_tiles = super::run::Atlas::load_master_tiles(&master)?;
-        let mut stitch_store =
-            crate::atlas::db::worker_store::<StitchJob>(STITCH_ALL_DB_PATH).await?;
+    let master_tiles = super::run::Atlas::load_master_tiles(&config.master)?;
+    let mut stitch_store = crate::atlas::db::worker_store::<StitchJob>(STITCH_ALL_DB_PATH).await?;
 
-        for master_tile in master_tiles {
-            stitch_store
-                .push(StitchJob {
-                    config: config.clone(),
-                    tile: master_tile,
-                })
-                .await?;
-        }
+    for master_tile in master_tiles {
+        stitch_store
+            .push(StitchJob {
+                config: config.clone(),
+                tile: master_tile,
+            })
+            .await?;
     }
 
     daemon(config.num_cpus).await?;
@@ -57,12 +52,7 @@ async fn daemon(num_cpus: usize) -> Result<()> {
 
 /// Process a single tile.
 pub async fn process(job: StitchJob) -> Result<()> {
-    let Some(dems) = job.config.dems else {
-        color_eyre::eyre::bail!(
-            "--dems must be set in the original command that created the jobs."
-        );
-    };
-    let dems_path = dems.display().to_string();
+    let dems_path = job.config.dems.display().to_string();
     let centre = format!("{},{}", job.tile.centre.0.x, job.tile.centre.0.y);
     let width = job.tile.width.to_string();
     let command = super::machines::connection::Command {
@@ -74,11 +64,14 @@ pub async fn process(job: StitchJob) -> Result<()> {
     };
     super::machines::local::Machine::command(command).await?;
 
-    let stitch_tile_path = format!("{centre}.bt");
+    let stitch_tile_path =
+        crate::stitch::canonical_filename(job.tile.centre.0.x, job.tile.centre.0.y);
     let source = format!("output/{stitch_tile_path}");
     let destination = format!("s3://viewview/stitched/{stitch_tile_path}");
     let local = super::machines::local::Machine::connection();
     local.sync_file_to_s3(&source, &destination).await?;
+    tracing::debug!("Removing: {source}");
+    tokio::fs::remove_file(source).await?;
 
     Ok(())
 }
