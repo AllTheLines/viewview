@@ -12,10 +12,11 @@ function run_worker {
 function world_run {
   danger_reset_atlas
 
+  run_worker &
   worker_pid=$!;
 
-  echo "started worker, waiting 10 seconds before provisioning"
-  sleep 10;
+  echo "started worker, waiting 2 seconds before provisioning"
+  sleep 2;
 
   provision_gcloud &
   provision_gcloud &
