@@ -3,7 +3,7 @@
 use color_eyre::Result;
 
 /// The marker to indicate that this is a local, non-production run.
-const RUN_ID_LOCAL: &str = "local";
+pub const RUN_ID_LOCAL: &str = "local";
 
 /// `Config`
 #[derive(clap::Parser, Debug)]
@@ -152,13 +152,17 @@ pub struct Atlas {
     #[arg(long, value_name = "Amount of tiles to process")]
     pub amount: Option<usize>,
 
+    /// Maximum width of tile to process
+    #[arg(long, value_name = "Max width of tile")]
+    pub max_tile_width: Option<f32>,
+
     /// Path to TVS executable.
     #[arg(long, value_name = "TVS executable")]
     pub tvs_executable: std::path::PathBuf,
 
-    /// Where to save longest lines COGs.
+    /// Where to load/save longest lines COGs.
     #[arg(long, value_name = "Longest lines COGs directory")]
-    pub longest_lines_cogs: std::path::PathBuf,
+    pub longest_lines_cogs: Option<std::path::PathBuf>,
 
     /// Where to run the computations, locally or on a cloud provider.
     #[arg(
@@ -177,6 +181,10 @@ pub struct Atlas {
         default_value_t = Backend::CPU
     )]
     pub backend: Backend,
+
+    /// Number of threads to use for the CPU kernel.
+    #[arg(long, value_name = "Thread count")]
+    pub cpu_kernel_threads: Option<u32>,
 
     /// Cleanup output files after each successful tile run.
     #[arg(long)]
@@ -224,7 +232,7 @@ pub enum ComputeProvider {
     /// Run on Vultr compute. Requires an already authed `vultr-ctl`.
     Vultr,
     /// Run on Google Cloud. Requires an already authed and installed `gcloud`
-    GoogleCloud
+    GoogleCloud,
 }
 
 /// Create the longest lines index and sync it.

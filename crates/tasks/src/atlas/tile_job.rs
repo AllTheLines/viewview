@@ -1,7 +1,7 @@
 //! Job to process a single tile.
 
 use crate::atlas::machines::connection::Connection;
-use apalis::prelude::*;
+use crate::config::RUN_ID_LOCAL;
 use clap::ValueEnum as _;
 use color_eyre::{Result, eyre::ContextCompat as _};
 use std::sync::Arc;
@@ -11,8 +11,11 @@ use tokio::sync::Mutex;
 /// The size of each point in the raw DEM data.
 pub const DEM_SCALE: f32 = 100.0;
 
-/// The default location to place output files.
-pub const TVS_OUTPUT_DIRECTORY: &str = "output";
+/// The directory where all our viewview input/output goes.
+pub const WORKING_DIRECTORY: &str = "work";
+
+/// The default directory where all the longest lines COGs live.
+pub const LONGEST_LINES_DIRECTORY: &str = "longest_lines";
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 /// A worker job that processes a tile.
@@ -27,20 +30,18 @@ pub struct TileRunner<'mutex> {
     /// `mutex` is a borrowed mutex from the `Worker`. It makes sure that
     /// only a single `TileRunner` is running an L.o.S calculation.
     mutex: &'mutex Mutex<()>,
-
     /// Details about this particular job.
     job: TileJob,
-    /// `file_prefix` is the unique-per-job file prefix that is used to store files
+    /// The unique-per-job path prefix that is used to store files
     /// in order to allow for unlimited concurrency
-    file_prefix: String,
-
+    job_directory: String,
     /// The connection to the machine where we run the compute parts of the job.
     machine: Arc<Connection>,
 }
 
 /// `TileState` is the necessary state that a `TileJob` worker needs to coordinate
 /// between other workers.
-pub struct TileState {
+pub struct TileWorkerState {
     /// `mutex` makes sure that only one line of sight computation is happening at any given time.
     /// Any other part of the job can run at the same time, but running L.o.S is too computationally
     /// intensive to share
@@ -55,17 +56,24 @@ pub struct TileState {
 /// It is a wrapper for `TileRunner`
 pub async fn process_tile(
     job: TileJob,
-    state: Data<Arc<TileState>>,
+    state: apalis::prelude::Data<Arc<TileWorkerState>>,
 ) -> Result<()> {
     tracing::info!("Processing tile: {:?}", job.tile);
 
     let timestamp = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)?
-        .as_millis();
+        .as_millis()
+        .to_string();
+
+    let job_id = if job.config.run_id == RUN_ID_LOCAL {
+        "local".to_owned()
+    } else {
+        timestamp
+    };
 
     let runner = TileRunner {
         mutex: &state.mutex,
-        file_prefix: format!("{timestamp}"),
+        job_directory: format!("{WORKING_DIRECTORY}/{job_id}"),
         job,
         machine: Arc::clone(&state.daemon),
     };
@@ -96,8 +104,8 @@ impl TileRunner<'_> {
 
     /// Create various directories needed to process tiles.
     async fn ensure_directories(&self) -> Result<()> {
-        let archive = format!("{}/output/archive", self.file_prefix);
-        let longest_lines = format!("{}/output/longest_lines", self.file_prefix);
+        let archive = format!("{}/archive", self.job_directory);
+        let longest_lines = format!("{}/longest_lines", self.job_directory);
 
         self.machine
             .command(crate::atlas::machines::connection::Command {
@@ -115,7 +123,7 @@ impl TileRunner<'_> {
         self.machine
             .command(crate::atlas::machines::connection::Command {
                 executable: "rm".into(),
-                args: vec!["-r", &self.file_prefix],
+                args: vec!["-r", &self.job_directory],
                 ..Default::default()
             })
             .await?;
@@ -129,7 +137,7 @@ impl TileRunner<'_> {
         let bt_filename =
             crate::stitch::canonical_filename(self.job.tile.centre.0.x, self.job.tile.centre.0.y);
         let from = format!("s3://viewview/stitched/{bt_filename}");
-        let to = format!("{}/{bt_filename}", self.file_prefix);
+        let to = format!("{}/{bt_filename}", self.job_directory);
         self.machine.sync_file_from_s3(&from, &to).await?;
 
         Ok(to)
@@ -139,31 +147,37 @@ impl TileRunner<'_> {
     async fn compute(&self, bt_filepath: &str) -> Result<()> {
         let _token = self.mutex.lock().await;
 
-        let output = format!("{}/{}/", self.file_prefix, TVS_OUTPUT_DIRECTORY);
+        let threads_as_string;
         let scale = format!("{DEM_SCALE}");
+        let backend = self
+            .job
+            .config
+            .backend
+            .to_possible_value()
+            .context("Couldn't convert backend to string")?;
+
+        let mut args = vec![
+            "compute",
+            &bt_filepath,
+            "--output-dir",
+            &self.job_directory,
+            "--scale",
+            &scale,
+            "--backend",
+            backend.get_name(),
+            "--process",
+            "total-surfaces,longest-lines",
+        ];
+
+        if let Some(threads) = self.job.config.cpu_kernel_threads {
+            threads_as_string = threads.to_string();
+            args.extend(["--thread-count", &threads_as_string]);
+        }
 
         self.machine
             .command(crate::atlas::machines::connection::Command {
                 executable: self.job.config.tvs_executable.clone(),
-                args: vec![
-                    "compute",
-                    &bt_filepath,
-                    "--output-dir",
-                    &output,
-                    "--scale",
-                    &scale,
-                    "--backend",
-                    self.job
-                        .config
-                        .backend
-                        .to_possible_value()
-                        .context("Couldn't convert backend to string")?
-                        .get_name(),
-                    "--process",
-                    "total-surfaces,longest-lines",
-                    "--thread-count",
-                    "48",
-                ],
+                args,
                 env: vec![
                     ("RUST_BACKTRACE", "1"),
                     ("RUST_LOG", "off,total_viewsheds=trace"),
@@ -178,12 +192,8 @@ impl TileRunner<'_> {
     /// Process the assets needed to display the output on the website.
     async fn assets(&self) -> Result<()> {
         self.prepare_for_cloud(
-            format!(
-                "{}/{TVS_OUTPUT_DIRECTORY}/total_surfaces.bt",
-                self.file_prefix
-            )
-            .as_str(),
-            &self.job.tile.cog_filename()
+            format!("{}/total_surfaces.bt", self.job_directory).as_str(),
+            &self.job.tile.cog_filename(),
         )
         .await?;
 
@@ -192,12 +202,8 @@ impl TileRunner<'_> {
         }
 
         self.prepare_for_cloud(
-            format!(
-                "{}/{TVS_OUTPUT_DIRECTORY}/longest_lines.bt",
-                self.file_prefix
-            )
-            .as_str(),
-            &self.job.tile.cog_filename()
+            format!("{}/longest_lines.bt", self.job_directory).as_str(),
+            &self.job.tile.cog_filename(),
         )
         .await?;
 
@@ -209,7 +215,6 @@ impl TileRunner<'_> {
         Ok(())
     }
 
-    // TODO: Make this its own job so it can be parallelised.
     /// Prepare a processed tile for the website UI.
     async fn prepare_for_cloud(&self, input: &str, output: &str) -> Result<()> {
         let arguments = vec!["prepare_for_cloud", input, output];
@@ -218,9 +223,7 @@ impl TileRunner<'_> {
             .command(crate::atlas::machines::connection::Command {
                 executable: "./ctl.sh".into(),
                 args: arguments,
-                env: vec![
-                    ("OUTPUT_DIR", format!("{}/output", &self.file_prefix).as_str(), ),
-                ],
+                env: vec![("OUTPUT_DIR", &self.job_directory)],
                 ..Default::default()
             })
             .await?;
@@ -228,11 +231,10 @@ impl TileRunner<'_> {
         Ok(())
     }
 
-    // TODO: Make this its own job so it can be parallelised.
     /// Sync the finished heatmap for the tile to our S3 bucket.
     async fn s3_put_tvs_tiff(&self) -> Result<()> {
         let tvs_tiff = self.job.tile.cog_filename();
-        let source = format!("{}/output/archive/{tvs_tiff}", self.file_prefix);
+        let source = format!("{}/archive/{tvs_tiff}", self.job_directory);
         let destination = format!(
             "s3://viewview/runs/{}/tvs/{tvs_tiff}",
             self.job.config.run_id
@@ -243,18 +245,19 @@ impl TileRunner<'_> {
         Ok(())
     }
 
-    // TODO: Make this its own job so it can be parallelised.
     /// Sync a longest lines COG to our S3 bucket.
     async fn s3_put_longest_lines_cog(&self, filename: &str) -> Result<()> {
         let source_cogs = self
             .job
             .config
             .longest_lines_cogs
+            .clone()
+            .unwrap_or_else(|| LONGEST_LINES_DIRECTORY.into())
             .join(filename)
             .display()
             .to_string();
 
-        let source = format!("{}/{source_cogs}", self.file_prefix);
+        let source = format!("{}/{source_cogs}", self.job_directory);
 
         let destination = format!(
             "s3://viewview/runs/{}/longest_lines_cogs/{filename}",

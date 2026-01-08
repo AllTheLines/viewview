@@ -76,8 +76,14 @@ impl Connection {
             .collect::<Vec<String>>()
             .join(" ");
 
+        let current_dir = match command.current_dir {
+            Some(path) => format!("/{}", path.to_string_lossy()),
+            None => String::new(),
+        };
+
         let command_string = format!(
-            "cd ~/viewview && {} {} {}",
+            "cd ~/viewview{} && {} {} {}",
+            current_dir,
             env,
             command.executable.display(),
             command.args.join(" ")

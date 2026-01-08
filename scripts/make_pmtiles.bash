@@ -18,7 +18,7 @@ function make_pmtiles {
 	rm "$output" || true
 	archive="$ARCHIVE_DIR"
 	world_vrt="$archive"/world.vrt
-	merged=output/merged.tif
+	merged="$OUTPUT_DIR"/merged.tif
 
 	echo "Using archive at $archive"
 
