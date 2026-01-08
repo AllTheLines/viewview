@@ -18,7 +18,7 @@ function make_pmtiles {
 	rm "$output" || true
 	archive="$ARCHIVE_DIR"
 	world_vrt="$archive"/world.vrt
-	merged=output/merged.tif
+	merged="$OUTPUT_DIR"/merged.tif
 
 	echo "Using archive at $archive"
 
@@ -59,5 +59,5 @@ function make_prod_pmtiles {
 	export WORKERS=12
 	export GDAL_CACHEMAX=32768
 
-	make_pmtiles "$version" output/world.pmtiles
+	make_pmtiles "$version" work/world.pmtiles
 }
