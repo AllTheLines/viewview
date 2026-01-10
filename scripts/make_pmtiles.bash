@@ -52,12 +52,3 @@ function make_pmtiles {
 		rclone_put "$output" viewview/runs/"$version"/pmtiles/
 	fi
 }
-
-function make_prod_pmtiles {
-	local version=$1
-
-	export WORKERS=12
-	export GDAL_CACHEMAX=32768
-
-	make_pmtiles "$version" output/world.pmtiles
-}
