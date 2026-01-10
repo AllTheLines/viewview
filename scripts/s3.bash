@@ -57,7 +57,7 @@ function rclone_put {
 function get_srtm_folder {
 	local destination=$1
 
-	get_s3_folder SRTM "$destination"
+	get_s3_folder viewview/SRTM "$destination"
 }
 
 function get_s3_folder {
