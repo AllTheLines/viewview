@@ -13,8 +13,14 @@ pub async fn compile() -> Result<()> {
     };
 
     let tiles = crate::atlas::db::get_completed_tiles().await?;
+    let default_directory = std::path::Path::new(crate::atlas::tile_job::WORKING_DIRECTORY)
+        .join(crate::atlas::tile_job::LONGEST_LINES_DIRECTORY);
 
-    let index_path = config.longest_lines_cogs.join("index.txt");
+    let index_path = config
+        .clone()
+        .longest_lines_cogs
+        .unwrap_or(default_directory)
+        .join("index.txt");
 
     let mut index = Vec::new();
     for tile in tiles {

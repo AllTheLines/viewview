@@ -29,17 +29,27 @@ impl Machine {
 
     /// Create a new droplet.
     async fn create_droplet(ssh_key_id: &str) -> Result<std::net::IpAddr> {
+        // "--image",
+        // "gpu-h100x1-base",
+        // "--size",
+        // // "gpu-h200x1-141gb",
+        // "gpu-h100x1-80gb",
+        // "--region",
+        // "nyc2",
         let args = vec![
             "compute",
             "droplet",
             "create",
+            // ---
             "--image",
-            "gpu-h100x1-base",
+            "ubuntu-24-04-x64",
             "--size",
-            // "gpu-h200x1-141gb",
-            "gpu-h100x1-80gb",
+            "c-48",
             "--region",
-            "nyc2",
+            "sfo2",
+            "--vpc-uuid",
+            "780d7b88-6d14-4cc4-85c2-950ad0f74928",
+            // ---
             "--enable-monitoring",
             "--tag-names",
             "viewview",
@@ -70,8 +80,6 @@ impl Machine {
         for _ in 0..60u8 {
             let result = super::local::Machine::command(command.clone()).await;
             if result.is_ok() {
-                // Wait a bit more, in case DO startup scripts are running.
-                tokio::time::sleep(std::time::Duration::from_secs(30)).await;
                 return Ok(());
             }
 

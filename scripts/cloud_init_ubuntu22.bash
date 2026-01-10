@@ -5,6 +5,9 @@ function cloud_init_ubuntu22 {
 
 	ssh -o StrictHostKeyChecking=accept-new "$address" "\
 		set -euo pipefail
+	  # On Digital Ocean, machines can startup with an existing apt process, so we need
+		# to wait for its lock to be released before updating.
+		while lsof /var/lib/apt/lists/lock &>/dev/null; do sleep 2; done;
 	  sudo apt update
 		sudo apt install --yes \
 			libvulkan1 mesa-vulkan-drivers vulkan-tools \
@@ -15,7 +18,6 @@ function cloud_init_ubuntu22 {
 		echo 'source ~/.cargo/env' >> ~/.bashrc
 		curl -LsSf https://astral.sh/uv/install.sh | sh
 		echo 'source ~/.local/bin/env' >> ~/.bashrc
-	  mkdir -p ~/tvs/output
 	"
 
 	_pushd "$PROJECT_ROOT/../total-viewsheds/"

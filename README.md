@@ -131,19 +131,29 @@ RUST_LOG=off,tasks=trace cargo run --bin tasks -- atlas run \
 Atlas doesn't run the following commands, you'll want to manually run them after a
 bunch of tiles have been processed:
 
+* Create the gigantic (10s of GBs) global `.pmtile` that contains the TVS heatmap for the entire planet.
 ```
-# Create an index of all the COG (optimised GeoTiff) files that contain all the longest
-# lines of sight for every point on the planet. Should only take seconds to run.
+# This requires a machine with a lot of RAM and CPU. As of writing, with a ~10% world run,
+# an 80Gb machine with 48 cores, took around 20 minutes.
+# Replace `latest` with `local` to skip syncing files to S3.
+./ctl.sh make_prod_pmtiles latest
+
+# This is exactly the same but without some more agressive settings.
+./ctl.sh make_pmtiles latest work/world.pmtiles
+```
+
+* Create an index of all the COG (optimised GeoTiff) files that contain all the longest lines of sight for every point on the planet. Should only take seconds to run.
+```
 RUST_LOG=off,tasks=trace cargo run --bin tasks -- atlas longest-lines-index
 ```
 
+* Cached longest lines grid:
 ```
-# Create the gigantic (10s of GBs) global `.pmtile` that contains the TVS heatmap for
-# the entire planet. This requires a machine with a lot of RAM and CPU. As of writing, with
-# a ~10% world run, an 80Gb machine with 48 cores, took around 20 minutes.
-#
-# Replace `latest` with `local` to skip syncing files to S3.
-./ctl.sh make_pmtiles latest output/world.pmtiles
+./ctl.sh get_s3_folder viewview/runs/0.1/longest_lines_cogs work/longest_lines
+
+RUST_LOG=off,tasks=trace cargo run --release --bin tasks -- \
+  atlas longest-lines-overviews \
+  --tiffs work/longest_lines
 ```
 
 ## Website

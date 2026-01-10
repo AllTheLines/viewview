@@ -100,7 +100,7 @@ impl Atlas {
         for master_tile in atlas
             .tiles
             .nearest_neighbor_iter(&start_from)
-            .filter(|tile| tile.data.width < 635_000.0)
+            .filter(|tile| tile.data.width < config.max_tile_width.unwrap_or(f32::MAX))
             .skip(config.skip.unwrap_or(0))
         {
             if crate::atlas::db::is_tile_added(master_tile.data).await? {
