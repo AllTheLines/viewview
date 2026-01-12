@@ -107,11 +107,11 @@ pub struct Stitch {
 pub struct StitchAll {
     /// Source of all the DEM files.
     #[arg(long, value_name = "Path to DEMs folder")]
-    pub dems: Option<std::path::PathBuf>,
+    pub dems: std::path::PathBuf,
 
     /// Master tile list produced by the Packer.
     #[arg(long, value_name = "Path to master tiles list")]
-    pub master: Option<std::path::PathBuf>,
+    pub master: std::path::PathBuf,
 
     /// Number of CPUS to use,
     #[arg(long, value_name = "Number of cpus", default_value_t = number_of_cpus_on_machine())]

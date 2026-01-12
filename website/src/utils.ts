@@ -5,7 +5,7 @@ export const CDN_BUCKET = 'https://cdn.alltheviews.world';
 export const MAP_SERVER = 'https://map.alltheviews.world';
 export const WORLD_PMTILES = 'world';
 export const PMTILES_SERVER = `${MAP_SERVER}/runs/${VERSION}/pmtiles/${WORLD_PMTILES}`;
-export const CACHE_BUSTER = '?buster=21:30-17/12/2025';
+export const CACHE_BUSTER = '?buster=08:51-10/01/2026';
 
 export const EARTH_RADIUS = 6371_000.0;
 

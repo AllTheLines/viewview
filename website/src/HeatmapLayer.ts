@@ -52,7 +52,7 @@ const config: { tileSize: number } = {
 
 // The average surface area visibile from a point far out at sea, where it can only see sea.
 // This is used to fill regions for which there is no elevation data.
-const AVERAGE_SURFACE_VISIBILITY = 63500000.0;
+const AVERAGE_SURFACE_VISIBILITY = 700000.0;
 
 let fillerTile: TileGL;
 

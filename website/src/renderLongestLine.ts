@@ -65,9 +65,7 @@ export async function render(lngLat: LngLat) {
     console.log(longest_line);
   }
 
-  // TODO: Why do we have to take away from 360? I suspect it's because forward and backward
-  // lines are the wrong way round?
-  longest_line.angle = 360 - longest_line.angle + ANGLE_SHIFT;
+  longest_line.angle = longest_line.angle + ANGLE_SHIFT;
 
   const θ = toRadians(longest_line.angle);
   const dx = longest_line.distance * Math.cos(θ);

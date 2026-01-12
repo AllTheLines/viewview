@@ -25,7 +25,12 @@ export class LongestLineH3 {
 }
 
 async function loadH3Lines() {
-  const indexURL = `${CDN_BUCKET}/runs/${VERSION}/${LONGEST_LINES_GRIDED_FILENAME}${CACHE_BUSTER}`;
+  let indexURL = `${CDN_BUCKET}/runs/${VERSION}/${LONGEST_LINES_GRIDED_FILENAME}${CACHE_BUSTER}`;
+  const params = new URLSearchParams(self.location.search);
+  const source = params.get('grid');
+  if (source) {
+    indexURL = source;
+  }
   Log.debug(`Fetching Longest Lines H3 file: ${indexURL}`);
   const result = await fetch(indexURL);
 
