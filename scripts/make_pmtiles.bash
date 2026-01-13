@@ -22,8 +22,19 @@ function make_pmtiles {
 
 	echo "Using archive at $archive"
 
-	# Merge all the heatmap GeoTiffs into one big GeoTiff.
+	# Collate all the heatmap GeoTiffs into a single virtual file.
 	gdalbuildvrt "$world_vrt" "$archive"/*.tiff
+
+	# Merge all the heatmap GeoTiffs into one big GeoTiff.
+	#
+	# Note: Even though this is just a temporary file, compression is still useful to help reduce
+	# disk IO. Bear in mind that `merged.tif` is constantly queried by the final pmtiler, so any
+	# reduction in disk IO can speed up the total runtime.
+	#
+	# TODO: Most of the time in this command is spent single threaded, which means up to 5 hours
+	# for the whole world. Perhaps produce multiple `merged-part.tiff` as pre-step, then merge
+	# for the whole world. Perhaps produce multiple `merged-part.tiff` as pre-step, then merge
+	# those for the final step?
 	gdal_translate \
 		-co TILED=YES \
 		-co BIGTIFF=YES \
