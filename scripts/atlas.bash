@@ -10,6 +10,12 @@ function atlas_query {
 	sqlite3 "$ATLAS_DB" "$query"
 }
 
+# Get the current run ID via the latest successful tile job in the DB.
+function get_current_run_id {
+	json=$(RUST_LOG=off cargo run --bin tasks -- atlas current-run-config)
+	echo "$json" | jq --raw-output '.run_id'
+}
+
 function remove_machines_older_than {
 	local last_seen=$1
 
@@ -65,8 +71,6 @@ function restart_job {
 }
 
 function restart_failed_jobs {
-	local job=$1
-
 	atlas_query "
 	  UPDATE Jobs SET
 		  status = 'Pending',

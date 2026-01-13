@@ -63,28 +63,26 @@ function prepare_for_cloud {
 	fi
 
 	if [[ $stem == "total_surfaces" ]]; then
-		# Interpolate the TVS heatmap's data to EPSG:3857. Along with all the other heatmap
-		# GeoTiff's, it will be used to create the single global `.pmtile`.
-		# EPSG:3857 is the Mercator metric projection, it is better for tiling.
+		# Interpolate the TVS heatmap's data to EPSG:3857.
 		#
-		# TODO: I'm pretty sure this is where the black border artefect around the tile
-		# circles appear.
+		# Along with all the other heatmap GeoTiff's, it will be used to create the single global
+		# `.pmtile`. EPSG:3857 is the Mercator metric projection, it is better for tiling.
+		#
+		# Note: We need to force the pixel size because without it then `gdal` chooses bad sizes. It
+		# makes tiles at the poles, for example, start reaching pixel sizes of ~500. That worst case
+		# is then used as the default for the _whole_ world when we come to make the `merged.tif`!
 		gdalwarp \
 			-overwrite \
 			-t_srs EPSG:3857 \
+			-tr 100 100 \
+			-tap \
 			-dstnodata 0 \
 			-srcnodata 0 \
 			-dstalpha \
-			-r near \
+			-r bilinear \
 			-co COMPRESS=DEFLATE \
 			-co TILED=YES \
 			-co PREDICTOR=3 \
 			"$plain_tif" "$archive"
 	fi
-}
-
-# Get the current run ID via the latest successful tile job in the DB.
-function get_current_run_id {
-	json=$(RUST_LOG=off cargo run --bin tasks -- atlas current-run-config)
-	echo "$json" | jq --raw-output '.run_id'
 }
