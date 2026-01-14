@@ -25,10 +25,10 @@ function make_pmtiles {
 	gdalbuildvrt "$world_vrt" "$archive"/*.tiff
 
 	# Create overviews to speed up tile creation at lower zoom levels.
+	# Note: Compression would be good, but I've seen it cause segfaults.
 	gdaladdo \
 		-r bilinear \
 		--config BIGTIFF YES \
-		--config COMPRESS_OVERVIEW DEFLATE \
 		--config GDAL_NUM_THREADS ALL_CPUS \
 		"$world_vrt" \
 		2 4 8 16 32 64 128 256

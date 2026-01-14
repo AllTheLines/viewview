@@ -63,26 +63,29 @@ function prepare_for_cloud {
 	fi
 
 	if [[ $stem == "total_surfaces" ]]; then
-		# Interpolate the TVS heatmap's data to EPSG:3857.
-		#
-		# Along with all the other heatmap GeoTiff's, it will be used to create the single global
-		# `.pmtile`. EPSG:3857 is the Mercator metric projection, it is better for tiling.
-		#
-		# Note: We need to force the pixel size because without it then `gdal` chooses bad sizes. It
-		# makes tiles at the poles, for example, start reaching pixel sizes of ~500. That worst case
-		# is then used as the default for the _whole_ world when we come to make the `merged.tif`!
-		gdalwarp \
-			-overwrite \
-			-t_srs EPSG:3857 \
-			-tr 100 100 \
-			-tap \
-			-dstnodata 0 \
-			-srcnodata 0 \
-			-dstalpha \
-			-r bilinear \
-			-co COMPRESS=DEFLATE \
-			-co TILED=YES \
-			-co PREDICTOR=3 \
-			"$plain_tif" "$archive"
+		if (($(echo "$latitude > -80" | bc -l))); then
+			# Interpolate the TVS heatmap's data to EPSG:3857.
+			#
+			# Along with all the other heatmap GeoTiff's, it will be used to create the single global
+			# `.pmtile`. EPSG:3857 is the Mercator metric projection, it is better for tiling.
+			#
+			# Note: We need to force the pixel size because without it then `gdal` chooses bad sizes. It
+			# makes tiles at the poles, for example, start reaching pixel sizes of ~500. That worst case
+			# is then used as the default for the _whole_ world!
+			gdalwarp \
+				-overwrite \
+				-t_srs EPSG:3857 \
+				-tr 100 100 \
+				-dstnodata 0 \
+				-srcnodata 0 \
+				-r bilinear \
+				-co BIGTIFF=IF_SAFER \
+				-co COMPRESS=DEFLATE \
+				-co TILED=YES \
+				-co PREDICTOR=3 \
+				"$plain_tif" "$archive"
+		else
+			echo "Not creating TVS heatmap tiff for Antartic tile: $longitude,$latitude:$width"
+		fi
 	fi
 }

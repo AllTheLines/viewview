@@ -201,7 +201,12 @@ impl TileRunner<'_> {
         .await?;
 
         if !self.job.config.is_local_run() {
-            self.s3_put_tvs_tiff().await?;
+            // Only heatmap tiffs are created for tiles above Antartica.
+            if self.job.tile.centre.0.y > -80.0f64 {
+                self.s3_put_tvs_tiff().await?;
+            } else {
+                tracing::debug!("Skipping syncing Antartic tile: {:?}", self.job.tile);
+            }
         }
 
         self.prepare_for_cloud(
