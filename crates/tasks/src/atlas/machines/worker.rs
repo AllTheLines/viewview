@@ -60,10 +60,11 @@ pub async fn tile_processor(
         daemon: Arc::new(connection),
     };
 
+    // clear out the previous run's state
     state.daemon
         .command(crate::atlas::machines::connection::Command {
             executable: "rm".into(),
-            args: vec!["-r", WORKING_DIRECTORY],
+            args: vec!["-rf", WORKING_DIRECTORY],
             ..Default::default()
         })
         .await?;

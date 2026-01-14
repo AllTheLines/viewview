@@ -81,7 +81,7 @@ function restart_failed_jobs {
 		  done_at = NULL,
       last_result = NULL,
 			attempts = 0
-    WHERE status='Failed'
+    WHERE status='Killed' OR status='Failed'
 	"
 }
 

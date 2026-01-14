@@ -71,6 +71,8 @@ pub async fn process_tile(
         timestamp
     };
 
+    let cleanup = job.config.enable_cleanup;
+
     let runner = TileRunner {
         mutex: &state.mutex,
         job_directory: format!("{WORKING_DIRECTORY}/{job_id}"),
@@ -78,8 +80,13 @@ pub async fn process_tile(
         machine: Arc::clone(&state.daemon),
     };
 
-    runner.run().await?;
-    Ok(())
+    let res = runner.run().await;
+
+    if cleanup {
+        runner.cleanup().await?;
+    }
+
+    Ok(res?)
 }
 
 impl TileRunner<'_> {
@@ -93,10 +100,6 @@ impl TileRunner<'_> {
         self.compute(&bt_filepath).await?;
 
         self.assets().await?;
-
-        if self.job.config.enable_cleanup {
-            self.cleanup().await?;
-        }
 
         tracing::debug!("Tile completed: {:?}", self.job.tile);
         Ok(())
