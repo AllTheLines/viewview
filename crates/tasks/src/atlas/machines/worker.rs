@@ -63,7 +63,7 @@ pub async fn tile_processor(
     // Computation concurrency is effectively 1 due to mutex locking in the tile job.
     let worker_concurrency = 2;
 
-    apalis::prelude::WorkerBuilder::new(tile_worker_name)
+    apalis::prelude::WorkerBuilder::new(tile_worker_name.clone())
         .backend(tile_store)
         .data(Arc::new(state))
         .concurrency(worker_concurrency)
@@ -71,6 +71,8 @@ pub async fn tile_processor(
         .build(crate::atlas::tile_job::process_tile)
         .run()
         .await?;
+
+    machines().lock().await.remove(&tile_worker_name);
 
     Ok(())
 }

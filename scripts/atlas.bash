@@ -43,6 +43,7 @@ function list_machines {
 	echo "All machines: "
 	atlas_query "
 		SELECT
+		  id,
 			job,
 			run_at,
 			datetime(run_at, 'unixepoch', 'localtime') as datetime
@@ -81,5 +82,19 @@ function restart_failed_jobs {
       last_result = NULL,
 			attempts = 0
     WHERE status='Failed'
+	"
+}
+
+function rebalance_queue {
+	atlas_query "
+	  UPDATE Jobs SET
+		  status = 'Pending',
+			run_at = strftime('%s', 'now'),
+      lock_at = NULL,
+      lock_by = NULL,
+		  done_at = NULL,
+      last_result = NULL,
+			attempts = 0
+    WHERE status='Queued'
 	"
 }

@@ -163,6 +163,19 @@ impl Tile {
     }
 }
 
+pub const LONGEST_LINES_GRIDED_FILENAME: &str = "longest_lines_grided.bin";
+
+/// Sync the longest lines grid to S3.
+async fn sync_to_s3(source: std::path::PathBuf, run_id: &str) -> Result<()> {
+    let destination =
+        format!("s3://viewview/runs/{run_id}/longest_lines_cogs/{LONGEST_LINES_GRIDED_FILENAME}");
+    crate::atlas::machines::local::Machine::connection()
+        .sync_file_to_s3(&source.display().to_string(), &destination)
+        .await?;
+
+    Ok(())
+}
+
 /// Entrypoint.
 pub async fn run(config: &crate::config::LongestLinesOverviews) -> Result<()> {
     let workers = crate::config::number_of_cpus_on_machine() - 1;
@@ -185,7 +198,7 @@ pub async fn run(config: &crate::config::LongestLinesOverviews) -> Result<()> {
                     Some(tiff) => {
                         let result: Result<()> = async {
                             let local = Tile::process(&tiff)?;
-                            update_state(&world_clone, local, &run_id).await?;
+                            update_state(&world_clone, local).await?;
                             Ok(())
                         }
                         .await;
@@ -210,12 +223,22 @@ pub async fn run(config: &crate::config::LongestLinesOverviews) -> Result<()> {
         result?;
     }
 
+    sync_to_s3(
+        format!(
+            "./output/{}",
+            LONGEST_LINES_GRIDED_FILENAME
+        )
+        .into(),
+        &config.run_id,
+    )
+    .await?;
+
     Ok(())
 }
 
 /// Take all the newly found longest lines in a COG and check to see if they're longer than any of
 /// the currently recorded global ones.
-async fn update_state(world: &StateHash, local: HashMap, run_id: &str) -> Result<()> {
+async fn update_state(world: &StateHash, local: HashMap) -> Result<()> {
     #[expect(clippy::iter_over_hash_type, reason = "We don't mind about ordering")]
     for (cell, line) in local {
         if let Some(existing) = world.write().await.get_mut(&cell) {
@@ -272,11 +295,10 @@ async fn update_state(world: &StateHash, local: HashMap, run_id: &str) -> Result
     super::grided::write(
         format!(
             "./output/{}",
-            crate::atlas::longest_lines::grided::LONGEST_LINES_GRIDED_FILENAME
+            LONGEST_LINES_GRIDED_FILENAME
         )
         .into(),
         &grided,
-        run_id,
     )
     .await?;
 
