@@ -38,8 +38,12 @@ function prepare_for_cloud {
 	plain_tif=$TMP_DIR/plain.tif
 	archive=$ARCHIVE_DIR/"$output"
 
-	# Convert to GeoTIff.
-	gdal_translate -of GTiff -a_nodata 0 "$input" "$plain_tif"
+	# Convert to GeoTiff.
+	gdal_translate \
+		-of GTiff \
+		-a_nodata 0 \
+		-co COMPRESS=DEFLATE \
+		"$input" "$plain_tif"
 
 	# The `.bt` format only has minimal support for georeferencing, so here we edit
 	# the GeoTiff's projection and extent. This is merely updating header metadata,

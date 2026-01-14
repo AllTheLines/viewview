@@ -80,13 +80,13 @@ pub async fn process_tile(
         machine: Arc::clone(&state.daemon),
     };
 
-    let res = runner.run().await;
+    let result = runner.run().await;
 
     if cleanup {
         runner.cleanup().await?;
     }
 
-    Ok(res?)
+    result
 }
 
 impl TileRunner<'_> {
@@ -207,6 +207,7 @@ impl TileRunner<'_> {
             } else {
                 tracing::debug!("Skipping syncing Antartic tile: {:?}", self.job.tile);
             }
+            self.s3_put_raw_tvs_tiff().await?;
         }
 
         self.prepare_for_cloud(
@@ -245,6 +246,23 @@ impl TileRunner<'_> {
         let source = format!("{}/archive/{tvs_tiff}", self.job_directory);
         let destination = format!(
             "s3://viewview/runs/{}/tvs/{tvs_tiff}",
+            self.job.config.run_id
+        );
+
+        self.machine.sync_file_to_s3(&source, &destination).await?;
+
+        Ok(())
+    }
+
+    /// Sync the raw, pre-projected finished heatmap for the tile to our S3 bucket.
+    ///
+    /// There isn't a huge difference between this and the post-processed one, but it's a shame
+    /// to have to recompute the entire planet just to get hold of this.
+    async fn s3_put_raw_tvs_tiff(&self) -> Result<()> {
+        let tvs_tiff = self.job.tile.cog_filename();
+        let source = format!("{}/tmp/plain.tif", self.job_directory);
+        let destination = format!(
+            "s3://viewview/runs/{}/raw/{tvs_tiff}",
             self.job.config.run_id
         );
 
