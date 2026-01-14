@@ -31,7 +31,7 @@ function cloud_init_ubuntu22 {
 	ssh "$address" "\
 		set -euo pipefail
 	  source ~/.cargo/env
-	  cd ~/tvs && RUST_FLAGS='-Ctarget-cpu=native' cargo build --release
+	  cd ~/tvs && RUSTFLAGS='-Ctarget-cpu=native' cargo build --release
 	  rm -r ~/.rustup/
 	  rm -r ~/.cargo/
 	"

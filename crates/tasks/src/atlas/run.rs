@@ -11,7 +11,8 @@
 
 use color_eyre::{Result, eyre::ContextCompat as _};
 
-use apalis::prelude::TaskSink as _;
+use apalis::prelude::{Task, TaskSink as _};
+use apalis_sqlite::SqlContext;
 
 /// All the config and state needed for processing all the tiles in the world.
 pub struct Atlas {
@@ -107,11 +108,25 @@ impl Atlas {
                 continue;
             }
 
+            let tile_args = super::tile_job::TileJob {
+                config: config.clone(),
+                tile: master_tile.data,
+            };
+
+
+            // map the priority of the tile width (10,000->900,000) to an integer 1-9
+            // and then invert the priority so that the smallest go first
+            let priority = -((tile_args.tile.width / 100_000.0f32) as i32);
+
+            let ctx = SqlContext::new()
+                .with_priority(priority);
+
+            let task = Task::builder(tile_args)
+                .with_ctx(ctx)
+                .build();
+
             tile_store
-                .push(super::tile_job::TileJob {
-                    config: config.clone(),
-                    tile: master_tile.data,
-                })
+                .push_task(task)
                 .await?;
 
             count += 1;

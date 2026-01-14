@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use std::sync::{Arc, OnceLock};
 
 use crate::atlas::machines::connection::Connection;
-use crate::atlas::tile_job::{TileJob, TileWorkerState};
+use crate::atlas::tile_job::{TileJob, TileWorkerState, WORKING_DIRECTORY};
 use apalis::layers::WorkerBuilderExt as _;
 use color_eyre::Result;
 use tokio::sync::Mutex;
@@ -37,6 +37,7 @@ pub async fn tile_processor(
         &machine_job.user,
     )
     .await;
+
     let connection = match result {
         Ok(connection) => {
             machines().lock().await.insert(tile_worker_name.clone());
@@ -58,6 +59,14 @@ pub async fn tile_processor(
         mutex: Arc::new(Mutex::new(())),
         daemon: Arc::new(connection),
     };
+
+    state.daemon
+        .command(crate::atlas::machines::connection::Command {
+            executable: "rm".into(),
+            args: vec!["-r", WORKING_DIRECTORY],
+            ..Default::default()
+        })
+        .await?;
 
     // We allow more than one so that all tasks apart from computation can run in parallel.
     // Computation concurrency is effectively 1 due to mutex locking in the tile job.

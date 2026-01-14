@@ -186,7 +186,6 @@ pub async fn run(config: &crate::config::LongestLinesOverviews) -> Result<()> {
 
     let mut handles = Vec::new();
     for worker in 0..workers {
-        let run_id = config.run_id.clone();
         let world_clone = Arc::clone(&world);
         let jobs_clone = Arc::clone(&jobs);
         let handle = tokio::task::spawn(async move {

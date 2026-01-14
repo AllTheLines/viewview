@@ -6,7 +6,7 @@ function spin_google_cloud {
       --zone=us-central1-c \
       --machine-type=c4d-highcpu-96 \
       --network-interface=network-tier=PREMIUM,nic-type=GVNIC,stack-type=IPV4_ONLY,subnet=default \
-      --metadata=ssh-keys=atlas:"$2"\
+      --metadata=startup-script="sudo rm -r /usr/lib/google-cloud-sdk/",ssh-keys=atlas:"$2" \
       --no-restart-on-failure \
       --maintenance-policy=TERMINATE \
       --provisioning-model=SPOT \
