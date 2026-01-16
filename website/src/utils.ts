@@ -1,6 +1,6 @@
 import { LngLat, LngLatBounds } from 'maplibre-gl';
 
-export const VERSION = '0.1';
+export const VERSION = 'rberger-fullworld2';
 export const CDN_BUCKET = 'https://cdn.alltheviews.world';
 export const MAP_SERVER = 'https://map.alltheviews.world';
 export const WORLD_PMTILES = 'world';
