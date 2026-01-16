@@ -14,7 +14,10 @@
   import { render, setupLongestLines } from './renderLongestLine.ts';
   import { state } from './state.svelte.ts';
   import { lonLatRound } from './utils.ts';
-  import { findLongestLineInBounds } from './worldLines.ts';
+  import {
+    findLongestLineInBoundsBruteForce,
+    findLongestLineInBoundsFromGrid,
+  } from './worldLines.ts';
 
   let { longest } = $props();
 
@@ -26,23 +29,31 @@
       style: map_vector as StyleSpecification,
     });
 
-    state.map?.on('load', () => {
+    state.map.on('load', () => {
       // 'mountain_peaks' is used here to mean, mountain peaks and every other layer after it.
       // This allows the heatmap to always appear below everything else.
       state.map?.addLayer(HeatmapLayer, 'mountain_peaks');
       setupLongestLines(longest);
     });
 
-    state.map?.on('movestart', () => {
+    state.map.on('movestart', () => {
       if (!state.isFirstInteraction) {
         state.isFirstInteraction = true;
       }
     });
 
     state.map?.on('moveend', async () => {
+      if (state.map === undefined) {
+        return;
+      }
+
       const bounds = state.map?.getBounds();
       if (bounds !== undefined) {
-        const longest = await findLongestLineInBounds(bounds);
+        let longest = await findLongestLineInBoundsFromGrid(bounds);
+        if (longest === undefined) {
+          state.longestLineInViewport = undefined;
+          longest = await findLongestLineInBoundsBruteForce(bounds);
+        }
         state.longestLineInViewport = longest;
       }
     });
@@ -86,17 +97,21 @@
 					</li>
 				{/each}
 			</ol>
-			<a
-				href={state.longestLineInViewport?.toURL()}
-				onclick={(event) => {
-					event.preventDefault();
-					if (state.longestLineInViewport !== undefined) {
-						const url = state.longestLineInViewport?.toURL();
-						render(state.longestLineInViewport.coordinate);
-						navigate(url);
-					}
-				}}>In viewport ({state.longestLineInViewport?.toDistance()})</a
-			>
+			{#if state.longestLineInViewport}
+				<a
+					href={state.longestLineInViewport?.toURL()}
+					onclick={(event) => {
+						event.preventDefault();
+						if (state.longestLineInViewport !== undefined) {
+							const url = state.longestLineInViewport?.toURL();
+							render(state.longestLineInViewport.coordinate);
+							navigate(url);
+						}
+					}}>In viewport ({state.longestLineInViewport?.toDistance()})</a
+				>
+			{:else}
+				In viewport (loading...)
+			{/if}
 		</CollapsableModal>
 
 		{#if state.longestLine}

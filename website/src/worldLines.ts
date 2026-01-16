@@ -1,4 +1,12 @@
+import nprogress from 'accessible-nprogress';
+import type { GeoTIFFImage } from 'geotiff';
 import { LngLat, type LngLatBounds } from 'maplibre-gl';
+import {
+  convertLngLatToRasterXY,
+  convertRasterXYToLngLat,
+  findLongestInWindow,
+  findTilesIntersectingViewport,
+} from './getLongestLine';
 import { state } from './state.svelte';
 import { CACHE_BUSTER, CDN_BUCKET, Log, VERSION } from './utils';
 
@@ -56,7 +64,7 @@ async function loadH3Lines() {
   state.worldLongestLines = longestLine;
 }
 
-export async function findLongestLineInBounds(bounds: LngLatBounds) {
+export async function findLongestLineInBoundsFromGrid(bounds: LngLatBounds) {
   if (state.worldLongestLines === undefined) {
     await loadH3Lines();
   }
@@ -74,7 +82,59 @@ export async function findLongestLineInBounds(bounds: LngLatBounds) {
       }
     }
   }
-  Log.debug('Found longest line in viewport:', max?.distance);
+
+  if (max !== undefined) {
+    Log.debug('Found longest line in viewport via grid:', max?.distance);
+  } else {
+    Log.debug("Couldn't find viewport longest line in grid");
+  }
 
   return max;
+}
+
+export async function findLongestLineInBoundsBruteForce(bounds: LngLatBounds) {
+  let max: LongestLineH3 | undefined;
+
+  nprogress.start();
+
+  const cogs = await findTilesIntersectingViewport(bounds);
+
+  for (const cog of cogs) {
+    const extent = convertViewportBoundsToCOGWindow(bounds, cog);
+    const longest = await findLongestInWindow(cog, extent);
+    if (longest === undefined) {
+      Log.debug(`Couldn't find longest line in cog: ${cog}`);
+      continue;
+    }
+    const coordinate = convertRasterXYToLngLat(cog, longest.x, longest.y);
+    if (max === undefined || longest.distance > max.distance) {
+      max = new LongestLineH3(coordinate, longest.distance);
+    }
+  }
+
+  if (max !== undefined) {
+    Log.debug('Found longest line in viewport via brute force:', max.distance);
+  } else {
+    Log.debug(
+      `Couldn't find longest line in viewport ${bounds} via brute force`,
+    );
+  }
+
+  nprogress.done();
+  return max;
+}
+
+function convertViewportBoundsToCOGWindow(
+  bounds: LngLatBounds,
+  cog: GeoTIFFImage,
+) {
+  const northWest = convertLngLatToRasterXY(cog, bounds.getNorthWest());
+  const southEast = convertLngLatToRasterXY(cog, bounds.getSouthEast());
+
+  return [
+    northWest.x_point,
+    northWest.y_point,
+    southEast.x_point,
+    southEast.y_point,
+  ];
 }

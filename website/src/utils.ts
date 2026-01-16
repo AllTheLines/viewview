@@ -5,6 +5,9 @@ export const CDN_BUCKET = 'https://cdn.alltheviews.world';
 export const MAP_SERVER = 'https://map.alltheviews.world';
 export const WORLD_PMTILES = 'world';
 export const PMTILES_SERVER = `${MAP_SERVER}/runs/${VERSION}/pmtiles/${WORLD_PMTILES}`;
+
+// This is for busting Cloudflare asset cache. Like for an updated `world.pmtiles`,
+// longest lines index, etc.
 export const CACHE_BUSTER = '?buster=08:51-10/01/2026';
 
 export const EARTH_RADIUS = 6371_000.0;
@@ -110,4 +113,8 @@ export function computeBBox(coordinates: number[][]) {
   }
 
   return new LngLatBounds([minLng, minLat, maxLng, maxLat]);
+}
+
+export function clamp(value: number, lowerBound: number, upperBound: number) {
+  return Math.max(lowerBound, Math.min(upperBound, value));
 }
