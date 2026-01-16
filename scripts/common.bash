@@ -53,3 +53,13 @@ function _uvx {
 		~/.local/bin/uvx "$@"
 	fi
 }
+
+function get_tiff_longitude {
+	local input=$1
+	gdalinfo -json "$input" | jq '.geoTransform[0]'
+}
+
+function get_tiff_latitude {
+	local input=$1
+	gdalinfo -json "$input" | jq '.geoTransform[3]'
+}

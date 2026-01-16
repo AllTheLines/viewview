@@ -13,7 +13,7 @@ function cloud_init_ubuntu22 {
 			libvulkan1 mesa-vulkan-drivers vulkan-tools \
 			build-essential pkg-config \
 			libgdal-dev gdal-bin python3-gdal rsync htop \
-			jq rclone tmux sqlite3
+			jq rclone tmux sqlite3 parallel
 	  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 		echo 'source ~/.cargo/env' >> ~/.bashrc
 		curl -LsSf https://astral.sh/uv/install.sh | sh

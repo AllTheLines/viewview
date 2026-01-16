@@ -10,8 +10,8 @@ function prepare_for_cloud {
 	ensure_tiles_env
 
 	# Lon/lat of the input tile
-	longitude=$(gdalinfo -json "$input" | jq '.geoTransform[0]')
-	latitude=$(gdalinfo -json "$input" | jq '.geoTransform[3]')
+	longitude=$(get_tiff_longitude "$input")
+	latitude=$(get_tiff_latitude "$input")
 	# Pixel resolution of the input tile
 	pixel_width=$(gdalinfo -json "$input" | jq '.size[0]')
 	# Width of the input tile
@@ -36,7 +36,6 @@ function prepare_for_cloud {
 	rm -f "$TMP_DIR/"*
 
 	plain_tif=$TMP_DIR/plain.tif
-	archive=$ARCHIVE_DIR/"$output"
 
 	# Convert to GeoTiff.
 	gdal_translate \
@@ -64,32 +63,5 @@ function prepare_for_cloud {
 			-co COMPRESS=DEFLATE \
 			-co PREDICTOR=3 \
 			"$plain_tif" "$cog"
-	fi
-
-	if [[ $stem == "total_surfaces" ]]; then
-		if (($(echo "$latitude > -80" | bc -l))); then
-			# Interpolate the TVS heatmap's data to EPSG:3857.
-			#
-			# Along with all the other heatmap GeoTiff's, it will be used to create the single global
-			# `.pmtile`. EPSG:3857 is the Mercator metric projection, it is better for tiling.
-			#
-			# Note: We need to force the pixel size because without it then `gdal` chooses bad sizes. It
-			# makes tiles at the poles, for example, start reaching pixel sizes of ~500. That worst case
-			# is then used as the default for the _whole_ world!
-			gdalwarp \
-				-overwrite \
-				-t_srs EPSG:3857 \
-				-tr 100 100 \
-				-dstnodata 0 \
-				-srcnodata 0 \
-				-r bilinear \
-				-co BIGTIFF=IF_SAFER \
-				-co COMPRESS=DEFLATE \
-				-co TILED=YES \
-				-co PREDICTOR=3 \
-				"$plain_tif" "$archive"
-		else
-			echo "Not creating TVS heatmap tiff for Antartic tile: $longitude,$latitude:$width"
-		fi
 	fi
 }

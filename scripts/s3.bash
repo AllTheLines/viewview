@@ -79,5 +79,5 @@ function get_s3_folder {
 function download_all_tvs_tiffs {
 	local version=$1
 
-	get_s3_folder viewview/runs/"$version"/tvs work/local/archive
+	get_s3_folder viewview/runs/"$version"/raw work/raw
 }

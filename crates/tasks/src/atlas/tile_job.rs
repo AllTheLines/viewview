@@ -201,12 +201,6 @@ impl TileRunner<'_> {
         .await?;
 
         if !self.job.config.is_local_run() {
-            // Only heatmap tiffs are created for tiles above Antartica.
-            if self.job.tile.centre.0.y > -80.0f64 {
-                self.s3_put_tvs_tiff().await?;
-            } else {
-                tracing::debug!("Skipping syncing Antartic tile: {:?}", self.job.tile);
-            }
             self.s3_put_raw_tvs_tiff().await?;
         }
 
@@ -236,20 +230,6 @@ impl TileRunner<'_> {
                 ..Default::default()
             })
             .await?;
-
-        Ok(())
-    }
-
-    /// Sync the finished heatmap for the tile to our S3 bucket.
-    async fn s3_put_tvs_tiff(&self) -> Result<()> {
-        let tvs_tiff = self.job.tile.cog_filename();
-        let source = format!("{}/archive/{tvs_tiff}", self.job_directory);
-        let destination = format!(
-            "s3://viewview/runs/{}/tvs/{tvs_tiff}",
-            self.job.config.run_id
-        );
-
-        self.machine.sync_file_to_s3(&source, &destination).await?;
 
         Ok(())
     }
