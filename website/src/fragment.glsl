@@ -12,7 +12,7 @@ out vec4 fragColor;
 
 void main() {
   vec3 final_color;
-  float normalisation_factor = 0.4;
+  float normalisation_factor = 0.3;
   float tile_width = 256.0;
 
   uvec4 pixel = texelFetch(u_data, ivec2(v_texcoord * tile_width), 0);
@@ -31,16 +31,24 @@ void main() {
   float normalized = value / u_max;
   float normalized_v = pow(normalized, normalisation_factor);
 
-  vec3 color_min = vec3(0.0, 0.0, 0.0);
-  vec3 color_mid = vec3(0.5, 0.5, 0.5);
-  vec3 color_max = vec3(1.0, 1.0, 1.0);
+  vec3 color_0 = vec3(0.03137254901960784, 0.09019607843137255, 0.23137254901960785);
+  vec3 color_1 = vec3(0.30980392156862746, 0.2784313725490196, 0.36470588235294116);
+  vec3 color_2 = vec3(0.9921568627450981, 0.3803921568627451, 0.0392156862745098);
+  vec3 color_3 = vec3(1.0, 1.0, 1.0);
 
-  if (normalized_v < 0.5) {
-    float half_normalized = normalized_v / 0.5;
-    final_color = mix(color_min, color_mid, half_normalized);
+  // Everything above this is considered "good" visibility.
+  float upper = 0.5;
+  float middle = upper / 2.0;
+
+  if (normalized_v < middle) {
+    float t = normalized_v / middle;
+    final_color = mix(color_0, color_1, t);
+  } else if (normalized_v < upper) {
+    float t = (normalized_v - middle) / (upper - middle);
+    final_color = mix(color_1, color_2, t);
   } else {
-    float half_normalized = (normalized_v - 0.5) / 0.5;
-    final_color = mix(color_mid, color_max, half_normalized);
+    float t = (normalized_v - upper) / (1.0 - upper);
+    final_color = mix(color_2, color_3, t);
   }
 
   fragColor = vec4(final_color, 1.0);
