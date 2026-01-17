@@ -11,37 +11,37 @@ uniform float u_averageSurfaceVisibility;
 out vec4 fragColor;
 
 void main() {
-    vec3 final_color;
-    float normalisation_factor = 0.4;
-    float tile_width = 256.0;
+  vec3 final_color;
+  float normalisation_factor = 0.4;
+  float tile_width = 256.0;
 
-    uvec4 pixel = texelFetch(u_data, ivec2(v_texcoord * tile_width), 0);
-    uint bits =
-        (pixel.a << 24) |
-            (pixel.b << 16) |
-            (pixel.g << 8) |
-            pixel.r;
-    float value = uintBitsToFloat(bits);
+  uvec4 pixel = texelFetch(u_data, ivec2(v_texcoord * tile_width), 0);
+  uint bits =
+    (pixel.a << 24) |
+      (pixel.b << 16) |
+      (pixel.g << 8) |
+      pixel.r;
+  float value = uintBitsToFloat(bits);
 
-    // Handle "nodata"
-    if (value == 0.0) {
-        value = u_averageSurfaceVisibility;
-    }
+  // Handle "nodata"
+  if (value == 0.0) {
+    value = u_averageSurfaceVisibility;
+  }
 
-    float normalized = value / u_max;
-    float normalized_v = pow(normalized, normalisation_factor);
+  float normalized = value / u_max;
+  float normalized_v = pow(normalized, normalisation_factor);
 
-    vec3 color_min = vec3(0.0, 0.0, 0.0);
-    vec3 color_mid = vec3(0.5, 0.5, 0.5);
-    vec3 color_max = vec3(1.0, 1.0, 1.0);
+  vec3 color_min = vec3(0.0, 0.0, 0.0);
+  vec3 color_mid = vec3(0.5, 0.5, 0.5);
+  vec3 color_max = vec3(1.0, 1.0, 1.0);
 
-    if (normalized_v < 0.5) {
-        float half_normalized = normalized_v / 0.5;
-        final_color = mix(color_min, color_mid, half_normalized);
-    } else {
-        float half_normalized = (normalized_v - 0.5) / 0.5;
-        final_color = mix(color_mid, color_max, half_normalized);
-    }
+  if (normalized_v < 0.5) {
+    float half_normalized = normalized_v / 0.5;
+    final_color = mix(color_min, color_mid, half_normalized);
+  } else {
+    float half_normalized = (normalized_v - 0.5) / 0.5;
+    final_color = mix(color_mid, color_max, half_normalized);
+  }
 
-    fragColor = vec4(final_color, 1.0);
+  fragColor = vec4(final_color, 1.0);
 }
