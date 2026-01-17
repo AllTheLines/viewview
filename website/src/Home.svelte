@@ -1,6 +1,10 @@
 <script lang="ts">
   import { DraftingCompass, Info, TrophyIcon } from '@lucide/svelte';
-  import { Map as MapLibre, type StyleSpecification } from 'maplibre-gl';
+  import {
+    LngLat,
+    Map as MapLibre,
+    type StyleSpecification,
+  } from 'maplibre-gl';
   import { onMount } from 'svelte';
   import { navigate } from 'svelte5-router';
   import CollapsableModal from './components/CollapsableModal.svelte';
@@ -20,6 +24,10 @@
   } from './worldLines.ts';
 
   let { longest } = $props();
+  const minZoom = 1.6;
+  const maxZoom = 15;
+  const startingZoom = 2.0;
+  const startingCentre = new LngLat(-5.0, 25.0);
 
   function addHeatmapLayer() {
     // 'mountain_peaks' is used here to mean, mountain peaks and every other layer after it.
@@ -27,12 +35,64 @@
     state.map?.addLayer(HeatmapLayer, 'mountain_peaks');
   }
 
+  // Custom map bounds that allows hiding most of Antartica, whilst still allowing infinite horizontal
+  // scroll.
+  //
+  // For an official fix, follow: https://github.com/maplibre/maplibre-gl-js/issues/6148
+  function transformConstrain(lngLat: LngLat, zoom: number) {
+    const latitudeToMercatorY = (latitude: number) => {
+      return (
+        0.5 -
+        (0.25 *
+          Math.log(
+            (1 + Math.sin((latitude * Math.PI) / 180)) /
+              (1 - Math.sin((latitude * Math.PI) / 180)),
+          )) /
+          Math.PI
+      );
+    };
+
+    const mercatorYToLatitude = (mercatorY: number) => {
+      return (
+        (360 / Math.PI) * Math.atan(Math.exp((0.5 - mercatorY) * 2 * Math.PI)) -
+        90
+      );
+    };
+
+    const viewportHeight = state.map?.getContainer().clientHeight;
+    if (viewportHeight === undefined) {
+      return {
+        center: startingCentre,
+        zoom: startingZoom,
+      };
+    }
+
+    const upperLatitudeBound = 85;
+    const lowerLatitudeBound = -75;
+
+    const worldSize = 512 * 2 ** zoom;
+    const mercatorYOffset = viewportHeight / 2 / worldSize;
+
+    const maxMercatorY = latitudeToMercatorY(upperLatitudeBound);
+    const maxLatitude = mercatorYToLatitude(maxMercatorY + mercatorYOffset);
+    const minMercatorY = latitudeToMercatorY(lowerLatitudeBound);
+    const minLatitude = mercatorYToLatitude(minMercatorY - mercatorYOffset);
+
+    const latitude = Math.max(minLatitude, Math.min(maxLatitude, lngLat.lat));
+
+    return {
+      center: new LngLat(lngLat.lng, latitude),
+      zoom: Math.max(minZoom, Math.min(maxZoom, zoom)),
+    };
+  }
+
   onMount(() => {
     state.map = new MapLibre({
       container: 'map',
-      zoom: 2.5,
-      center: [-30.0, 34.11871197394943],
+      zoom: startingZoom,
+      center: startingCentre,
       style: map_vector as StyleSpecification,
+      transformConstrain,
     });
 
     state.map.on('load', () => {
