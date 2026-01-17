@@ -26,6 +26,7 @@ export type TileGL = {
 type Uniforms = {
   uProjectionMatrix: WebGLUniformLocation | null;
   uTileMatrix: WebGLUniformLocation | null;
+  uWorldOffset: WebGLUniformLocation | null;
   uData: WebGLUniformLocation | null;
   uMax: WebGLUniformLocation | null;
   uScale: WebGLUniformLocation | null;
@@ -137,6 +138,7 @@ const HeatmapLayer: CustomLayerInterface = {
     const uniforms = {
       uProjectionMatrix: gl.getUniformLocation(program, 'u_projectionMatrix'),
       uTileMatrix: gl.getUniformLocation(program, 'u_tileMatrix'),
+      uWorldOffset: gl.getUniformLocation(program, 'u_worldOffset'),
       uData: gl.getUniformLocation(program, 'u_data'),
       uMax: gl.getUniformLocation(program, 'u_max'),
       uScale: gl.getUniformLocation(program, 'u_scale'),
@@ -298,6 +300,8 @@ const HeatmapLayer: CustomLayerInterface = {
         state.uniforms.uTileMatrix,
         ...projection.tileMercatorCoords,
       );
+      gl.uniform1f(state.uniforms.uWorldOffset, tile.wrap);
+
       gl.uniform1f(state.uniforms.uMax, max);
       gl.uniform1f(state.uniforms.uScale, scaleIfParent);
       gl.uniform2f(state.uniforms.uOffset, offsetIfParentX, offsetIfParentY);

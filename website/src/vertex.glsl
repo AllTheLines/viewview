@@ -6,6 +6,7 @@ out vec2 v_texcoord;
 
 uniform mat4 u_projectionMatrix;
 uniform vec4 u_tileMatrix;
+uniform float u_worldOffset;
 uniform float u_scale;
 uniform vec2 u_offset;
 
@@ -20,6 +21,9 @@ void main() {
   vec2 tileSize = u_tileMatrix.zw * magicScaler;
   vec2 in_tile = a_pos;
   vec4 uv = vec4(tileOrigin + in_tile * tileSize, 0.0, 1.0);
+
+  // Wrap the world infinitely along the x-axis.
+  uv.x = uv.x + u_worldOffset;
 
   gl_Position = u_projectionMatrix * uv;
 }
