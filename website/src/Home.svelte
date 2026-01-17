@@ -21,6 +21,12 @@
 
   let { longest } = $props();
 
+  function addHeatmapLayer() {
+    // 'mountain_peaks' is used here to mean, mountain peaks and every other layer after it.
+    // This allows the heatmap to always appear below everything else.
+    state.map?.addLayer(HeatmapLayer, 'mountain_peaks');
+  }
+
   onMount(() => {
     state.map = new MapLibre({
       container: 'map',
@@ -30,9 +36,9 @@
     });
 
     state.map.on('load', () => {
-      // 'mountain_peaks' is used here to mean, mountain peaks and every other layer after it.
-      // This allows the heatmap to always appear below everything else.
-      state.map?.addLayer(HeatmapLayer, 'mountain_peaks');
+      if (longest === '') {
+        addHeatmapLayer();
+      }
       setupLongestLines(longest);
     });
 
@@ -45,6 +51,10 @@
     state.map?.on('moveend', async () => {
       if (state.map === undefined) {
         return;
+      }
+
+      if (state.map?.getLayer(HeatmapLayer.id) === undefined) {
+        addHeatmapLayer();
       }
 
       const bounds = state.map?.getBounds();
