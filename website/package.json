@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@lucide/svelte": "^0.554.0",
+    "@mapbox/search-js-web": "^1.5.1",
     "accessible-nprogress": "^2.1.2",
     "geotiff": "^2.1.4-beta.1",
     "maplibre-gl": "^5.11.0",
