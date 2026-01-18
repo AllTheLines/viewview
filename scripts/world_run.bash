@@ -6,6 +6,11 @@ function provision_gcloud {
 function run_worker {
     eval "$(ssh-agent)"
     ssh-add ~/.ssh/id_rsa
+
+    if [ -e "state/atlas.db" ]; then
+      replay_last_run
+    fi
+
     RUST_LOG=info,axum=trace,apalis=trace,tasks=trace cargo run --release --bin tasks -- atlas worker
 }
 

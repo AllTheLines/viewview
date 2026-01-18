@@ -85,6 +85,20 @@ function restart_failed_jobs {
 	"
 }
 
+function requeue_running {
+	atlas_query "
+    UPDATE Jobs SET
+      status = 'Pending',
+      run_at = strftime('%s', 'now'),
+      lock_at = NULL,
+      lock_by = NULL,
+      done_at = NULL,
+      last_result = NULL,
+      attempts = 0
+    WHERE status='Running'
+	"
+}
+
 function rebalance_queue {
 	atlas_query "
 	  UPDATE Jobs SET
@@ -97,4 +111,10 @@ function rebalance_queue {
 			attempts = 0
     WHERE status='Queued'
 	"
+}
+
+function replay_last_run {
+  requeue_running
+  rebalance_queue
+  restart_failed_jobs
 }

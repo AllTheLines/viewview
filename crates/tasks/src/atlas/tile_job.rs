@@ -6,6 +6,7 @@ use clap::ValueEnum as _;
 use color_eyre::{Result, eyre::ContextCompat as _};
 use std::sync::Arc;
 use std::time::SystemTime;
+use apalis::prelude::WorkerContext;
 use tokio::sync::Mutex;
 
 /// The size of each point in the raw DEM data.
@@ -57,6 +58,7 @@ pub struct TileWorkerState {
 pub async fn process_tile(
     job: TileJob,
     state: apalis::prelude::Data<Arc<TileWorkerState>>,
+    ctx: WorkerContext
 ) -> Result<()> {
     tracing::info!("Processing tile: {:?}", job.tile);
 
@@ -81,6 +83,11 @@ pub async fn process_tile(
     };
 
     let result = runner.run().await;
+    if let Err(_) = result {
+        tracing::info!("shutting down worker {}", ctx.name());
+        ctx.stop()?;
+        return result
+    }
 
     if cleanup {
         runner.cleanup().await?;
@@ -166,6 +173,7 @@ impl TileRunner<'_> {
             &self.job_directory,
             "--scale",
             &scale,
+            "--disable-image-render",
             "--backend",
             backend.get_name(),
             "--process",
@@ -275,3 +283,4 @@ impl TileRunner<'_> {
         Ok(())
     }
 }
+

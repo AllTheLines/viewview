@@ -3,7 +3,7 @@
 
 function spin_google_cloud {
   gcloud compute instances create "$1" --format="json" \
-      --zone=us-central1-c \
+      --zone=us-central1-a \
       --machine-type=c4d-highcpu-96 \
       --network-interface=network-tier=PREMIUM,nic-type=GVNIC,stack-type=IPV4_ONLY,subnet=default \
       --metadata=startup-script="sudo rm -r /usr/lib/google-cloud-sdk/",ssh-keys=atlas:"$2" \

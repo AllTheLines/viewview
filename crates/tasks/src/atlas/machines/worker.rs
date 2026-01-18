@@ -6,6 +6,7 @@ use std::sync::{Arc, OnceLock};
 use crate::atlas::machines::connection::Connection;
 use crate::atlas::tile_job::{TileJob, TileWorkerState, WORKING_DIRECTORY};
 use apalis::layers::WorkerBuilderExt as _;
+use apalis::prelude::WorkerBuilder;
 use color_eyre::Result;
 use tokio::sync::Mutex;
 
@@ -73,7 +74,8 @@ pub async fn tile_processor(
     // Computation concurrency is effectively 1 due to mutex locking in the tile job.
     let worker_concurrency = 2;
 
-    apalis::prelude::WorkerBuilder::new(tile_worker_name.clone())
+
+    WorkerBuilder::new(tile_worker_name.clone())
         .backend(tile_store)
         .data(Arc::new(state))
         .concurrency(worker_concurrency)

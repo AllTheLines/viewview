@@ -287,3 +287,4 @@ pub fn number_of_cpus_on_machine() -> usize {
         .filter(|cpu| *cpu > 0)
         .unwrap_or(1)
 }
+
