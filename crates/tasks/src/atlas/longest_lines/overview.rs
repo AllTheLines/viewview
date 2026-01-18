@@ -163,6 +163,7 @@ impl Tile {
     }
 }
 
+/// The output file name.
 pub const LONGEST_LINES_GRIDED_FILENAME: &str = "longest_lines_grided.bin";
 
 /// Sync the longest lines grid to S3.
@@ -182,12 +183,15 @@ pub async fn run(config: &crate::config::LongestLinesOverviews) -> Result<()> {
     let world: StateHash = Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new()));
 
     let tiffs = find_longest_lines_tiffs_in_path(&config.tiffs)?;
+    let total_jobs = tiffs.len();
+    let completed_jobs_master = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let jobs = Arc::new(tokio::sync::RwLock::new(tiffs));
 
     let mut handles = Vec::new();
     for worker in 0..workers {
         let world_clone = Arc::clone(&world);
         let jobs_clone = Arc::clone(&jobs);
+        let completed_jobs = Arc::clone(&completed_jobs_master);
         let handle = tokio::task::spawn(async move {
             tracing::debug!("Spawning worker {worker}");
 
@@ -198,6 +202,11 @@ pub async fn run(config: &crate::config::LongestLinesOverviews) -> Result<()> {
                         let result: Result<()> = async {
                             let local = Tile::process(&tiff)?;
                             update_state(&world_clone, local).await?;
+                            completed_jobs.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                            tracing::info!(
+                                "{}/{total_jobs} completed jobs",
+                                completed_jobs.load(std::sync::atomic::Ordering::Relaxed)
+                            );
                             Ok(())
                         }
                         .await;
@@ -223,11 +232,7 @@ pub async fn run(config: &crate::config::LongestLinesOverviews) -> Result<()> {
     }
 
     sync_to_s3(
-        format!(
-            "./output/{}",
-            LONGEST_LINES_GRIDED_FILENAME
-        )
-        .into(),
+        format!("./output/{LONGEST_LINES_GRIDED_FILENAME}").into(),
         &config.run_id,
     )
     .await?;
@@ -292,11 +297,7 @@ async fn update_state(world: &StateHash, local: HashMap) -> Result<()> {
     };
 
     super::grided::write(
-        format!(
-            "./output/{}",
-            LONGEST_LINES_GRIDED_FILENAME
-        )
-        .into(),
+        format!("./output/{LONGEST_LINES_GRIDED_FILENAME}",).into(),
         &grided,
     )
     .await?;
