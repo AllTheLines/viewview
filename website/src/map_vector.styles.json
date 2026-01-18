@@ -26,10 +26,15 @@
       "minzoom": 0,
       "layout": {
         "icon-image": "mountain",
-        "text-field": ["get", "name"],
+        "text-field": [
+          "case",
+          ["has", "name:nonlatin"],
+          ["concat", ["get", "name:latin"], "\n", ["get", "name:nonlatin"]],
+          ["coalesce", ["get", "name_en"], ["get", "name"]]
+        ],
         "text-size": 12,
         "text-font": ["Noto Sans Regular"],
-        "text-offset": [0, 1.2]
+        "text-offset": [0, 1.9]
       },
       "paint": {
         "text-color": "#fff",
