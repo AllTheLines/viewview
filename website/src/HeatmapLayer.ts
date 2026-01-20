@@ -4,6 +4,7 @@ import {
   type Map as MapLibre,
 } from 'maplibre-gl';
 import fragment from './fragment.glsl?raw';
+import { state as sharedState } from './state.svelte.ts';
 import {
   getParentTile,
   isTileIntersectingBounds,
@@ -28,6 +29,8 @@ type Uniforms = {
   uTileMatrix: WebGLUniformLocation | null;
   uWorldOffset: WebGLUniformLocation | null;
   uData: WebGLUniformLocation | null;
+  uContrast: WebGLUniformLocation | null;
+  uIntensity: WebGLUniformLocation | null;
   uMax: WebGLUniformLocation | null;
   uScale: WebGLUniformLocation | null;
   uOffset: WebGLUniformLocation | null;
@@ -140,6 +143,8 @@ const HeatmapLayer: CustomLayerInterface = {
       uTileMatrix: gl.getUniformLocation(program, 'u_tileMatrix'),
       uWorldOffset: gl.getUniformLocation(program, 'u_worldOffset'),
       uData: gl.getUniformLocation(program, 'u_data'),
+      uIntensity: gl.getUniformLocation(program, 'u_intensity'),
+      uContrast: gl.getUniformLocation(program, 'u_contrast'),
       uMax: gl.getUniformLocation(program, 'u_max'),
       uScale: gl.getUniformLocation(program, 'u_scale'),
       uOffset: gl.getUniformLocation(program, 'u_offset'),
@@ -290,6 +295,14 @@ const HeatmapLayer: CustomLayerInterface = {
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, cachedTile.texture);
       gl.uniform1i(state.uniforms.uData, 0);
+      gl.uniform1f(
+        state.uniforms.uIntensity,
+        sharedState.heatmapConfig.intensity,
+      );
+      gl.uniform1f(
+        state.uniforms.uContrast,
+        sharedState.heatmapConfig.contrast,
+      );
 
       gl.uniformMatrix4fv(
         state.uniforms.uProjectionMatrix,

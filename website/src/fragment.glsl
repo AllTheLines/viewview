@@ -7,12 +7,14 @@ in vec2 v_texcoord;
 uniform usampler2D u_data;
 uniform float u_max;
 uniform float u_averageSurfaceVisibility;
+uniform float u_intensity;
+uniform float u_contrast;
 
 out vec4 fragColor;
 
 void main() {
   vec3 final_color;
-  float normalisation_factor = 0.3;
+  float normalisation_factor = u_intensity;
   float tile_width = 256.0;
 
   uvec4 pixel = texelFetch(u_data, ivec2(v_texcoord * tile_width), 0);
@@ -37,7 +39,7 @@ void main() {
   vec3 color_3 = vec3(1.0, 1.0, 1.0);
 
   // Everything above this is considered "good" visibility.
-  float upper = 0.5;
+  float upper = u_contrast;
   float middle = upper / 2.0;
 
   if (normalized_v < middle) {
