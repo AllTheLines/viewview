@@ -86,6 +86,15 @@
     };
   }
 
+  async function updateTopLongestLines() {
+    const bounds = state.map?.getBounds();
+    if (bounds === undefined) {
+      return;
+    }
+
+    state.longestLineInViewport = await findLongestLineInBoundsFromGrid(bounds);
+  }
+
   onMount(() => {
     state.map = new MapLibre({
       container: 'map',
@@ -95,11 +104,12 @@
       transformConstrain,
     });
 
-    state.map.on('load', () => {
+    state.map.on('load', async () => {
       if (longest === '') {
         addHeatmapLayer();
       }
       setupLongestLines(longest);
+      await updateTopLongestLines();
     });
 
     state.map.on('movestart', () => {
@@ -117,15 +127,7 @@
         addHeatmapLayer();
       }
 
-      const bounds = state.map?.getBounds();
-      if (bounds !== undefined) {
-        let longest = await findLongestLineInBoundsFromGrid(bounds);
-        if (longest === undefined) {
-          state.longestLineInViewport = undefined;
-          longest = await findLongestLineInBoundsBruteForce(bounds);
-        }
-        state.longestLineInViewport = longest;
-      }
+      await updateTopLongestLines();
     });
   });
 </script>
@@ -179,8 +181,24 @@
 						}
 					}}>In viewport ({state.longestLineInViewport?.toDistance()})</a
 				>
-			{:else}
+			{:else if state.bruteForceLoadingLine}
 				In viewport (loading...)
+			{:else}
+				In viewport (
+				<button
+					onclick={async (event) => {
+						event.preventDefault();
+						const bounds = state.map?.getBounds();
+						if (bounds === undefined) {
+							return;
+						}
+						state.bruteForceLoadingLine = true;
+						let longest = await findLongestLineInBoundsBruteForce(bounds);
+						state.bruteForceLoadingLine = false;
+						state.longestLineInViewport = longest;
+					}}>load</button
+				>
+				)
 			{/if}
 		</CollapsableModal>
 
