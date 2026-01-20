@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { DraftingCompass, Info, TrophyIcon } from '@lucide/svelte';
+  import { DraftingCompass, Info, Settings, TrophyIcon } from '@lucide/svelte';
   import {
     LngLat,
     Map as MapLibre,
@@ -16,6 +16,7 @@
   import Layout from './Layout.svelte';
   import map_vector from './map_vector.styles.json';
   import { render, setupLongestLines } from './renderLongestLine.ts';
+  import Slider from './Slider.svelte';
   import { state } from './state.svelte.ts';
   import { lonLatRound } from './utils.ts';
   import {
@@ -221,6 +222,12 @@
 				</div>
 			</CollapsableModal>
 		{/if}
+
+		<CollapsableModal collapsedIcon={Settings} isOpen={false}>
+			<h2>Settings</h2>
+			<Slider setting={"contrast"} />
+			<Slider setting={"intensity"} />
+		</CollapsableModal>
 	</div>
 
 	<div id="layout_toggles">
