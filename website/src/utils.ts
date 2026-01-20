@@ -1,14 +1,14 @@
 import { LngLat, LngLatBounds } from 'maplibre-gl';
 
-export const VERSION = 'rberger-fullworld2';
+export const VERSION = 'ryan-fullworld-raw';
 export const CDN_BUCKET = 'https://cdn.alltheviews.world';
 export const MAP_SERVER = 'https://map.alltheviews.world';
-export const WORLD_PMTILES = 'world';
+export const WORLD_PMTILES = 'world.pmtiles/world'; // TODO move the file to its proper place
 export const PMTILES_SERVER = `${MAP_SERVER}/runs/${VERSION}/pmtiles/${WORLD_PMTILES}`;
 
 // This is for busting Cloudflare asset cache. Like for an updated `world.pmtiles`,
 // longest lines index, etc.
-export const CACHE_BUSTER = '?buster=08:51-10/01/2026';
+export const CACHE_BUSTER = '?buster=19:26-20/01/2026';
 
 export const EARTH_RADIUS = 6371_000.0;
 
