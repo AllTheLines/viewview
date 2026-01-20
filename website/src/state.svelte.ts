@@ -7,6 +7,7 @@ let worldLongestLines: LongestLineH3[] | undefined;
 let longestLine: LongestLine | undefined;
 let longestLineInViewport: LongestLineH3 | undefined;
 const isFirstInteraction = false;
+const bruteForceLoadingLine = false;
 
 export const state = $state({
   map,
@@ -14,4 +15,5 @@ export const state = $state({
   longestLine,
   longestLineInViewport,
   isFirstInteraction,
+  bruteForceLoadingLine,
 });
