@@ -136,7 +136,7 @@
 <Layout>
 	<div id="info">
 		<CollapsableModal collapsedIcon={Info} isOpen={!state.isFirstInteraction}>
-			<h1>All The Views</h1>
+			<h2>All The Views In The World</h2>
 			<p>We've calculated all the views on the planet.</p>
 			<p>
 				Click on any point to show the longest line of sight at that location
@@ -149,10 +149,14 @@
 				Heatmap colours: the brighter the more and further you can see. The
 				darker the less you can see.
 			</p>
+
+			<p>
+				See <a href="https://alltheviews.world">alltheviews.world</a> for more details.
+			</p>
 		</CollapsableModal>
 
 		<CollapsableModal collapsedIcon={TrophyIcon} isOpen={false}>
-			<h2>Longest Lines</h2>
+			<h2>Longest Lines Of Sight</h2>
 			<ol>
 				{#each state.worldLongestLines?.slice(0, 10) as line}
 					<li>
@@ -171,7 +175,7 @@
 				{/each}
 			</ol>
 			{#if state.longestLineInViewport}
-				<a
+				In viewport: <a
 					href={state.longestLineInViewport?.toURL()}
 					onclick={(event) => {
 						event.preventDefault();
@@ -180,12 +184,12 @@
 							render(state.longestLineInViewport.coordinate);
 							navigate(url);
 						}
-					}}>In viewport ({state.longestLineInViewport?.toDistance()})</a
+					}}>{state.longestLineInViewport?.toDistance()}</a
 				>
 			{:else if state.bruteForceLoadingLine}
-				In viewport (loading...)
+				In viewport: loading...
 			{:else}
-				In viewport (
+				In viewport:
 				<button
 					onclick={async (event) => {
 						event.preventDefault();
@@ -199,13 +203,12 @@
 						state.longestLineInViewport = longest;
 					}}>load</button
 				>
-				)
 			{/if}
 		</CollapsableModal>
 
 		{#if state.longestLine}
 			<CollapsableModal collapsedIcon={DraftingCompass}>
-				<h2>Current line of sight</h2>
+				<h2>Current Line Of Sight</h2>
 				<div id="details">
 					<div>
 						Distance: {(state.longestLine.distance || 0) / 1000}km
@@ -224,7 +227,7 @@
 		{/if}
 
 		<CollapsableModal collapsedIcon={Settings} isOpen={false}>
-			<h2>Settings</h2>
+			<h2>Heatmap Settings</h2>
 			<Slider setting={"contrast"} />
 			<Slider setting={"intensity"} />
 		</CollapsableModal>

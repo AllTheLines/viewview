@@ -46,13 +46,13 @@
 			top: 1em;
 			right: 1em;
 			&:hover {
-				color: red;
+				color: var(--primary-colour);
 			}
 		}
 
 		.modal__open {
 			&:hover {
-				color: green;
+				color: var(--primary-colour);
 			}
 		}
 	}
