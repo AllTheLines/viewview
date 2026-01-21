@@ -87,7 +87,7 @@
 		width: 100%;
 		min-width: 300px;
 		height: 10px;
-		background: #b8bdd6;
+		background: var(--secondary-light);
 		border-radius: 5px;
 		cursor: pointer;
 		touch-action: none; /* Prevents scrolling while dragging */
@@ -98,7 +98,7 @@
 		top: 50%;
 		width: 20px;
 		height: 20px;
-		background: #fd6612;
+		background: var(--primary-colour);
 		border-radius: 50%;
 		transform: translate(-50%, -50%);
 		transition: transform 0.1s ease;

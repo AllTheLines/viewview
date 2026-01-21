@@ -22,9 +22,9 @@ export function setupLongestLines(coordFromURL: string | undefined) {
     type: 'fill',
     source: 'longest-line',
     paint: {
-      'fill-color': '#657DA4',
-      'fill-outline-color': '#253B61',
-      'fill-opacity': 0.7,
+      'fill-color': '#fd6612',
+      'fill-outline-color': '#141f41',
+      'fill-opacity': 0.5,
     },
   });
 
