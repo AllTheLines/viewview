@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Route, Router } from 'svelte5-router';
   import Home from './Home.svelte';
-  import Packing from './Packing.svelte';
   import LinesDump from './LinesDump.svelte';
+  import Packing from './Packing.svelte';
 
   export const url = '';
 </script>

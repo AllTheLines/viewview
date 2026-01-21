@@ -3,7 +3,6 @@
   import 'maplibre-gl/dist/maplibre-gl.css';
   import 'accessible-nprogress/src/styles.css';
   import { MapboxSearchBox } from '@mapbox/search-js-web';
-  import Sidebar from './Sidebar.svelte';
   import { state } from './state.svelte.ts';
 
   onMount(() => {
@@ -38,8 +37,6 @@
 
 <div id="map"></div>
 
-<Sidebar />
-
 <div id="search-box"></div>
 
 <main>
@@ -56,7 +53,7 @@
 	#search-box {
 		position: absolute;
 		width: 300px;
-		margin-left: 70px;
+		margin-left: 17px;
 		margin-top: 17px;
 	}
 </style>
