@@ -32,7 +32,15 @@ self.onmessage = async (event: MessageEvent<WorkerEvent>) => {
     }
 
     let bytes: Uint8Array<ArrayBufferLike> | ArrayBuffer;
-    const url = `${pmtilesSource}/${z}/${x}/${y}.bin${CACHE_BUSTER}`;
+    let url = `${pmtilesSource}/${z}/${x}/${y}.bin${CACHE_BUSTER}`;
+    if (z <= 8) {
+      // For zoom levels 0-8 we skip the Cloudflare Worker and use a CDN cache. This saves
+      // on Cloudflare Worker monthly quotas.
+      url = url
+        .replace('https://map.', 'https://cdn.')
+        .replace('world.pmtiles/world', 'cache')
+        .replace('.bin', '');
+    }
 
     const isProductionMapServer =
       !import.meta.env.DEV || localTiler.source.getKey().includes(MAP_SERVER);
