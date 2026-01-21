@@ -32,7 +32,7 @@ export class LongestLineH3 {
   }
 }
 
-async function loadH3Lines() {
+export async function loadH3Lines() {
   let indexURL = `${CDN_BUCKET}/runs/${VERSION}/${LONGEST_LINES_GRIDED_FILENAME}${CACHE_BUSTER}`;
   const params = new URLSearchParams(self.location.search);
   const source = params.get('grid');
