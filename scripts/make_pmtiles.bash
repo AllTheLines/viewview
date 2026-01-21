@@ -21,17 +21,15 @@ function make_pmtiles {
 
 	echo "Using archive at $archive"
 
+	if [ -d "$archive" ] && [ "$(ls -A "$archive")" ]; then
+		echo "$archive is not empty. Exiting."
+		exit 1
+	fi
+
+	prepare_all_tiffs work/raw "$archive"
+
 	# Collate all the heatmap GeoTiffs into a single virtual file.
 	gdalbuildvrt "$world_vrt" "$archive"/*.tiff
-
-	# Create overviews to speed up tile creation at lower zoom levels.
-	# Notes:
-	#  * Compression would be good, but I've seen it cause segfaults.
-	#  * I tried to `parallel` this, but not only is not faster but the final overviews aren't
-	#    usable by our pmtiler.
-	gdaladdo \
-		-r bilinear \
-		"$world_vrt" 2 4 8 16 32 64 128 256
 
 	# Create the global `.pmtile`
 	uv run scripts/to_pmtiles.py "$world_vrt" "$output" \
@@ -53,45 +51,71 @@ function make_pmtiles {
 # is then used as the default for the _whole_ world!
 #
 # TODO: Use worker jobs to parallelise. Will speed it up and give retries and resumes.
-function reproject_raw_tvs_tiff {
+function process_raw_tvs_tiff {
+	set -e
+	set -x
+
 	local input=$1
 	local output=$2
 
-	# EPSG:3857 but allowing wrapping over ±180°
-	wrapping_web_mercator="\
-	  +proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0 \
-    +over +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null \
-    +wktext +lon_wrap=-180 +no_defs\
-	"
-	latitude=$(echo "$input" | sed -E 's#.*_([0-9.-]+)\.tiff#\1#')
+	# These are in an array because I've been exploring splitting tiles that cross the antimeridian.
+	# Having an array makes it easier to diverge the processing into west and east branches.
+	local warp_args=(
+		"-overwrite"
+		"-tr" "100" "100"
+		"-t_srs" "EPSG:3857"
+		"-dstnodata" "0"
+		"-srcnodata" "0"
+		"-r" "bilinear"
+		"-co" "BIGTIFF=IF_SAFER"
+		"-co" "COMPRESS=DEFLATE"
+		"-co" "TILED=YES"
+		"-co" "PREDICTOR=3"
+		"$input"
+	)
 
-	if (($(echo "$latitude > -80" | bc -l))); then
-		gdalwarp \
-			-overwrite \
-			-tr 100 100 \
-			-t_srs "$wrapping_web_mercator" \
-			-dstnodata 0 \
-			-srcnodata 0 \
-			-r bilinear \
-			-co BIGTIFF=IF_SAFER \
-			-co COMPRESS=DEFLATE \
-			-co TILED=YES \
-			-co PREDICTOR=3 \
-			"$input" "$output"
-	else
-		echo "Not creating TVS heatmap tiff for Antartic tile: $input"
-	fi
+	warp_args=("${warp_args[@]}" "$output")
+	gdalwarp "${warp_args[@]}"
 }
 
-function reproject_raw_tvs_tiffs {
+# Create overviews to speed up tile creation at lower zoom levels.
+function create_overviews_for_tiff {
+	local input=$1
+
+	gdaladdo \
+		-r bilinear \
+		"$input" 2 4 8 16 32 64 128 256 512 1024 2048
+}
+
+function prepare_tiff {
+	set -eo pipefail
+	set -x
+
 	local source=$1
 	local destination=$2
 
-	mkdir -p "$destination"
+	filename=$(basename "$source")
+	latitude=$(echo "$filename" | sed -E 's#.*_([0-9.-]+)\.tiff#\1#')
 
-	for path in "$source"/*.tiff; do
-		[[ -f $path ]] || continue
-		file=$(basename "$path")
-		reproject_raw_tvs_tiff "$path" "$destination/$file"
-	done
+	if (($(echo "$latitude > -80" | bc -l))); then
+		process_raw_tvs_tiff "$source" "$destination/$filename"
+		create_overviews_for_tiff "$destination/$filename"
+	else
+		echo "Not creating preparing heatmap tiff for Antartic tile: $input"
+	fi
+
+}
+
+function prepare_all_tiffs {
+	local source_directory=$1
+	local destination_directory=$2
+
+	export -f prepare_tiff
+	export -f process_raw_tvs_tiff
+	export -f create_overviews_for_tiff
+
+	mkdir -p "$destination_directory"
+
+	find "$source_directory" -name "*.tiff" |
+		parallel -j +0 --halt now,fail=1 prepare_tiff {} "$destination_directory"
 }
