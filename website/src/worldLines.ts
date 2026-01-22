@@ -1,4 +1,3 @@
-import nprogress from 'accessible-nprogress';
 import type { GeoTIFFImage } from 'geotiff';
 import { LngLat, type LngLatBounds } from 'maplibre-gl';
 import {
@@ -9,7 +8,14 @@ import {
 } from './getLongestLine';
 import { longestLineURL } from './renderLongestLine';
 import { state } from './state.svelte';
-import { CACHE_BUSTER, CDN_BUCKET, Log, VERSION } from './utils';
+import {
+  CACHE_BUSTER,
+  CDN_BUCKET,
+  endLoadingSpinner,
+  Log,
+  startLoadingSpinner,
+  VERSION,
+} from './utils';
 
 /// The filename for the longest lines grid.
 const LONGEST_LINES_GRIDED_FILENAME = 'longest_lines_grided.bin';
@@ -98,7 +104,7 @@ export async function findLongestLineInBoundsFromGrid(bounds: LngLatBounds) {
 export async function findLongestLineInBoundsBruteForce(bounds: LngLatBounds) {
   let max: LongestLineH3 | undefined;
 
-  nprogress.start();
+  startLoadingSpinner();
 
   const cogs = await findTilesIntersectingViewport(bounds);
 
@@ -123,7 +129,7 @@ export async function findLongestLineInBoundsBruteForce(bounds: LngLatBounds) {
     );
   }
 
-  nprogress.done();
+  endLoadingSpinner();
   return max;
 }
 
