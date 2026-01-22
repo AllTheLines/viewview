@@ -1,4 +1,3 @@
-import nprogress from 'accessible-nprogress';
 import type { GeoTIFFImage } from 'geotiff';
 import { fromUrl as geotiffFromURL } from 'geotiff';
 import { LngLat, type LngLatBounds } from 'maplibre-gl';
@@ -8,7 +7,9 @@ import {
   CACHE_BUSTER,
   CDN_BUCKET,
   clamp,
+  endLoadingSpinner,
   Log,
+  startLoadingSpinner,
   VERSION,
 } from './utils';
 
@@ -37,9 +38,9 @@ const cogs: Map<string, GeoTIFFImage> = new Map();
 
 // Given a lon/lat coordinate, get the nearest actual COG point to it.
 export async function getLongestLine(coordinate: LngLat) {
-  nprogress.start();
+  startLoadingSpinner();
   const candidates = await getLongestLines(coordinate);
-  nprogress.done();
+  endLoadingSpinner();
 
   if (candidates === undefined || candidates.length === 0) {
     return;

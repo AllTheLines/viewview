@@ -15,6 +15,15 @@ body {
   color: $secondary-colour;
 }
 
+html {
+  filter: brightness(100%);
+  transition: filter 0.3s ease;
+}
+
+.is-dimmed {
+  filter: brightness(50%);
+}
+
 a {
   color: color.adjust($primary-colour, $lightness: -15%);
   &:hover {
