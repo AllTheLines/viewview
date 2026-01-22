@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { DraftingCompass, Info, Settings, TrophyIcon } from '@lucide/svelte';
+  import {
+    DraftingCompass,
+    Info,
+    Monitor,
+    Settings,
+    TrophyIcon,
+  } from '@lucide/svelte';
   import {
     LngLat,
     Map as MapLibre,
@@ -18,6 +24,7 @@
   import { render, setupLongestLines } from './renderLongestLine.ts';
   import Slider from './Slider.svelte';
   import { state } from './state.svelte.ts';
+  import TopLines from './TopLines.svelte';
   import { lonLatRound } from './utils.ts';
   import {
     findLongestLineInBoundsBruteForce,
@@ -151,31 +158,21 @@
 			</p>
 
 			<p>
+				Click the <span class="unclickable_icon"><TrophyIcon /></span> icon below
+				to see our curated list of the planet's longest lines of sight
+			</p>
+
+			<p>
 				See <a href="https://alltheviews.world">alltheviews.world</a> for more details.
 			</p>
 		</CollapsableModal>
 
 		<CollapsableModal collapsedIcon={TrophyIcon} isOpen={false}>
-			<h2>Longest Lines Of Sight</h2>
-			<ol>
-				{#each state.worldLongestLines?.slice(0, 10) as line}
-					<li>
-						<a
-							href={line.toURL()}
-							onclick={(event) => {
-								event.preventDefault();
-								if (line !== undefined) {
-									const url = line.toURL();
-									render(line.coordinate);
-									navigate(url);
-								}
-							}}>{line.toDistance()}</a
-						>
-					</li>
-				{/each}
-			</ol>
+			<h2>Top Lines Of Sight</h2>
+			<TopLines />
+			In viewport<span class="unclickable_icon"><Monitor /></span>:
 			{#if state.longestLineInViewport}
-				In viewport: <a
+				<a
 					href={state.longestLineInViewport?.toURL()}
 					onclick={(event) => {
 						event.preventDefault();
@@ -187,9 +184,8 @@
 					}}>{state.longestLineInViewport?.toDistance()}</a
 				>
 			{:else if state.bruteForceLoadingLine}
-				In viewport: loading...
+				loading...
 			{:else}
-				In viewport:
 				<button
 					onclick={async (event) => {
 						event.preventDefault();
@@ -302,5 +298,11 @@
 		flex-direction: row;
 		justify-content: space-between;
 		gap: 1em;
+	}
+
+	.unclickable_icon {
+		display: inline-block;
+		scale: 0.7;
+		translate: 0px 6px;
 	}
 </style>

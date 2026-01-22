@@ -17,10 +17,12 @@ const LONGEST_LINES_GRIDED_FILENAME = 'longest_lines_grided.bin';
 export class LongestLineH3 {
   coordinate: LngLat;
   distance: number;
+  description: string | undefined;
 
-  constructor(coordinate: LngLat, distance: number) {
+  constructor(coordinate: LngLat, distance: number, description?: string) {
     this.coordinate = coordinate;
     this.distance = distance;
+    this.description = description;
   }
 
   toURL() {
@@ -29,7 +31,7 @@ export class LongestLineH3 {
 
   toDistance() {
     const distance = this.distance / 1000;
-    return `${distance}km`;
+    return `${distance.toFixed(1)}km`;
   }
 }
 
