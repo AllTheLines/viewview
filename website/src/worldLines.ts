@@ -7,6 +7,7 @@ import {
   findLongestInWindow,
   findTilesIntersectingViewport,
 } from './getLongestLine';
+import { longestLineURL } from './renderLongestLine';
 import { state } from './state.svelte';
 import { CACHE_BUSTER, CDN_BUCKET, Log, VERSION } from './utils';
 
@@ -23,7 +24,7 @@ export class LongestLineH3 {
   }
 
   toURL() {
-    return `/longest/${this.coordinate.lng},${this.coordinate.lat}${window.location.search}`;
+    return longestLineURL(this.coordinate.lng, this.coordinate.lat);
   }
 
   toDistance() {
