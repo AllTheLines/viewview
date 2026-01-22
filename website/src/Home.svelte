@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     DraftingCompass,
+    Heart,
     Info,
     Monitor,
     Settings,
@@ -170,7 +171,7 @@
 		<CollapsableModal collapsedIcon={TrophyIcon} isOpen={false}>
 			<h2>Top Lines Of Sight</h2>
 			<TopLines />
-			In viewport<span class="unclickable_icon"><Monitor /></span>:
+			In current viewport<span class="unclickable_icon"><Monitor /></span>:
 			{#if state.longestLineInViewport}
 				<a
 					href={state.longestLineInViewport?.toURL()}
@@ -226,6 +227,27 @@
 			<h2>Heatmap Settings</h2>
 			<Slider setting={"contrast"} />
 			<Slider setting={"intensity"} />
+		</CollapsableModal>
+
+		<CollapsableModal collapsedIcon={Heart} isOpen={false}>
+			<h2>Acknowledgments</h2>
+			<p>
+				This project was made by <a href="https://tombh.co.uk">Tom</a> and
+				<a href="https://ryan.berge.rs/">Ryan</a>.
+			</p>
+
+			<p>
+				The raw data comes from NASA's
+				<a href="https://www.earthdata.nasa.gov/data/instruments/srtm">SRTM</a>
+				mission. We used the cleaned version by
+				<a href="http://www.viewfinderpanoramas.org/">Jonathon de Ferranti</a>.
+			</p>
+
+			<p>
+				The vector map data is hosted by Zsolt Ero's <a
+					href="https://openfreemap.org/">openfreemap.org</a
+				> project.
+			</p>
 		</CollapsableModal>
 	</div>
 
