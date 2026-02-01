@@ -1,0 +1,26 @@
+{{- $page := .page | default . -}}
+{{- $showTags := .showTags | default true -}}
+{{- $showSummary := .showSummary | default false -}}
+
+<article>
+  <h3>
+    <a href="{{ $page.RelPermalink }}">{{ $page.LinkTitle }}</a>
+  </h3>
+  <p>
+    <i>
+      <time datetime="{{ $page.Date | time.Format "2006-01-02" }}">
+        {{ partial "date/format.html" (dict "page" $page "date" $page.Date "context" "list") }}
+      </time>
+    </i>
+  </p>
+
+  {{- if $showSummary -}}
+    {{- with $page.Summary -}}
+      <p>{{ . | plainify }}</p>
+    {{- end -}}
+  {{- end -}}
+
+  {{- if $showTags -}}
+    {{- partial "terms.html" (dict "page" $page "taxonomy" "tags") -}}
+  {{- end -}}
+</article>

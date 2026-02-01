@@ -1,0 +1,11 @@
+baseURL = 'https://alltheviews.world'
+languageCode = 'en-us'
+theme = 'hugo-trainsh'
+title = 'All The Views'
+
+[outputs]
+  home = ["HTML", "RSS", "JSON"]
+
+[params]
+  mainSections = ["posts"]
+  nav = "[Home](/) [News](/posts/) [Map](https://map.alltheviews.world)"

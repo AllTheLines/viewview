@@ -1,0 +1,27 @@
+{{ define "main" }}
+{{- $sections := default (slice "posts") .Site.Params.mainSections -}}
+{{- $isPost := in $sections .Section -}}
+
+<article class="post">
+  {{- if $isPost -}}
+  <header class="post-header">
+    <h1 class="post-title">{{ .Title }}</h1>
+    <p class="post-meta">
+      <time datetime="{{ .Date | time.Format "2006-01-02" }}">
+        {{ partial "date/format.html" (dict "page" . "date" .Date "context" "single") }}
+      </time>
+    </p>
+  </header>
+  {{- else -}}
+  <header class="page-header">
+    <h1 class="page-title">{{ .Title }}</h1>
+  </header>
+  {{- end -}}
+
+  <div class="post-content">
+    {{ .Content }}
+  </div>
+
+  {{ partial "post/footer-meta.html" . }}
+</article>
+{{ end }}
