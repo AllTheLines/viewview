@@ -1,0 +1,7 @@
+{{ define "main" }}
+{{ with .Content }}
+{{ . }}
+{{ end }}
+
+{{ partial "post/blog-posts.html" (dict "pages" .Pages.ByDate.Reverse) }}
+{{ end }}

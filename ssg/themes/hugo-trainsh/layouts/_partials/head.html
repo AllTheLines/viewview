@@ -1,0 +1,38 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5">
+<title>{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ printf "%s | %s" .Title .Site.Title }}{{ end }}</title>
+
+{{ partial "head/css.html" . }}
+
+{{- /* Optional: KaTeX support (CSS always when math is detected; auto-render only when raw delimiters exist). */ -}}
+{{- $raw := .RawContent | default "" -}}
+{{- $hasPassthroughCodeblock := gt (len (findRE "(?m)^```passthrough\\b" $raw)) 0 -}}
+{{- $hasDisplayMath := or (gt (len (findRE "\\$\\$[^\\$]+\\$\\$" $raw)) 0) (in $raw "\\[") -}}
+{{- $hasInlineMath := or (gt (len (findRE "\\$[^\\$]+\\$" $raw)) 0) (in $raw "\\(") -}}
+{{- $needsKatexCss := or $hasPassthroughCodeblock (or $hasDisplayMath $hasInlineMath) -}}
+{{- $needsAutoRender := or $hasDisplayMath $hasInlineMath -}}
+{{- if $needsKatexCss -}}
+  <link href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css" rel="stylesheet">
+{{- end -}}
+{{- if $needsAutoRender -}}
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js"></script>
+  <script>
+  document.addEventListener("DOMContentLoaded", function() {
+    if (typeof renderMathInElement === 'function') {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: "$$", right: "$$", display: true},
+          {left: "$", right: "$", display: false},
+          {left: "\\\\[", right: "\\\\]", display: true},
+          {left: "\\\\(", right: "\\\\)", display: false}
+        ],
+        throwOnError: false,
+        ignoredTags: ["script","noscript","style","textarea","pre","code"]
+      });
+    }
+  });
+  </script>
+{{- end -}}
+
+{{ partial "head/js.html" . }}

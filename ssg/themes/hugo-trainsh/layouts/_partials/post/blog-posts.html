@@ -1,0 +1,38 @@
+{{- /*
+Renders a post list with title on top and date below:
+
+<ul class="blog-posts">
+  <li>
+    <a href="/.../">Title</a>
+    <time>YYYY-MM-DD</time>
+  </li>
+</ul>
+
+@context {slice} pages: A slice of Page objects.
+*/ -}}
+
+{{- $pages := .pages | default (slice) -}}
+{{- $filterable := .filterable | default false -}}
+
+<ul class="blog-posts"{{ if $filterable }} data-tag-filter{{ end }}>
+  {{- range $pages -}}
+  {{- $tags := slice -}}
+  {{- with .Params.tags -}}
+    {{- range . -}}
+      {{- $tags = $tags | append ((. | lower | replaceRE "\\s+" "-")) -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $tagsStr := delimit $tags "|" -}}
+  <li>
+    <span hidden aria-hidden="true" data-tags>{{ $tagsStr }}</span>
+    <a href="{{ .RelPermalink }}">{{ .Title }}</a>
+    <time datetime="{{ .Date | time.Format "2006-01-02" }}">
+      {{ partial "date/format.html" (dict "page" . "date" .Date "context" "list") }}
+    </time>
+  </li>
+  {{- else -}}
+  <li>{{ i18n "no_posts_yet" }}</li>
+  {{- end -}}
+</ul>
+
+

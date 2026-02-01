@@ -1,0 +1,17 @@
+{{ define "main" }}
+<h3 style="margin-bottom:0">
+  {{ i18n "filtering_for" }}
+  <span class="tag">#{{ .Title | lower }}</span>
+</h3>
+<small>
+  {{- with site.GetPage "/tags" -}}
+    <a rel="nofollow" href="{{ .RelPermalink }}">{{ i18n "remove_all_filters" }}</a>
+  {{- end -}}
+</small>
+
+{{ with .Content }}
+  {{ . }}
+{{ end }}
+
+{{ partial "post/blog-posts.html" (dict "pages" .Pages.ByDate.Reverse) }}
+{{ end }}

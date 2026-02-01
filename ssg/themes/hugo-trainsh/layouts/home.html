@@ -1,0 +1,9 @@
+{{ define "main" }}
+{{- if .Content -}}
+{{ .Content }}
+{{- else -}}
+{{- with site.Params.home.intro -}}
+{{ . | markdownify }}
+{{- end -}}
+{{- end -}}
+{{ end }}

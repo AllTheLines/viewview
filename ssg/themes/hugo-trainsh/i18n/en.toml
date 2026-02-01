@@ -1,0 +1,134 @@
+[home]
+other = "Home"
+
+[archive]
+other = "Archive"
+
+[blog]
+other = "Blog"
+
+[tags]
+other = "Tags"
+
+[more_posts]
+other = "View all posts"
+
+[more_tags]
+other = "View all tags"
+
+[popular_tags]
+other = "Popular tags"
+
+[recent_posts]
+other = "Recent posts"
+
+[search_posts]
+other = "Search posts"
+
+[type_to_search]
+other = "Type to search..."
+
+[powered_by]
+other = "Powered by {{ .Hugo }} &amp; {{ .Theme }}"
+
+[toc]
+other = "Table of Contents"
+
+[published_on]
+other = "Published on"
+
+[upvote_hint]
+other = "Click to upvote"
+
+[upvote_title]
+other = "Toast this post"
+
+[upvote_count]
+other = "Upvote count"
+
+[link_to_section]
+other = "Link to this section"
+
+[code_plain_text]
+other = "plain text"
+
+[toggle_word_wrap]
+other = "Toggle word wrap"
+
+[wrap]
+other = "WRAP"
+
+[copy_code]
+other = "Copy code"
+
+[copy]
+other = "COPY"
+
+[nav_primary]
+other = "Primary"
+
+[language_switcher]
+other = "Language"
+
+[toggle_theme]
+other = "Toggle theme"
+
+[social_linkedin]
+other = "LinkedIn"
+
+[social_github]
+other = "GitHub"
+
+[social_x]
+other = "X"
+
+[email]
+other = "Email"
+
+[no_results]
+other = "No results"
+
+[upvoted_title]
+other = "Toasted"
+
+[copied]
+other = "COPIED"
+
+[nowrap]
+other = "NOWRAP"
+
+[no_posts_yet]
+other = "No posts yet"
+
+[filtering_for]
+other = "Filtering for:"
+
+[remove_all_filters]
+other = "Remove all filters"
+
+[remove_tag]
+other = "Remove tag"
+
+[home_most_recent_posts]
+other = "Recent posts"
+
+[subscribe_via]
+other = "Subscribe via {{ .Links }}"
+
+[or_just_say_hello]
+other = "or just say hello."
+
+[or_just_say_hello_on]
+other = "or just say hello on"
+
+[follow_on]
+other = "follow on {{ .Links }}"
+
+[or_just_say_hello_via]
+other = "or just say hello by {{ .Link }}"
+
+[enable_soft_wrap]
+other = "Enable soft wrap"
+
+[disable_soft_wrap]
+other = "Disable soft wrap"

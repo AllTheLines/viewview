@@ -1,0 +1,16 @@
+{{ define "main" }}
+{{ with .Content }}
+  {{ . }}
+{{ end }}
+
+{{- $terms := .Data.Terms.Alphabetical -}}
+{{- if $terms -}}
+<small>
+  <div class="tags">
+    {{ range $terms }}
+      <a rel="nofollow" href="{{ .Page.RelPermalink }}">#{{ .Page.LinkTitle | lower }}</a>
+    {{ end }}
+  </div>
+</small>
+{{- end -}}
+{{ end }}
