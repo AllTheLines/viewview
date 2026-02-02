@@ -8,4 +8,4 @@ title = 'All The Views'
 
 [params]
   mainSections = ["posts"]
-  nav = "[Home](/) [Map](https://map.alltheviews.world) [News](/posts/) [FAQ](/faq/) [About](/about/)"
+  nav = "[Home](/) [News](/posts/) [FAQ](/faq/) [About](/about/) |&nbsp; [Map ↗](https://map.alltheviews.world)"
