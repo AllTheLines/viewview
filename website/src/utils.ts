@@ -3,7 +3,7 @@ import { LngLat, LngLatBounds } from 'maplibre-gl';
 
 export const VERSION = 'ryan-fullworld-raw';
 export const CDN_BUCKET = 'https://cdn.alltheviews.world';
-export const MAP_SERVER = 'https://pmtiles.alltheviews.world';
+export const MAP_SERVER = 'https://pmtiles.alltheviews.world'; // Remember to change domain in `Worker.ts` too.
 export const WORLD_PMTILES = 'world.pmtiles/world'; // TODO move the file to its proper place
 export const PMTILES_SERVER = `${MAP_SERVER}/runs/${VERSION}/pmtiles/${WORLD_PMTILES}`;
 

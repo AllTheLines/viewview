@@ -37,7 +37,7 @@ self.onmessage = async (event: MessageEvent<WorkerEvent>) => {
       // For zoom levels 0-8 we skip the Cloudflare Worker and use a CDN cache. This saves
       // on Cloudflare Worker monthly quotas.
       url = url
-        .replace('https://map.', 'https://cdn.')
+        .replace('https://pmtiles.', 'https://cdn.')
         .replace('world.pmtiles/world', 'cache')
         .replace('.bin', '');
     }
