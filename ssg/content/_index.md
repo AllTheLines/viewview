@@ -4,7 +4,7 @@ With the help of a custom-developed algorithm, [CacheTVS](https://github.com/All
 checked _every single_ view on Earth in search of the coveted **longest line of sight on the planet**.
 Based on the method we detail [here](/faq/), we present the greatest view of all:
 
-## [1. Hindu Kush to Pik Dankova ↗](https://map.alltheviews.world/longest/78.76539611816406-36.31400680541992)
+## [1. Hindu Kush to Pik Dankova (530km) ↗](https://map.alltheviews.world/longest/78.76539611816406-36.31400680541992)
 
 ![Longest Line Of Site](/longest_line_1.webp 'The longest line of sight on the planet, at 530km, from the Hindu Kush to Pik Dankova')
 
@@ -12,13 +12,13 @@ Based on the method we detail [here](/faq/), we present the greatest view of all
 
 Longest lines of sight tend to group together around peaks and ridges. So the following are more of our own curated list rather than the technically correct runners up. We chose them based on being in notably different regions of the world.
 
-## [2. Telkik Shan to Kongur Tagh ↗](https://map.alltheviews.world/longest/80.29535675048828-36.52555465698242)
+## [2. Telkik Shan to Kongur Tagh (507km) ↗](https://map.alltheviews.world/longest/80.29535675048828-36.52555465698242)
 ![Second Longest Line Of Site](/longest_line_2.webp 'The second longest line of sight, at 507km, between the Telkik Shan and Kongur Tah')
 
 Another long line of sight in the Himalays, over the Tarim Basin and Tibetan Plateau. With such tall mountain
 ranges on either side, they're everywhere!
 
-## [3. Antioquia to Pico Cristobal ↗](https://map.alltheviews.world/longest/-75.72223663330078-6.75514030456543)
+## [3. Antioquia to Pico Cristobal (504km) ↗](https://map.alltheviews.world/longest/-75.72223663330078-6.75514030456543)
 ![Third Longest Line Of Site](/longest_line_3.webp 'The third longest line of sight, at 504km, from Antioquia to Pico Crostobal in Colombia')
 
 Now we go right to the other side of the world to Colombia in South America. We've found a line of sight from the department of Antioquia to Pico Cristobal, Colombia's highest mountain.

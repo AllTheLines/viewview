@@ -14,7 +14,7 @@ long lines of sight.
 
 ## Tom
 {{<figure src="/tomisme.png" class="profile" >}}
-When Tom isn't on his laptop he's meditating or getting to know a new country. He's been a digital nomad since 2015. You can find his longest lines blog posts [here](https://alltheviews.world/tile-packing-the-world) and [here](https://tombh.co.uk/longest-line-of-sight), or see what else he is up to on his website https://tombh.co.uk
+When Tom isn't on his laptop he's meditating or getting to know a new country. He's been a digital nomad since 2015. You can find his longest lines blog posts [here](https://tombh.co.uk/packing-world-lines-of-sight) and [here](https://tombh.co.uk/longest-line-of-sight), or see what else he is up to on his website https://tombh.co.uk
 
 {{< rawhtml >}}
   <div style="clear:both"></div>
