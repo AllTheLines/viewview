@@ -12,7 +12,6 @@ import {
   PMTILES_SERVER,
   packFloatToU8s,
   tileKey,
-  WORLD_PMTILES,
 } from './utils';
 import vertex from './vertex.glsl?raw';
 import type { WorkerEvent } from './Worker';
@@ -70,11 +69,7 @@ function initialise() {
   const params = new URLSearchParams(self.location.search);
   let source = params.get('pmtiles');
   if (!source) {
-    if (import.meta.env.DEV) {
-      source = `/${WORLD_PMTILES}.pmtiles`;
-    } else {
-      source = PMTILES_SERVER;
-    }
+    source = PMTILES_SERVER;
   }
   state.worker.postMessage({ type: 'init', source });
   state.worker.onmessage = onWorkerMessage;

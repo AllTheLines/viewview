@@ -1,6 +1,12 @@
 import { PMTiles } from 'pmtiles';
 import type { TileGL } from './HeatmapLayer';
-import { CACHE_BUSTER, MAP_SERVER, tileKey, tileToLatLonBounds } from './utils';
+import {
+  CACHE_BUSTER,
+  MAP_SERVER,
+  MAP_SERVER_SUBDOMAIN,
+  tileKey,
+  tileToLatLonBounds,
+} from './utils';
 
 export type WorkerEvent =
   | { type: 'init'; source: string }
@@ -9,6 +15,7 @@ export type WorkerEvent =
 
 let localTiler: PMTiles;
 let pmtilesSource: string;
+let isProductionMapServer: boolean;
 
 const loading = new Map();
 
@@ -16,7 +23,8 @@ self.onmessage = async (event: MessageEvent<WorkerEvent>) => {
   if (event.data.type === 'init') {
     const { source } = event.data;
     pmtilesSource = source;
-    if (import.meta.env.DEV) {
+    isProductionMapServer = pmtilesSource.includes(MAP_SERVER);
+    if (!isProductionMapServer) {
       localTiler = new PMTiles(pmtilesSource);
     }
     console.debug('Tile worker ready for:', pmtilesSource);
@@ -37,13 +45,11 @@ self.onmessage = async (event: MessageEvent<WorkerEvent>) => {
       // For zoom levels 0-8 we skip the Cloudflare Worker and use a CDN cache. This saves
       // on Cloudflare Worker monthly quotas.
       url = url
-        .replace('https://pmtiles.', 'https://cdn.')
+        .replace(`https://${MAP_SERVER_SUBDOMAIN}.`, 'https://cdn.')
         .replace('world.pmtiles/world', 'cache')
         .replace('.bin', '');
     }
 
-    const isProductionMapServer =
-      !import.meta.env.DEV || localTiler.source.getKey().includes(MAP_SERVER);
     if (isProductionMapServer) {
       let tile: Response;
       tile = await fetch(url);

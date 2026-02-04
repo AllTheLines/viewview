@@ -327,11 +327,7 @@ function getLongestLinesSource() {
   const params = new URLSearchParams(self.location.search);
   const source = params.get('longest_lines');
   if (!source) {
-    if (!import.meta.env.DEV) {
-      return `${CDN_BUCKET}/runs/${VERSION}/longest_lines_cogs`;
-    } else {
-      return `/longest_lines`;
-    }
+    return `${CDN_BUCKET}/runs/${VERSION}/longest_lines_cogs`;
   } else {
     return source;
   }
