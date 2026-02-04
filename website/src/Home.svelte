@@ -188,6 +188,7 @@
 				loading...
 			{:else}
 				<button
+					id="load_longest_line_in_viewport_button"
 					onclick={async (event) => {
 						event.preventDefault();
 						const bounds = state.map?.getBounds();
@@ -326,5 +327,9 @@
 		display: inline-block;
 		scale: 0.7;
 		translate: 0px 6px;
+	}
+
+	#load_longest_line_in_viewport_button {
+		cursor: pointer;
 	}
 </style>

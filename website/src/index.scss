@@ -44,3 +44,7 @@ a {
 #nprogress .spinner-icon {
   display: none;
 }
+
+.maplibregl-canvas-container.maplibregl-interactive {
+  cursor: pointer;
+}
