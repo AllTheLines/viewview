@@ -46,7 +46,7 @@ export function setupLongestLines(coordFromURL: string | undefined) {
 }
 
 function extractCoordFromURL(coordFromURL: string) {
-  const parts = coordFromURL.replace('longest/', '').split('-');
+  const parts = coordFromURL.replace('longest/', '').split('_');
   const lng = parseFloat(parts[0]);
   const lat = parseFloat(parts[1]);
   const coord = new LngLat(lng, lat);
@@ -120,5 +120,5 @@ function rotate(x: number, y: number, degrees: number) {
 }
 
 export function longestLineURL(lon: number, lat: number) {
-  return `/longest/${lon}-${lat}${window.location.search}`;
+  return `/longest/${lon}_${lat}${window.location.search}`;
 }
