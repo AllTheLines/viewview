@@ -36,7 +36,7 @@ type Uniforms = {
   uAverageSurfaceVisibility: WebGLUniformLocation | null;
 };
 
-type State =
+type HeatmapState =
   | {
       map: MapLibre;
       gl: WebGL2RenderingContext;
@@ -59,10 +59,10 @@ const AVERAGE_SURFACE_VISIBILITY = 700000.0;
 
 let fillerTile: TileGL;
 
-let state: State;
+let heatmapState: HeatmapState;
 
 function initialise() {
-  if (state === undefined) {
+  if (heatmapState === undefined) {
     return;
   }
 
@@ -71,14 +71,14 @@ function initialise() {
   if (!source) {
     source = PMTILES_SERVER;
   }
-  state.worker.postMessage({ type: 'init', source });
-  state.worker.onmessage = onWorkerMessage;
+  heatmapState.worker.postMessage({ type: 'init', source });
+  heatmapState.worker.onmessage = onWorkerMessage;
 
   makeFillerTile();
 }
 
 function onWorkerMessage(event: MessageEvent<WorkerEvent>) {
-  if (state === undefined) {
+  if (heatmapState === undefined) {
     return;
   }
 
@@ -89,10 +89,10 @@ function onWorkerMessage(event: MessageEvent<WorkerEvent>) {
       return;
     }
 
-    state.tileCache.set(key, tile);
+    heatmapState.tileCache.set(key, tile);
 
     // Should these be throttled?
-    state.map?.redraw();
+    heatmapState.map?.redraw();
   }
 }
 
@@ -149,7 +149,7 @@ const HeatmapLayer: CustomLayerInterface = {
       ),
     };
 
-    state = {
+    heatmapState = {
       map,
       gl,
       program,
@@ -164,39 +164,39 @@ const HeatmapLayer: CustomLayerInterface = {
   },
 
   prerender() {
-    if (state === undefined) {
+    if (heatmapState === undefined) {
       return;
     }
 
-    if (Date.now() - state.lastGC < 60 * 1000) {
+    if (Date.now() - heatmapState.lastGC < 60 * 1000) {
       return;
     }
 
-    const mapBounds = state.map.getBounds();
+    const mapBounds = heatmapState.map.getBounds();
 
-    for (const [key, tile] of state.tileCache.entries()) {
+    for (const [key, tile] of heatmapState.tileCache.entries()) {
       if (isTileIntersectingBounds(tile.bounds, mapBounds)) {
       } else {
-        state.tileCache.delete(key);
+        heatmapState.tileCache.delete(key);
       }
     }
 
-    state.lastGC = Date.now();
+    heatmapState.lastGC = Date.now();
   },
 
   async render(gl, matrix) {
     let max = 0.0;
 
-    if (state === undefined) {
+    if (heatmapState === undefined) {
       return;
     }
 
     let isSomethingToRender = false;
-    for (const tile of state.map.coveringTiles({ tileSize: 256 })) {
+    for (const tile of heatmapState.map.coveringTiles({ tileSize: 256 })) {
       const key = tileKey(tile.canonical.z, tile.canonical.x, tile.canonical.y);
-      let cachedTile = state.tileCache.get(key);
+      let cachedTile = heatmapState.tileCache.get(key);
       if (!cachedTile) {
-        state.worker.postMessage({
+        heatmapState.worker.postMessage({
           type: 'getTile',
           z: tile.canonical.z,
           x: tile.canonical.x,
@@ -214,7 +214,7 @@ const HeatmapLayer: CustomLayerInterface = {
             continue;
           }
           const parentKey = tileKey(parent.z, parent.x, parent.y);
-          cachedTile = state.tileCache.get(parentKey);
+          cachedTile = heatmapState.tileCache.get(parentKey);
 
           if (cachedTile) {
             break;
@@ -239,19 +239,22 @@ const HeatmapLayer: CustomLayerInterface = {
       return;
     }
 
-    gl.useProgram(state.program);
-    gl.bindBuffer(gl.ARRAY_BUFFER, state.vertexBuffer);
-    const positionLocation = gl.getAttribLocation(state.program, 'a_pos');
+    gl.useProgram(heatmapState.program);
+    gl.bindBuffer(gl.ARRAY_BUFFER, heatmapState.vertexBuffer);
+    const positionLocation = gl.getAttribLocation(
+      heatmapState.program,
+      'a_pos',
+    );
     gl.enableVertexAttribArray(positionLocation);
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
-    for (const tile of state.map.coveringTiles({ tileSize: 256 })) {
+    for (const tile of heatmapState.map.coveringTiles({ tileSize: 256 })) {
       let scaleIfParent = 1.0;
       let offsetIfParentX = 0.0;
       let offsetIfParentY = 0.0;
 
       const key = tileKey(tile.canonical.z, tile.canonical.x, tile.canonical.y);
-      let cachedTile = state.tileCache.get(key);
+      let cachedTile = heatmapState.tileCache.get(key);
 
       if (!cachedTile) {
         let child = {
@@ -265,7 +268,7 @@ const HeatmapLayer: CustomLayerInterface = {
             continue;
           }
           const parentKey = tileKey(parent.z, parent.x, parent.y);
-          cachedTile = state.tileCache.get(parentKey);
+          cachedTile = heatmapState.tileCache.get(parentKey);
 
           if (cachedTile) {
             const zoomDifference = tile.canonical.z - parent.z;
@@ -283,38 +286,42 @@ const HeatmapLayer: CustomLayerInterface = {
         cachedTile = fillerTile;
       }
 
-      const projection = state.map.transform.getProjectionData({
+      const projection = heatmapState.map.transform.getProjectionData({
         overscaledTileID: tile,
       });
 
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, cachedTile.texture);
-      gl.uniform1i(state.uniforms.uData, 0);
+      gl.uniform1i(heatmapState.uniforms.uData, 0);
       gl.uniform1f(
-        state.uniforms.uIntensity,
+        heatmapState.uniforms.uIntensity,
         sharedState.heatmapConfig.intensity,
       );
       gl.uniform1f(
-        state.uniforms.uContrast,
+        heatmapState.uniforms.uContrast,
         sharedState.heatmapConfig.contrast,
       );
 
       gl.uniformMatrix4fv(
-        state.uniforms.uProjectionMatrix,
+        heatmapState.uniforms.uProjectionMatrix,
         false,
         new Float32Array(matrix.defaultProjectionData.mainMatrix),
       );
       gl.uniform4f(
-        state.uniforms.uTileMatrix,
+        heatmapState.uniforms.uTileMatrix,
         ...projection.tileMercatorCoords,
       );
-      gl.uniform1f(state.uniforms.uWorldOffset, tile.wrap);
+      gl.uniform1f(heatmapState.uniforms.uWorldOffset, tile.wrap);
 
-      gl.uniform1f(state.uniforms.uMax, max);
-      gl.uniform1f(state.uniforms.uScale, scaleIfParent);
-      gl.uniform2f(state.uniforms.uOffset, offsetIfParentX, offsetIfParentY);
+      gl.uniform1f(heatmapState.uniforms.uMax, max);
+      gl.uniform1f(heatmapState.uniforms.uScale, scaleIfParent);
+      gl.uniform2f(
+        heatmapState.uniforms.uOffset,
+        offsetIfParentX,
+        offsetIfParentY,
+      );
       gl.uniform1f(
-        state.uniforms.uAverageSurfaceVisibility,
+        heatmapState.uniforms.uAverageSurfaceVisibility,
         AVERAGE_SURFACE_VISIBILITY,
       );
 
@@ -329,42 +336,42 @@ function makeTile(
   bounds: LngLatBounds,
   data: Uint8Array,
 ) {
-  if (state?.gl === undefined) {
+  if (heatmapState?.gl === undefined) {
     console.warn("No GL context, couldn't make tile");
     return;
   }
 
-  const texture = state.gl.createTexture();
-  state.gl.bindTexture(state.gl.TEXTURE_2D, texture);
-  state.gl.texParameteri(
-    state.gl.TEXTURE_2D,
-    state.gl.TEXTURE_MIN_FILTER,
-    state.gl.NEAREST,
+  const texture = heatmapState.gl.createTexture();
+  heatmapState.gl.bindTexture(heatmapState.gl.TEXTURE_2D, texture);
+  heatmapState.gl.texParameteri(
+    heatmapState.gl.TEXTURE_2D,
+    heatmapState.gl.TEXTURE_MIN_FILTER,
+    heatmapState.gl.NEAREST,
   );
-  state.gl.texParameteri(
-    state.gl.TEXTURE_2D,
-    state.gl.TEXTURE_MAG_FILTER,
-    state.gl.NEAREST,
+  heatmapState.gl.texParameteri(
+    heatmapState.gl.TEXTURE_2D,
+    heatmapState.gl.TEXTURE_MAG_FILTER,
+    heatmapState.gl.NEAREST,
   );
-  state.gl.texParameteri(
-    state.gl.TEXTURE_2D,
-    state.gl.TEXTURE_WRAP_S,
-    state.gl.CLAMP_TO_EDGE,
+  heatmapState.gl.texParameteri(
+    heatmapState.gl.TEXTURE_2D,
+    heatmapState.gl.TEXTURE_WRAP_S,
+    heatmapState.gl.CLAMP_TO_EDGE,
   );
-  state.gl.texParameteri(
-    state.gl.TEXTURE_2D,
-    state.gl.TEXTURE_WRAP_T,
-    state.gl.CLAMP_TO_EDGE,
+  heatmapState.gl.texParameteri(
+    heatmapState.gl.TEXTURE_2D,
+    heatmapState.gl.TEXTURE_WRAP_T,
+    heatmapState.gl.CLAMP_TO_EDGE,
   );
-  state.gl.texImage2D(
-    state.gl.TEXTURE_2D,
+  heatmapState.gl.texImage2D(
+    heatmapState.gl.TEXTURE_2D,
     0,
-    state.gl.RGBA8UI,
+    heatmapState.gl.RGBA8UI,
     config.tileSize,
     config.tileSize,
     0,
-    state.gl.RGBA_INTEGER,
-    state.gl.UNSIGNED_BYTE,
+    heatmapState.gl.RGBA_INTEGER,
+    heatmapState.gl.UNSIGNED_BYTE,
     data,
   );
 
