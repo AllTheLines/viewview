@@ -3,11 +3,13 @@
 $primary-colour: #fd6612;
 $secondary-colour: #141f41;
 $secondary-light: #b8bdd6;
+$longest-line: #5bc0eb;
 
 :root {
   --primary-colour: #{$primary-colour};
   --secondary-colour: #{$secondary-colour};
   --secondary-light: #{$secondary-light};
+  --longest-line: #{$longest-line};
 }
 
 body {

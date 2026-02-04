@@ -14,6 +14,7 @@
   } from 'maplibre-gl';
   import { onMount } from 'svelte';
   import { navigate } from 'svelte5-router';
+  import ClickEffect, { initClickEffect } from './ClickEffect.svelte';
   import CollapsableModal from './components/CollapsableModal.svelte';
   import LayerToggle from './components/LayerToggle.svelte';
   import { HeatmapLayer } from './HeatmapLayer.ts';
@@ -114,6 +115,7 @@
     });
 
     state.map.on('load', async () => {
+      initClickEffect();
       if (longest === '') {
         addHeatmapLayer();
       }
@@ -142,6 +144,7 @@
 </script>
 
 <Layout>
+	<ClickEffect />
 	<div id="info">
 		<CollapsableModal collapsedIcon={Info} isOpen={!state.isFirstInteraction}>
 			<h2>All The Views In The World</h2>
