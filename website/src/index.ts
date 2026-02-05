@@ -3,7 +3,7 @@ import App from './App.svelte';
 import './index.scss';
 
 const app = mount(App, {
-  target: document.body,
+  target: document.getElementById('root') as HTMLElement,
 });
 
 export default app;
