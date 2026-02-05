@@ -14,6 +14,7 @@ $longest-line: #5bc0eb;
 
 body {
   margin: 0;
+  background-color: #000;
   color: $secondary-colour;
 }
 
@@ -23,7 +24,8 @@ html {
 }
 
 .is-dimmed {
-  filter: brightness(50%);
+  opacity: 0.3;
+  pointer-events: none;
 }
 
 a {

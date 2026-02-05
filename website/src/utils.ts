@@ -123,10 +123,10 @@ export function clamp(value: number, lowerBound: number, upperBound: number) {
 
 export function startLoadingSpinner() {
   nprogress.start();
-  document.documentElement.classList.toggle('is-dimmed');
+  document.getElementById('root')?.classList.toggle('is-dimmed');
 }
 
 export function endLoadingSpinner() {
   nprogress.done();
-  document.documentElement.classList.toggle('is-dimmed');
+  document.getElementById('root')?.classList.toggle('is-dimmed');
 }
