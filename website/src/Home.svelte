@@ -10,6 +10,7 @@
   import {
     LngLat,
     Map as MapLibre,
+    NavigationControl,
     type StyleSpecification,
   } from 'maplibre-gl';
   import { onMount } from 'svelte';
@@ -112,6 +113,14 @@
       style: map_vector as StyleSpecification,
       transformConstrain,
     });
+    state.map.addControl(
+        new NavigationControl({
+          visualizePitch: true,
+          visualizeRoll: true,
+          showZoom: true,
+        }),
+       'bottom-right'
+	);
 
     state.map.on('load', async () => {
       if (longest === '') {
