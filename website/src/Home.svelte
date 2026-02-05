@@ -115,13 +115,13 @@
       transformConstrain,
     });
     state.map.addControl(
-        new NavigationControl({
-          visualizePitch: true,
-          visualizeRoll: true,
-          showZoom: true,
-        }),
-       'bottom-right'
-	);
+      new NavigationControl({
+        visualizePitch: true,
+        visualizeRoll: true,
+        showZoom: true,
+      }),
+      'bottom-right',
+    );
 
     state.map.on('load', async () => {
       initClickEffect();
