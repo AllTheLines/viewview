@@ -9,10 +9,10 @@
   } from '@lucide/svelte';
   import {
     LngLat,
-	setRTLTextPlugin,
     Map as MapLibre,
     NavigationControl,
     type StyleSpecification,
+    setRTLTextPlugin,
   } from 'maplibre-gl';
   import { onMount } from 'svelte';
   import { navigate } from 'svelte5-router';
@@ -124,13 +124,13 @@
       'bottom-right',
     );
 
-	// https://maplibre.org/maplibre-gl-js/docs/API/functions/setRTLTextPlugin/
-	if (typeof window !== 'undefined') {
-		await setRTLTextPlugin(
-			'https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.3.0/dist/mapbox-gl-rtl-text.js',
-			true
-		); 
-	}
+    // https://maplibre.org/maplibre-gl-js/docs/API/functions/setRTLTextPlugin/
+    if (typeof window !== 'undefined') {
+      await setRTLTextPlugin(
+        'https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.3.0/dist/mapbox-gl-rtl-text.js',
+        true,
+      );
+    }
     state.map.on('load', async () => {
       initClickEffect();
       if (longest === '') {
