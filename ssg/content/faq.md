@@ -1,9 +1,18 @@
 
 # FAQs
 
+## How Did You Do It?
+
+Tom and Ryan go into detail on their respective blogs:
+
+* [tombh.co.uk/packing-world-lines-of-sight](https://tombh.co.uk/packing-world-lines-of-sight) 
+* [tombh.co.uk/longest-line-of-sight](https://tombh.co.uk/longest-line-of-sight) 
+* [ryan.berge.rs/posts/lines-of-sight](https://ryan.berge.rs/posts/lines-of-sight) 
+* [ryan.berge.rs/posts/total-viewshed-algorithm](https://ryan.berge.rs/posts/total-viewshed-algorithm/) 
+
 ## What Assumptions Did You Make?
 
-* The original source of our data is from [NASA's SRTM survey](https://www.earthdata.nasa.gov/data/instruments/srtm) which is ~100m resolution analysis of the planet's elevation data. It is known to have some issues so we used a clean version kindly provided by [viewfinderpanoramas.org](https://www.viewfinderpanoramas.org/Coverage%20map%20viewfinderpanoramas_org3.htm).
+* The original source of our data is from [NASA's SRTM survey](https://www.earthdata.nasa.gov/data/instruments/srtm) which is ~100m resolution analysis of the planet's elevation data. It is known to have some issues so we used a cleaned version kindly provided by [viewfinderpanoramas.org](https://www.viewfinderpanoramas.org/Coverage%20map%20viewfinderpanoramas_org3.htm).
 * We used a globe earth meaning it is an approximation of earth's shape, as it is an oblate spheroid.
 * We take refraction into account, and we use what the GIS community has calculated to be the world average, which is a refraction coefficient of `0.13`.
 * Each viewshed is calculated using 360 lines of sight each seperated by 1°. This could potentially miss some longest lines of sight, but it is considered to be the optimal resolution to balance the accumulation of errors and computational costs. For more details, see: Siham Tabik, Antonio R. Cervilla, Emilio Zapata, Luis F. Romero in their 2014 paper _Efficient Data Structure and Highly Scalable Algorithm for Total-Viewshed Computation_ https://ieeexplore.ieee.org/document/6837455
