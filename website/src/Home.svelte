@@ -157,6 +157,15 @@
 
       await updateTopLongestLines();
     });
+
+    state.map?.on('moveend', async () => {
+      if (state.isFlying) {
+        const root = document.getElementById('root');
+        if (!root) return;
+        root.classList.remove('disable-pointer');
+        state.isFlying = false;
+      }
+    });
   });
 </script>
 

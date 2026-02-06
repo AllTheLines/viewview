@@ -25,6 +25,9 @@ html {
 
 .is-dimmed {
   opacity: 0.3;
+}
+
+.disable-pointer {
   pointer-events: none;
 }
 
