@@ -126,7 +126,7 @@ export function startLoadingSpinner() {
   const root = document.getElementById('root');
   if (!root) return;
   root.classList.toggle('is-dimmed');
-  root.classList.add('disable-pointer');
+  disablePointer();
 }
 
 export function endLoadingSpinner() {
@@ -134,5 +134,17 @@ export function endLoadingSpinner() {
   const root = document.getElementById('root');
   if (!root) return;
   root.classList.toggle('is-dimmed');
+  enablePointer();
+}
+
+export function disablePointer() {
+  const root = document.getElementById('root');
+  if (!root) return;
+  root.classList.add('disable-pointer');
+}
+
+export function enablePointer() {
+  const root = document.getElementById('root');
+  if (!root) return;
   root.classList.remove('disable-pointer');
 }

@@ -29,7 +29,7 @@
   import Slider from './Slider.svelte';
   import { state } from './state.svelte.ts';
   import TopLines from './TopLines.svelte';
-  import { lonLatRound } from './utils.ts';
+  import { enablePointer, lonLatRound } from './utils.ts';
   import {
     findLongestLineInBoundsBruteForce,
     findLongestLineInBoundsFromGrid,
@@ -160,9 +160,7 @@
 
     state.map?.on('moveend', async () => {
       if (state.isFlying) {
-        const root = document.getElementById('root');
-        if (!root) return;
-        root.classList.remove('disable-pointer');
+        enablePointer();
         state.isFlying = false;
       }
     });

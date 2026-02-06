@@ -3,7 +3,12 @@ import proj4 from 'proj4';
 import { navigate } from 'svelte5-router';
 import { getLongestLine } from './getLongestLine.ts';
 import { state } from './state.svelte.ts';
-import { aeqdProjectionString, computeBBox, toRadians } from './utils.ts';
+import {
+  aeqdProjectionString,
+  computeBBox,
+  disablePointer,
+  toRadians,
+} from './utils.ts';
 
 // Inherited from the TVS algorithm. It's to counter unfavourable floating point rounding.
 const ANGLE_SHIFT = 0.0001;
@@ -109,6 +114,8 @@ export async function render(lngLat: LngLat) {
     padding: 100,
     duration: 1000,
   });
+  state.isFlying = true;
+  disablePointer();
 }
 
 // Rotate a coordinate around the origin.

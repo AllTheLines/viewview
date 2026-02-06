@@ -4,6 +4,7 @@
   import 'accessible-nprogress/src/styles.css';
   import { MapboxSearchBox } from '@mapbox/search-js-web';
   import { state } from './state.svelte.ts';
+  import { disablePointer } from './utils.ts';
 
   onMount(() => {
     const searchBox = new MapboxSearchBox();
@@ -22,9 +23,7 @@
       });
       state.isFlying = true;
 
-      const root = document.getElementById('root');
-      if (!root) return;
-      root.classList.add('disable-pointer');
+      disablePointer();
     });
 
     // @ts-expect-error: `document` can't be null.
