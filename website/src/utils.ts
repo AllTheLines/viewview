@@ -123,10 +123,16 @@ export function clamp(value: number, lowerBound: number, upperBound: number) {
 
 export function startLoadingSpinner() {
   nprogress.start();
-  document.getElementById('root')?.classList.toggle('is-dimmed');
+  const root = document.getElementById('root');
+  if (!root) return;
+  root.classList.toggle('is-dimmed');
+  root.classList.add('disable-pointer');
 }
 
 export function endLoadingSpinner() {
   nprogress.done();
-  document.getElementById('root')?.classList.toggle('is-dimmed');
+  const root = document.getElementById('root');
+  if (!root) return;
+  root.classList.toggle('is-dimmed');
+  root.classList.remove('disable-pointer');
 }

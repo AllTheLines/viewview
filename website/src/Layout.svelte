@@ -20,6 +20,11 @@
         center: [coordinates[0], coordinates[1]],
         zoom: 11,
       });
+      state.isFlying = true;
+
+      const root = document.getElementById('root');
+      if (!root) return;
+      root.classList.add('disable-pointer');
     });
 
     // @ts-expect-error: `document` can't be null.

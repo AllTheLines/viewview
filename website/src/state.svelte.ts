@@ -17,6 +17,7 @@ const heatmapConfig: HeatmapConfig = {
   contrast: 1 - 0.45,
   intensity: 1 - 0.5,
 };
+const isFlying = false;
 
 export const state = $state({
   map,
@@ -26,4 +27,5 @@ export const state = $state({
   isFirstInteraction,
   bruteForceLoadingLine,
   heatmapConfig,
+  isFlying,
 });
