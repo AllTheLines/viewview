@@ -261,7 +261,8 @@
 			<h2>Acknowledgments</h2>
 			<p>
 				This project was made by <a href="https://tombh.co.uk">Tom</a> and
-				<a href="https://ryan.berge.rs/">Ryan</a>.
+				<a href="https://ryan.berge.rs/">Ryan</a>. Contact us at
+				<a href="mailto:hello@alltheviews.world"> hello@alltheviews.world </a>.
 			</p>
 
 			<p>
