@@ -42,12 +42,14 @@
 			}
 		}
 		&.layer_toggle__on {
-			border: 2px solid green;
-			border-color: green;
+			border: 2px solid color-mix(in srgb, var(--primary-colour) 70%, white 30%);
+			&:hover {
+				border-color: var(--primary-colour);
+			}
 			img {
-				opacity: 1;
+				opacity: 0.8;
 				&:hover {
-					opacity: 0.7;
+					opacity: 1;
 				}
 			}
 		}
