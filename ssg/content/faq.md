@@ -1,5 +1,6 @@
-
-# FAQs
+---
+title: FAQs
+---
 
 ## How Did You Do It?
 

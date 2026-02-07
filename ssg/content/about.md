@@ -1,5 +1,6 @@
-
-# About Us
+---
+title: About Us
+---
 
 Tom and Ryan are two friends united behind a single problem: finding the longest line
 of sight. Ryan met Tom through a tech forum, [HackerNews](https://news.ycombonator.com), 
