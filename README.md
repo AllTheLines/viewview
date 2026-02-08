@@ -2,17 +2,25 @@
 
 This repo is for all the supporting code used to find and display the longest line of sight on the planet.
 
-The main viewshed algorithm is another repo https://github.com/tombh/total-viewsheds
+The main viewshed algorithm is another repo https://github.com/AllTheLines/CacheTVS
 
-The raw elevation data is, as of writing (October 2025), from https://www.viewfinderpanoramas.org/Coverage%20map%20viewfinderpanoramas_org3.htm Other sources of data are available, notably via AWS's https://registry.opendata.aws/terrain-tiles, but as far as I can tell viewfinderpanoramas.org offers a cleaned version, removing noisy data and filling in voids with other sources.
+The raw elevation data is from [www.viewfinderpanoramas.org](https://www.viewfinderpanoramas.org/Coverage%20map%20viewfinderpanoramas_org3.htm).
+
+There are 7 main parts to this repo:
+1. The Packer
+2. The Stitcher
+3. Calculating Total Viewsheds
+4. Preparing Assets For The Cloud
+5. Atlas: Automating Steps 2, 3 and 4
+6. Static Site Website
+7. Map Web App
 
 ## Packer
 
 I wrote an in-depth blog post about the Packer https://tombh.co.uk/packing-world-lines-of-sight
 
-![Map of all the longest line of sight tiles in the world](https://alltheviews.world/world_packed.webp)
-
-This map shows a not-terrible packing of the minimum tiles needed to guarantee searching every line of sight on the planet.
+This map shows a not-terrible packing of the minimum tiles needed to guarantee searching every line of sight on the planet:
+![Map of all the longest line of sight tiles in the world](https://tombh.co.uk/images/tile-packing-red.webp)
 
 To calculate any [viewshed](https://en.wikipedia.org/wiki/Viewshed), and therefore line of sight, you must inevitably provide more data than ends up being used. This is to say that you don't know the limits of what you can see from a given point until you actually calculate it. The only limit you can calculate beforehand is the longest _theoretical_ line of sight based on the highest points within the region you're interested in.
 
@@ -26,7 +34,7 @@ Here are some examples, they are for 2 peaks of the same height and the maximum 
 * 0.5km  160km
 * 1.65m  9km (height of an average human)
 
-Formula: √(2 * Earth Radius * height) * 2
+Formula: `√(2 * Earth Radius * height) * 2`
 
 So as long as you provide the raw data within these theoretical limits then you are at least guaranteed to have complete viewsheds. The worst that can happen is that RAM and CPU cycles are wasted on calculating lines that have already terminated.
 
@@ -133,12 +141,9 @@ bunch of tiles have been processed:
 
 * Create the gigantic (10s of GBs) global `.pmtile` that contains the TVS heatmap for the entire planet.
 ```
-# This requires a machine with a lot of RAM and CPU. As of writing, with a ~10% world run,
-# an 80Gb machine with 48 cores, took around 20 minutes.
+# This requires a machine with a lot of disk, RAM and CPU. As of writing, I'd recommend
+# 3TB disk, >150GB RAM and at least 48 cores.
 # Replace `latest` with `local` to skip syncing files to S3.
-./ctl.sh make_prod_pmtiles latest
-
-# This is exactly the same but without some more agressive settings.
 ./ctl.sh make_pmtiles latest work/world.pmtiles
 ```
 
@@ -156,8 +161,22 @@ RUST_LOG=off,tasks=trace cargo run --release --bin tasks -- \
   --tiffs work/longest_lines
 ```
 
-## Website
+## Static Site Website
 
-https://alltheviews.world Still in development so expect daily breakages.
+Uses [Hugo](https://gohugo.io). Run development server with `hugo server --buildDrafts` in `ssg/` direectory.
 
-`.ctl.sh website_deploy`
+Live at [alltheviews.world](https://alltheviews.world)
+
+Automatically deployed by pushing to either `staging` or `main` branches.
+
+Manually deploy to production from current checked out code: `.ctl.sh static_site_deploy`
+
+## Web App
+
+Run development server with `pnpm run dev` in `website/` direectory.
+
+Live at [map.alltheviews.world](https://map.alltheviews.world)
+
+Automatically deployed by pushing to either `staging` or `main` branches.
+
+Manually deploy to production from current checked out code: `.ctl.sh webapp_deploy`
