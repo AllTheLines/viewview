@@ -9,7 +9,7 @@ kept in touch since.
 
 Recently (in July of 2025), Tom started working on an algorithm to find the longest line of sight,
 and Ryan noticed it through a post on a tech forum explaining the project. For the last
-6 months both have spent innumerous hours engineering [a tool](https://github.com/AllTheViews/CacheTVS) 
+6 months both have spent innumerous hours engineering [a tool](https://github.com/AllTheLines/CacheTVS) 
 for the longest line of sight for every point on the planet, and to let others explore the beautiful world and all its
 long lines of sight.
 

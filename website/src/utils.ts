@@ -90,7 +90,7 @@ export function toDegrees(radians: number) {
 
 export function lonLatRound(lonlat: LngLat) {
   const precision = 6;
-  return [lonlat.lng.toPrecision(precision), lonlat.lat.toPrecision(precision)];
+  return [lonlat.lat.toPrecision(precision), lonlat.lng.toPrecision(precision)];
 }
 
 export function packFloatToU8s(float: number) {
