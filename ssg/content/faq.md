@@ -28,6 +28,10 @@ Yes. [The core algorithm](https://github.com/AllTheLines/CacheTVS). [The pipelin
 
 The sea actually has above average visibility, due to it generally not being blocked by hills and mountains. As such it can generate some often interesting and sometimes beautiful heatmaps, like around [the islands of South Korea](https://map.alltheviews.world/longest/126.9141495423105_33.956726689880966).
 
+## What Is The Longest View From Mount Everest?
+
+[It is 453.3km, looking South to the peaks of Parasnath in India](https://map.alltheviews.world/longest/86.92073822021484_27.988929748535156). Even though Mount Everest is the tallest mountain on Earth, its longest view is nearly 100km shorter than the world's longest.
+
 ## How Do I Contact You?
 
 💌 hello@alltheviews.world

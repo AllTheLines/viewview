@@ -80,7 +80,7 @@
     }
 
     const upperLatitudeBound = 85;
-    const lowerLatitudeBound = -75;
+    const lowerLatitudeBound = -80;
 
     const worldSize = 512 * 2 ** zoom;
     const mercatorYOffset = viewportHeight / 2 / worldSize;

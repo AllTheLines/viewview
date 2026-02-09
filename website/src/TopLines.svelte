@@ -12,24 +12,9 @@
       '🇨🇳🇰🇬 Hindu Kush/Pik Dankova',
     ),
     new LongestLineH3(
-      new LngLat(80.29535675048828, 36.52555465698242),
-      506.8 * 1000,
-      '🇨🇳 Telkik Shan/Kongur Tagh',
-    ),
-    new LongestLineH3(
       new LngLat(-75.72223663330078, 6.75514030456543),
       504.1 * 1000,
       '🇨🇴 Antioquia/Pico Cristobal',
-    ),
-    new LongestLineH3(
-      new LngLat(78.37439727783203, 36.64704895019531),
-      494.0 * 1000,
-      '🇨🇳🇰🇬 Kunlun/Nochnaya Babochka',
-    ),
-    new LongestLineH3(
-      new LngLat(76.53218078613281, 36.620765686035156),
-      488.2 * 1000,
-      '🇨🇳 Hindu Kush/Tian Shan',
     ),
     new LongestLineH3(
       new LngLat(42.43996810913086, 43.34897232055664),
@@ -55,6 +40,21 @@
       new LngLat(71.8376235961914, 36.432369232177734),
       470.1 * 1000,
       '🇵🇰🇺🇿 Noshaq/Aghbai Kalon',
+    ),
+    new LongestLineH3(
+      new LngLat(162.6785430908203, -78.0618667602539),
+      463.8 * 1000,
+      '🇦🇶 Antarctica',
+    ),
+    new LongestLineH3(
+      new LngLat(46.122562408447266, 42.21756362915039),
+      462.9 * 1000,
+      '🇷🇺🇮🇷 Balakuri/Sabalan',
+    ),
+    new LongestLineH3(
+      new LngLat(146.864501953125, -6.220884323120117),
+      451.6 * 1000,
+      '🇵🇬 Kotewon/Suckling',
     ),
   ];
 </script>
