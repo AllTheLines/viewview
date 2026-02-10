@@ -360,6 +360,34 @@
 		gap: 1em;
 	}
 
+	/* Mobile-only layout tweaks */
+	@media (max-width: 600px) {
+		/* slightly smaller collapsed modal icons on Home only */
+		:global(#info .collapseable_modal .modal__open svg) {
+			width: 1rem;
+			height: 1rem;
+		}
+
+		/* align top of first info button roughly with search bar */
+		#info {
+			top: 1.08rem;
+			right: 0.75rem;
+			max-width: min(22rem, 80vw);
+			gap: 0.75rem;
+		}
+
+		:global(#info .collapseable_modal > div) {
+			padding: 0.75em;
+		}
+
+		#layout_toggles {
+			left: 0.5rem;
+			bottom: 0.5rem;
+			gap: 0.4rem;
+			flex-direction: column;
+		}
+	}
+
 	.unclickable_icon {
 		display: inline-block;
 		scale: 0.7;
