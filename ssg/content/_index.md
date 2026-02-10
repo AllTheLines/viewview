@@ -4,7 +4,7 @@ With the help of a custom-developed algorithm, [CacheTVS](https://github.com/All
 checked _every single_ view on Earth in search of the coveted **longest line of sight on the planet**.
 Based on the method we detail [here](/faq/), we present the greatest view of all:
 
-## [1. Hindu Kush to Pik Dankova (530km) ↗](https://map.alltheviews.world/longest/78.76539611816406_36.31400680541992)
+## [1. Kunlun Mountains to Pik Dankova (530km) ↗](https://map.alltheviews.world/longest/78.76539611816406_36.31400680541992)
 
 ![Longest Line Of Site](/longest_line_1.webp 'The longest line of sight on the planet, at 530km, from the Hindu Kush to Pik Dankova')
 
@@ -12,7 +12,7 @@ Based on the method we detail [here](/faq/), we present the greatest view of all
 
 Longest lines of sight tend to group together around peaks and ridges. So the following are more of our own curated list rather than the technically correct runners up. We chose them based on being in notably different regions of the world.
 
-## [2. Antioquia to Pico Cristobal (504km) ↗](https://map.alltheviews.world/longest/-75.72223663330078_6.75514030456543)
+## [2. Cerro Lago del Congo to Pico Cristóbal (504km) ↗](https://map.alltheviews.world/longest/-75.72223663330078_6.75514030456543)
 ![Second Longest Line Of Site](/longest_line_2.webp 'The second longest line of sight, at 504km, from Antioquia to Pico Cristobal in Colombia')
 
 Now we go right to the other side of the world to Colombia in South America. We've found a line of sight from the department of Antioquia to Pico Cristobal, Colombia's highest mountain.

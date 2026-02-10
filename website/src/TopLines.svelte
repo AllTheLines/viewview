@@ -9,12 +9,12 @@
     new LongestLineH3(
       new LngLat(78.76539611816406, 36.31400680541992),
       530.8 * 1000,
-      '🇨🇳🇰🇬 Hindu Kush/Pik Dankova',
+      '🇨🇳🇰🇬 Kunlun Mountains/Pik Dankova',
     ),
     new LongestLineH3(
       new LngLat(-75.72223663330078, 6.75514030456543),
       504.1 * 1000,
-      '🇨🇴 Antioquia/Pico Cristobal',
+      '🇨🇴 Cerro Lago/Pico Cristobal',
     ),
     new LongestLineH3(
       new LngLat(42.43996810913086, 43.34897232055664),
