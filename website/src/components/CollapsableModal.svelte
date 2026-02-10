@@ -1,21 +1,35 @@
 <script lang="ts">
   import { Minimize2 } from '@lucide/svelte';
   import type { Component } from 'svelte';
+  import { createEventDispatcher } from 'svelte';
 
   export let collapsedIcon: Component;
   export let isOpen = true;
   const __buttonSize = 18;
+  const _dispatch = createEventDispatcher();
 </script>
 
 <div class="collapseable_modal {isOpen ? '' : 'modal__collapsed'}">
 	<div>
 		{#if isOpen}
-			<button class="modal__close" on:click={() => (isOpen = false)}>
+			<button
+				class="modal__close"
+				on:click={() => {
+					isOpen = false;
+					_dispatch('close');
+				}}
+			>
 				<Minimize2 size={__buttonSize} />
 			</button>
 			<slot />
 		{:else}
-			<button class="modal__open" on:click={() => (isOpen = true)}>
+			<button
+				class="modal__open"
+				on:click={() => {
+					isOpen = true;
+					_dispatch('open');
+				}}
+			>
 				<svelte:component this={collapsedIcon} size={__buttonSize} />
 			</button>
 		{/if}

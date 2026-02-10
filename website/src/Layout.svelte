@@ -2,6 +2,10 @@
   import { onDestroy, onMount } from 'svelte';
   import 'maplibre-gl/dist/maplibre-gl.css';
   import 'accessible-nprogress/src/styles.css';
+<<<<<<< HEAD
+=======
+  import { Search } from '@lucide/svelte';
+>>>>>>> af3023c (satisfy biome lint for CollapsableModal dispatcher & import reordering)
   import { MapboxSearchBox } from '@mapbox/search-js-web';
   import { state } from './state.svelte.ts';
   import { disablePointer } from './utils.ts';
