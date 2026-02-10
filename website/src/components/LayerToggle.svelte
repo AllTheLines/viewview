@@ -54,4 +54,10 @@
 			}
 		}
 	}
+	@media /* mobile-only */ (max-width: 600px) {
+		.layer_toggle {
+			width: 2.75rem;
+			height: 2.75rem;
+		}
+	}
 </style>
