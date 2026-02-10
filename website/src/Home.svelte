@@ -170,7 +170,16 @@
 <Layout>
 	<ClickEffect />
 	<div id="info">
-		<CollapsableModal collapsedIcon={Info} isOpen={!state.isFirstInteraction}>
+		<CollapsableModal collapsedIcon={Info}
+		isOpen={state.isInfoOpen}
+		on:open={() => {
+			state.isSearchOpen = false;
+			state.isInfoOpen = true;
+		}}
+		on:close={() => {
+			state.isInfoOpen = false;
+		}}
+	>
 			<h2>All The Views In The World</h2>
 			<p>We've calculated all the views on the planet.</p>
 			<p>

@@ -2,10 +2,7 @@
   import { onDestroy, onMount } from 'svelte';
   import 'maplibre-gl/dist/maplibre-gl.css';
   import 'accessible-nprogress/src/styles.css';
-<<<<<<< HEAD
-=======
   import { Search } from '@lucide/svelte';
->>>>>>> af3023c (satisfy biome lint for CollapsableModal dispatcher & import reordering)
   import { MapboxSearchBox } from '@mapbox/search-js-web';
   import { state } from './state.svelte.ts';
   import { disablePointer } from './utils.ts';
@@ -46,7 +43,19 @@
 
 <div id="map"></div>
 
-<div id="search-box"></div>
+<div id="search-box" class:is-open={state.isSearchOpen}>
+	<div id="search-widget"></div>
+	<button
+		id="search-toggle"
+		type="button"
+		on:click={() => {
+			state.isSearchOpen = true;
+			state.isInfoOpen = false;
+		}}
+	>
+		<Search size={18} />
+	</button>
+</div>
 
 <main>
 	<slot />
@@ -65,4 +74,61 @@
 		margin-left: 17px;
 		margin-top: 17px;
 	}
+  
+	#search-widget {
+		width: 100%;
+	}
+
+	#search-toggle {
+		all: unset;
+		cursor: pointer;
+		display: none;
+	}
+
+	/* Mobile: search behaves like a compact icon button that expands into the full input */
+	@media (max-width: 600px) {
+		#search-box {
+			width: 2.75rem;
+			height: 2.5rem;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			overflow: hidden;
+			background-color: white;
+			border-radius: 3px;
+			z-index: 2;
+		}
+
+		#search-toggle {
+			display: flex;
+			width: 1rem;
+			height: 2.5rem;
+			align-items: center;
+			justify-content: center;
+			color: #141f41;
+		}
+
+		/* collapsed: only icon button visible */
+		#search-widget {
+			display: none;
+		}
+
+		/* expanded: show full widget, hide icon, grow container */
+		#search-box.is-open {
+			width: min(18rem, 80vw);
+			height: auto;
+			overflow: visible;
+			background-color: transparent;
+			border-radius: 0;
+		}
+
+		#search-box.is-open #search-widget {
+			display: block;
+		}
+
+		#search-box.is-open #search-toggle {
+			display: none;
+		}
+	}
+
 </style>
