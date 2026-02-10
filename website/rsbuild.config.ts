@@ -8,6 +8,9 @@ export default defineConfig({
     // See: https://github.com/sveltejs/svelte-loader?tab=readme-ov-file#hot-reload
     hmr: false,
   },
+  html: {
+    template: './public/index.html',
+  },
   tools: {
     rspack: {
       module: {

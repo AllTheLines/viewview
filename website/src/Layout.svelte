@@ -35,10 +35,6 @@
   });
 </script>
 
-<svelte:head>
-	<title>All The Views</title>
-</svelte:head>
-
 <div id="map"></div>
 
 <div id="search-box"></div>
