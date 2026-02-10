@@ -1,5 +1,4 @@
 @use "sass:color";
-
 @use "./variables.scss" as *;
 
 body {
@@ -48,4 +47,18 @@ a {
 
 .maplibregl-canvas {
   background-color: #131e40;
+}
+
+/* Mobile-only tweaks */
+@media (max-width: 600px) {
+  /* Map attribution: make box narrower and text more compact */
+  .maplibregl-ctrl-attrib {
+    max-width: 200px;
+  }
+  .maplibregl-ctrl-attrib-inner {
+    white-space: normal; /* allow wrapping */
+    font-size: 10px;
+    line-height: 1.2;
+    padding: 2px 4px;
+  }
 }
