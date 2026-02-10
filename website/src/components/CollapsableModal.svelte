@@ -6,7 +6,7 @@
   export let collapsedIcon: Component;
   export let isOpen = true;
   const __buttonSize = 18;
-  const _dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher();
 </script>
 
 <div class="collapseable_modal {isOpen ? '' : 'modal__collapsed'}">
@@ -16,7 +16,7 @@
 				class="modal__close"
 				on:click={() => {
 					isOpen = false;
-					_dispatch('close');
+					dispatch('close');
 				}}
 			>
 				<Minimize2 size={__buttonSize} />
@@ -27,7 +27,7 @@
 				class="modal__open"
 				on:click={() => {
 					isOpen = true;
-					_dispatch('open');
+					dispatch('open');
 				}}
 			>
 				<svelte:component this={collapsedIcon} size={__buttonSize} />
