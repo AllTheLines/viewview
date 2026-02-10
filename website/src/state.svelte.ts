@@ -18,6 +18,9 @@ const heatmapConfig: HeatmapConfig = {
   intensity: 1 - 0.5,
 };
 const isFlying = false;
+// Mobile-only events
+const isSearchOpen = false;
+const isInfoOpen = true;
 
 export const state = $state({
   map,
@@ -28,4 +31,6 @@ export const state = $state({
   bruteForceLoadingLine,
   heatmapConfig,
   isFlying,
+  isSearchOpen,
+  isInfoOpen,
 });
