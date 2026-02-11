@@ -330,7 +330,8 @@
 	</div>
 </Layout>
 
-<style>
+<style lang="scss">
+	@use "./styles/variables.scss" as *;
 	#info {
 		position: fixed;
 		top: 1em;
@@ -361,7 +362,7 @@
 	}
 
 	/* Mobile-only layout tweaks */
-	@media (max-width: 600px) {
+	@media (max-width: $mobile-break) {
 		/* slightly smaller collapsed modal icons on Home only */
 		:global(#info .collapseable_modal .modal__open svg) {
 			width: 1rem;

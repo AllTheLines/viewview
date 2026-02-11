@@ -16,7 +16,8 @@
 	<img src={image} alt="Layer toggle" />
 </button>
 
-<style>
+<style lang="scss">
+	@use "../styles/variables.scss" as *;
 	button {
 		all: unset;
 		cursor: pointer;
@@ -54,7 +55,7 @@
 			}
 		}
 	}
-	@media /* mobile-only */ (max-width: 600px) {
+	@media /* mobile-only */ (max-width: $mobile-break) {
 		.layer_toggle {
 			width: 2.75rem;
 			height: 2.75rem;
