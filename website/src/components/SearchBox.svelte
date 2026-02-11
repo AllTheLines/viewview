@@ -68,7 +68,7 @@
 	}
 
 	/* Mobile: search behaves like a compact icon button that expands into the full input */
-	@media (max-width: 700px) { /* maybe 730 waiting on tom */
+	@media (max-width: 730px) {
 		#search-box {
 			width: 2.75rem;
 			height: 2.5rem;
