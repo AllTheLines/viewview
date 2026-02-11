@@ -50,7 +50,7 @@ a {
 }
 
 /* Mobile-only tweaks */
-@media (max-width: 600px) {
+@media (max-width: $mobile-break) {
   /* Map attribution: make box narrower and text more compact */
   .maplibregl-ctrl-attrib {
     max-width: 200px;

@@ -49,7 +49,8 @@
 	</button>
 </div>
 
-<style>
+<style lang="scss">
+	@use "../styles/variables.scss" as *;
 	#search-box {
 		position: absolute;
 		width: 300px;
@@ -68,7 +69,7 @@
 	}
 
 	/* Mobile: search behaves like a compact icon button that expands into the full input */
-	@media (max-width: 730px) {
+	@media (max-width: $mobile-break) {
 		#search-box {
 			width: 2.75rem;
 			height: 2.5rem;
