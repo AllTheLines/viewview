@@ -4,8 +4,8 @@
 
   export let collapsedIcon: Component;
   export let isOpen = true;
-  export let onOpen: (() => void) | undefined;
-  export let onClose: (() => void) | undefined;
+  export let onOpen: (() => void) | undefined = undefined;
+  export let onClose: (() => void) | undefined = undefined;
   const __buttonSize = 18;
 </script>
 

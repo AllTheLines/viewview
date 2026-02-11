@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { Search } from '@lucide/svelte';
   import { MapboxSearchBox } from '@mapbox/search-js-web';
+  import { onMount } from 'svelte';
   import { state } from '../state.svelte.ts';
   import { disablePointer } from '../utils.ts';
 

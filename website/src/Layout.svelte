@@ -2,8 +2,8 @@
   import { onDestroy } from 'svelte';
   import 'maplibre-gl/dist/maplibre-gl.css';
   import 'accessible-nprogress/src/styles.css';
-  import { state } from './state.svelte.ts';
   import SearchBox from './components/SearchBox.svelte';
+  import { state } from './state.svelte.ts';
 
   onDestroy(() => {
     state.map?.remove();
