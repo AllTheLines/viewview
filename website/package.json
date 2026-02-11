@@ -29,6 +29,7 @@
     "@rsbuild/plugin-svelte": "^1.0.11",
     "pmtiles": "^4.3.0",
     "prettier": "^3.6.2",
+    "sass": "^1.97.3",
     "svelte-check": "^4.3.3",
     "typescript": "^5.9.3"
   }
