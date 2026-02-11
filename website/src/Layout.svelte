@@ -26,8 +26,13 @@
       disablePointer();
     });
 
-    // @ts-expect-error: `document` can't be null.
-    document.querySelector('#search-box').appendChild(searchBox);
+    /* #search-widget is hidden (display: none) on mobile until the user expands search;
+    we still mount here so the box is ready. Guard in case the node isn't available yet. */
+    const container = document.querySelector('#search-widget');
+    if (container) {
+      // @ts-expect-error: MapboxSearchBox is a custom element
+      container.appendChild(searchBox);
+    }
   });
 
   onDestroy(() => {
