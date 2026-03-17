@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 export PROJECT_ROOT
 PROJECT_ROOT=$(dirname "$(readlink -f "$0")")
 

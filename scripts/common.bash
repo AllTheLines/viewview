@@ -63,3 +63,16 @@ function get_tiff_latitude {
 	local input=$1
 	gdalinfo -json "$input" | jq '.geoTransform[3]'
 }
+
+function get_extent {
+	local input=$1
+
+	gdalinfo \
+		-json "$input" |
+		jq -r '
+	    .cornerCoordinates.lowerLeft[0],
+			.cornerCoordinates.lowerLeft[1],
+			.cornerCoordinates.upperRight[0],
+			.cornerCoordinates.upperRight[1]' |
+		xargs
+}
