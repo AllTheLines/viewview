@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { DraftingCompass } from '@lucide/svelte';
+  import { DraftingCompass, Earth } from '@lucide/svelte';
   import CollapsableModal from '../components/CollapsableModal.svelte';
   import { lonLatRound } from '../lib/utils';
   import { state } from '../state.svelte';
@@ -22,6 +22,17 @@
 				To: {lonLatRound(state.longestLine.to)}
 			</div>
 		</div>
+
+		<div id="google_earth_link">
+			<Earth />
+			<a
+				href={state.longestLine.googleEarth}
+				title="View on Google Earth"
+				target="_blank"
+			>
+				View on Google Earth ↗
+			</a>
+		</div>
 	{/if}
 </CollapsableModal>
 
@@ -29,5 +40,14 @@
 	#details {
 		font-family: monospace;
 		flex: 0 0 auto;
+	}
+
+	#google_earth_link {
+		margin-top: 1em;
+		display: flex;
+		align-items: center;
+		a {
+			margin-left: 0.5em;
+		}
 	}
 </style>

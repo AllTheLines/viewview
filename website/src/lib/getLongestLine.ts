@@ -8,6 +8,7 @@ import {
   CDN_BUCKET,
   clamp,
   endLoadingSpinner,
+  getElevationAtCoord,
   Log,
   startLoadingSpinner,
   VERSION,
@@ -22,6 +23,7 @@ export type LongestLine = {
   angle: number;
   from: LngLat;
   to: LngLat;
+  googleEarth: string;
 };
 
 type IndexedTile = {
@@ -121,6 +123,33 @@ async function getLongestLineCandidate(cog: GeoTIFFImage, coordinate: LngLat) {
   }
 
   return { distance, angle } as LongestLine;
+}
+
+export async function makeGoogleEarthLink(line: LongestLine) {
+  const base = 'https://earth.google.com/web/@';
+  const latlon = `${line.from.lat},${line.from.lng}`;
+
+  // Add a bit because sometimes we're placed under the terrain.
+  const extraAltitude = 10;
+
+  const altitude = (await getElevationAtCoord(line.from)) + extraAltitude;
+
+  // We need a little bit of distance so that the `heading` has something to point at.
+  const distance = 1;
+
+  // Google Earth measures heading from North. TODO: we should too.
+  const heading = 90 - line.angle;
+
+  // How wide the camera view is?
+  const fieldOfView = 15;
+
+  // Whether camera is pointing up or down. 90 is just flat looking at the horizon.
+  const tilt = 90;
+
+  // Looks like "CgRCAggBQgIIAEoNCP___________wEQAA", I think it's just user-specific session stuff?
+  const data = ``;
+
+  return `${base}${latlon},${altitude}a,${distance}d,${fieldOfView}y,${heading}h,${tilt}t,0r/data=${data}`;
 }
 
 async function getPointFromRaster(cog: GeoTIFFImage, x: number, y: number) {
