@@ -194,3 +194,11 @@ export function setVectorVisibility(state: AppState, isVisible: boolean) {
       );
   }
 }
+
+export async function getElevationAtCoord(coord: LngLat) {
+  const base = 'https://api.elevationapi.com/api/Elevation';
+  const url = `${base}?lat=${coord.lat}&lon=${coord.lng}&dataSet=NASADEM`;
+  const result = await fetch(url);
+  const payload = await result.json();
+  return payload.geoPoints[0].elevation;
+}

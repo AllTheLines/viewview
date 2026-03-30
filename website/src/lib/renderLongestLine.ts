@@ -1,8 +1,10 @@
 import { type GeoJSONFeature, type GeoJSONSource, LngLat } from 'maplibre-gl';
 import proj4 from 'proj4';
 import { navigate } from 'svelte5-router';
+
 import { state } from '../state.svelte.ts';
-import { getLongestLine } from './getLongestLine.ts';
+import { getLongestLine, makeGoogleEarthLink } from './getLongestLine.ts';
+
 import {
   ANGLE_SHIFT,
   aeqdProjectionString,
@@ -58,30 +60,31 @@ function extractCoordFromURL(coordFromURL: string) {
 }
 
 export async function render(lngLat: LngLat) {
-  const longest_line = await getLongestLine(lngLat);
-  if (longest_line === undefined) {
+  const longestLine = await getLongestLine(lngLat);
+  if (longestLine === undefined) {
     return;
   }
 
-  state.longestLine = longest_line;
+  state.longestLine = longestLine;
 
   if (import.meta.env.DEV) {
-    console.log(longest_line);
+    console.log(longestLine);
   }
 
-  longest_line.angle = longest_line.angle + ANGLE_SHIFT;
+  longestLine.angle = longestLine.angle + ANGLE_SHIFT;
 
-  const θ = toRadians(longest_line.angle);
-  const dx = longest_line.distance * Math.cos(θ);
-  const dy = longest_line.distance * Math.sin(θ);
+  const θ = toRadians(longestLine.angle);
+  const dx = longestLine.distance * Math.cos(θ);
+  const dy = longestLine.distance * Math.sin(θ);
   const rotatedClockwiseAEQD = rotate(dx, dy, -0.5);
   const rotatedAntiAEQD = rotate(dx, dy, +0.5);
 
   const aeqd = aeqdProjectionString(lngLat.lng, lngLat.lat);
   const unrotated = proj4(aeqd, proj4.WGS84, [dx, dy]);
-  longest_line.from = lngLat;
-  longest_line.to = new LngLat(unrotated[0], unrotated[1]);
-  state.longestLine = longest_line;
+  longestLine.from = lngLat;
+  longestLine.to = new LngLat(unrotated[0], unrotated[1]);
+  longestLine.googleEarth = await makeGoogleEarthLink(longestLine);
+  state.longestLine = longestLine;
 
   const rotatedClockwiseLonLat = proj4(aeqd, proj4.WGS84, rotatedClockwiseAEQD);
   const rotatedAntiLonLat = proj4(
