@@ -45,9 +45,14 @@ mod atlas {
 mod config;
 mod max_subtile;
 mod packer;
-mod projector;
 mod stitch;
 mod tile;
+
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "This lib is mostly for our internal use"
+)]
+pub mod projector;
 
 use clap::Parser as _;
 use color_eyre::Result;

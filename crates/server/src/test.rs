@@ -1,0 +1,93 @@
+#[cfg(test)]
+mod tests {
+    #![expect(clippy::indexing_slicing, reason = "These are just tests")]
+
+    use axum::{
+        body::{Body, to_bytes},
+        http::{Request, StatusCode},
+    };
+    use tower::ServiceExt as _; // for `oneshot`
+
+    use std::convert::TryInto as _;
+    use std::io::Read as _;
+
+    fn read_u16_be(cursor: &mut std::io::Cursor<&[u8]>) -> u16 {
+        let mut buffer = [0u8; 2];
+        cursor.read_exact(&mut buffer).unwrap();
+        u16::from_be_bytes(buffer)
+    }
+
+    #[expect(
+        clippy::as_conversions,
+        clippy::cast_possible_truncation,
+        clippy::integer_division,
+        clippy::integer_division_remainder_used,
+        reason = "These are just for tests"
+    )]
+    fn parse_payload_cursor(data: &[u8]) -> Vec<Vec<u16>> {
+        let mut cursor = std::io::Cursor::new(data);
+        let angle_count = read_u16_be(&mut cursor) as usize;
+        let mut out = Vec::with_capacity(angle_count);
+
+        for _ in 0..angle_count {
+            let byte_length = read_u16_be(&mut cursor) as usize;
+
+            let mut values = Vec::with_capacity(byte_length / 2);
+            let mut buf = vec![0u8; byte_length];
+            cursor.read_exact(&mut buf).unwrap();
+            for chunk in buf.chunks_exact(2) {
+                values.push(u16::from_be_bytes(chunk.try_into().unwrap()));
+            }
+            out.push(values);
+        }
+
+        assert!(cursor.position() as usize == data.len());
+        out
+    }
+
+    async fn app() -> axum::Router {
+        let config = crate::config::Config {
+            db_path: "./fixtures/sample_16x16.db".into(),
+        };
+
+        let pool = crate::app::db(config).await.unwrap();
+        crate::app::router(pool).await.unwrap()
+    }
+
+    #[tokio::test]
+    async fn hello() {
+        let response = app()
+            .await
+            .oneshot(Request::get("/").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = to_bytes(response.into_body(), 100).await.unwrap();
+
+        assert_eq!(body, "hello");
+    }
+
+    #[tokio::test]
+    async fn unpacking_viewshed() {
+        let response = app()
+            .await
+            .oneshot(
+                Request::get("/viewshed/-3.1229856,51.4897910")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = to_bytes(response.into_body(), 10000).await.unwrap();
+
+        let segments = parse_payload_cursor(&body);
+
+        assert_eq!(segments[0], vec![0, 4]);
+        assert_eq!(segments[300], vec![0, 2, 3, 1]);
+    }
+}
