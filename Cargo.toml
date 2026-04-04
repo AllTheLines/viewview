@@ -1,8 +1,14 @@
 [workspace]
 resolver = "2"
-members = [ "crates/server",
+members = [
+    "crates/server",
     "crates/tasks",
 ]
+
+[workspace.dependencies]
+clap = { version = "4.5.47", features = ["derive"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.20", default-features = false, features = ["env-filter", "ansi"] }
 
 [patch.crates-io]
 # Just waiting for any release after v0.54.6 and for `async-ssh2-tokio` to update from 0.12.0.
