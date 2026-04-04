@@ -1,16 +1,48 @@
-//! serves the website
+//! An HTTP server to return viewshed data.
 
+#![expect(
+    clippy::big_endian_bytes,
+    reason = "It's how we pack the viewhsed blobs"
+)]
+
+use clap::Parser as _;
+use color_eyre::Result;
+use tracing_subscriber::{Layer as _, layer::SubscriberExt as _, util::SubscriberInitExt as _};
+
+mod app;
+mod config;
+mod metadata;
+mod utils;
+
+#[cfg(test)]
+mod test;
+
+/// Entrypoint
 #[tokio::main]
-async fn main() {
-    let serve_index = tower_http::services::ServeDir::new("./assets");
+async fn main() -> Result<()> {
+    setup_logging()?;
+    let config = crate::config::Config::parse();
+    let pool = app::db(config.clone()).await?;
+    let router = app::router(pool).await?;
 
-    let app = axum::Router::new()
-        .fallback_service(serve_index)
-        .layer(tower::ServiceBuilder::new().layer(tower_http::trace::TraceLayer::new_for_http()));
+    let address = "0.0.0.0:3333";
 
-    // run our app with hyper, listening globally on port 3000
-    #[expect(clippy::unwrap_used, reason="we need to crash the server if it can't start")]
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3333").await.unwrap();
-    #[expect(clippy::unwrap_used, reason="we need to crash the server if it can't start")]
-    axum::serve(listener, app).await.unwrap();
+    tracing::info!("Starting server on: {address}");
+
+    let listener = tokio::net::TcpListener::bind(address).await?;
+    axum::serve(listener, router).await?;
+
+    Ok(())
+}
+
+/// Setup logging.
+fn setup_logging() -> Result<()> {
+    let filters = tracing_subscriber::EnvFilter::builder()
+        .with_default_directive("server=info".parse()?)
+        .from_env_lossy();
+    let filter_layer = tracing_subscriber::fmt::layer().with_filter(filters);
+    let tracing_setup = tracing_subscriber::registry().with(filter_layer);
+    tracing_setup.init();
+
+    Ok(())
 }

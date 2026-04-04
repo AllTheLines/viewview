@@ -1,19 +1,37 @@
 //! Project coordinates between different systems.
 
-use color_eyre::Result;
+use color_eyre::{Result, eyre::ContextCompat as _};
 
 /// The radius of the planet in kilometers.
 pub const EARTH_RADIUS: f32 = 6371.0;
 
-/// A latitude/longtitude coordinate.
+/// A longtitude/latitude coordinate.
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, PartialEq, Default)]
 pub struct LonLatCoord(pub geo::Coord);
 
-#[expect(clippy::unreachable, reason = "This is just a 2D coordinate.")]
+impl LonLatCoord {
+    /// Parse coordinates from a string.
+    ///
+    /// # Errors
+    /// On parsing errors
+    #[inline]
+    pub fn parse(coordinates: &str) -> Result<Self> {
+        let mut parts = coordinates.split(',');
+        let lon_str = parts.next().context("missing longtitude")?.trim();
+        let lat_str = parts.next().context("missing latitude")?.trim();
+
+        Ok(Self(geo::Coord {
+            x: lon_str.parse()?,
+            y: lat_str.parse()?,
+        }))
+    }
+}
+
 impl rstar::Point for LonLatCoord {
     type Scalar = f64;
     const DIMENSIONS: usize = 2;
 
+    #[inline]
     fn generate(mut generator: impl FnMut(usize) -> Self::Scalar) -> Self {
         Self(geo::coord! {
             x: generator(0),
@@ -21,18 +39,22 @@ impl rstar::Point for LonLatCoord {
         })
     }
 
+    #[inline]
     fn nth(&self, index: usize) -> Self::Scalar {
         match index {
             0 => self.0.x,
             1 => self.0.y,
+            #[expect(clippy::unreachable, reason = "This is just a 2D coordinate.")]
             _ => unreachable!(),
         }
     }
 
+    #[inline]
     fn nth_mut(&mut self, index: usize) -> &mut Self::Scalar {
         match index {
             0 => &mut self.0.x,
             1 => &mut self.0.y,
+            #[expect(clippy::unreachable, reason = "This is just a 2D coordinate.")]
             _ => unreachable!(),
         }
     }
@@ -60,7 +82,11 @@ impl Convert {
         Ok(proj4rs::Proj::from_proj_string(&string)?)
     }
 
+    #[inline]
     /// Convert from degrees to the AEQD metric projection.
+    ///
+    /// # Errors
+    /// When projection conversion fails.
     pub fn to_meters(&self, source: LonLatCoord) -> Result<geo::Coord> {
         let mut converted = (source.0.x.to_radians(), source.0.y.to_radians(), 0.0f64);
         proj4rs::transform::transform(
@@ -72,7 +98,11 @@ impl Convert {
         Ok(geo::coord! { x: converted.0, y: converted.1 })
     }
 
+    #[inline]
     /// Convert from the AEQD metric projection to degrees.
+    ///
+    /// # Errors
+    /// When projection conversion fails.
     pub fn to_degrees(&self, source: geo::Coord) -> Result<LonLatCoord> {
         let mut converted = (source.x, source.y, 0.0f64);
         proj4rs::transform::transform(
@@ -86,6 +116,8 @@ impl Convert {
         ))
     }
 
+    #[inline]
+    #[must_use]
     /// Calculate the width of a degree in meters at the given latitude.
     pub fn meters_per_degree(latitude: f64) -> f32 {
         #[expect(
