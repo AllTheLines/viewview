@@ -18,6 +18,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build-test:
+    name: Build and Test 🔬
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.94.1
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install libgdal-dev gdal-bin
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --verbose --all
+      - name: Run tests
+        run: cargo test
+
   lints:
     name: "Lints 💅"
     runs-on: ubuntu-latest
