@@ -3,13 +3,14 @@ import {
   LngLatBounds,
   type Map as MapLibre,
 } from 'maplibre-gl';
+import { getConfig } from './config.ts';
 import fragment from './fragment.glsl?raw';
 import { state as sharedState } from './state.svelte.ts';
 import {
   getParentTile,
+  getPMTilesSource,
   isTileIntersectingBounds,
   Log,
-  PMTILES_SERVER,
   packFloatToU8s,
   tileKey,
 } from './utils';
@@ -49,13 +50,11 @@ type HeatmapState =
     }
   | undefined;
 
-const config: { tileSize: number } = {
+const tilingConfig: { tileSize: number } = {
   tileSize: 256,
 };
 
-// The average surface area visibile from a point far out at sea, where it can only see sea.
-// This is used to fill regions for which there is no elevation data.
-const AVERAGE_SURFACE_VISIBILITY = 700000.0;
+const config = getConfig();
 
 let fillerTile: TileGL;
 
@@ -66,11 +65,7 @@ function initialise() {
     return;
   }
 
-  const params = new URLSearchParams(self.location.search);
-  let source = params.get('pmtiles');
-  if (!source) {
-    source = PMTILES_SERVER;
-  }
+  const source = getPMTilesSource();
   heatmapState.worker.postMessage({ type: 'init', source });
   heatmapState.worker.onmessage = onWorkerMessage;
 
@@ -322,7 +317,7 @@ const HeatmapLayer: CustomLayerInterface = {
       );
       gl.uniform1f(
         heatmapState.uniforms.uAverageSurfaceVisibility,
-        AVERAGE_SURFACE_VISIBILITY,
+        config.heatmap.averageVisibility,
       );
 
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -367,8 +362,8 @@ function makeTile(
     heatmapState.gl.TEXTURE_2D,
     0,
     heatmapState.gl.RGBA8UI,
-    config.tileSize,
-    config.tileSize,
+    tilingConfig.tileSize,
+    tilingConfig.tileSize,
     0,
     heatmapState.gl.RGBA_INTEGER,
     heatmapState.gl.UNSIGNED_BYTE,
@@ -384,12 +379,12 @@ function makeTile(
 }
 
 function makeFillerTile() {
-  const data = new Uint8Array(config.tileSize ** 2 * 4);
-  data.set(packFloatToU8s(AVERAGE_SURFACE_VISIBILITY));
+  const data = new Uint8Array(tilingConfig.tileSize ** 2 * 4);
+  data.set(packFloatToU8s(config.heatmap.averageVisibility));
 
   const tile = makeTile(
     'filler',
-    AVERAGE_SURFACE_VISIBILITY,
+    config.heatmap.averageVisibility,
     new LngLatBounds(),
     data,
   );

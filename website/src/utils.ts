@@ -1,5 +1,6 @@
 import nprogress from 'accessible-nprogress';
 import { LngLat, LngLatBounds } from 'maplibre-gl';
+import { getViewViewRegion } from './config';
 
 export const VERSION = 'ryan-fullworld-raw';
 export const CDN_BUCKET = 'https://cdn.alltheviews.world';
@@ -13,6 +14,9 @@ export const PMTILES_SERVER = `${MAP_SERVER}/runs/${VERSION}/pmtiles/${WORLD_PMT
 export const CACHE_BUSTER = '?buster=19:26-20/01/2026';
 
 export const EARTH_RADIUS = 6371_000.0;
+
+// Inherited from the TVS algorithm. It's to counter unfavourable floating point rounding.
+export const ANGLE_SHIFT = 0.0001;
 
 export const Log = {
   // biome-ignore lint/suspicious/noExplicitAny: needed for debugging.
@@ -147,4 +151,30 @@ export function enablePointer() {
   const root = document.getElementById('root');
   if (!root) return;
   root.classList.remove('disable-pointer');
+}
+
+// Rotate a coordinate around the origin.
+export function rotate(x: number, y: number, degrees: number) {
+  const θ = degrees * (Math.PI / 180);
+  const cos = Math.cos(θ);
+  const sin = Math.sin(θ);
+  return [x * cos - y * sin, x * sin + y * cos];
+}
+
+export function getSubdomain() {
+  const parts = window.location.hostname.split('.');
+  return parts.length > 2 ? parts[0] : null;
+}
+
+export function getPMTilesSource() {
+  const params = new URLSearchParams(self.location.search);
+  const source = params.get('pmtiles');
+  if (!source) {
+    if (getViewViewRegion() === 'galiano') {
+      return 'https://pmtiles.alltheviews.world/runs/galiano/pmtiles/galiano';
+    }
+    return PMTILES_SERVER;
+  } else {
+    return source;
+  }
 }
