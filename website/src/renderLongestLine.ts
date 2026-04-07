@@ -4,14 +4,13 @@ import { navigate } from 'svelte5-router';
 import { getLongestLine } from './getLongestLine.ts';
 import { state } from './state.svelte.ts';
 import {
+  ANGLE_SHIFT,
   aeqdProjectionString,
   computeBBox,
   disablePointer,
+  rotate,
   toRadians,
 } from './utils.ts';
-
-// Inherited from the TVS algorithm. It's to counter unfavourable floating point rounding.
-const ANGLE_SHIFT = 0.0001;
 
 export function setupLongestLines(coordFromURL: string | undefined) {
   state.map?.addSource('longest-line', {
@@ -116,14 +115,6 @@ export async function render(lngLat: LngLat) {
   });
   state.isFlying = true;
   disablePointer();
-}
-
-// Rotate a coordinate around the origin.
-function rotate(x: number, y: number, degrees: number) {
-  const θ = degrees * (Math.PI / 180);
-  const cos = Math.cos(θ);
-  const sin = Math.sin(θ);
-  return [x * cos - y * sin, x * sin + y * cos];
 }
 
 export function longestLineURL(lon: number, lat: number) {

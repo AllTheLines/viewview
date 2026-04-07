@@ -19,6 +19,7 @@
   import ClickEffect, { initClickEffect } from './ClickEffect.svelte';
   import CollapsableModal from './components/CollapsableModal.svelte';
   import LayerToggle from './components/LayerToggle.svelte';
+  import { getConfig, getViewViewRegion } from './config.ts';
   import { HeatmapLayer } from './HeatmapLayer.ts';
   import heatmap_layer from './images/heatmap_layer.png';
   import mountain_peak from './images/mountain_peak.png';
@@ -26,6 +27,7 @@
   import Layout from './Layout.svelte';
   import map_vector from './map_vector.styles.json';
   import { render, setupLongestLines } from './renderLongestLine.ts';
+  import { setupViewsheds } from './renderViewsheds.ts';
   import Slider from './Slider.svelte';
   import { state } from './state.svelte.ts';
   import TopLines from './TopLines.svelte';
@@ -36,10 +38,7 @@
   } from './worldLines.ts';
 
   let { longest } = $props();
-  const minZoom = 1.6;
-  const maxZoom = 15;
-  const startingZoom = 2.0;
-  const startingCentre = new LngLat(-5.0, 25.0);
+  const config = getConfig();
 
   function addHeatmapLayer() {
     // 'mountain_peaks' is used here to mean, mountain peaks and every other layer after it.
@@ -74,8 +73,8 @@
     const viewportHeight = state.map?.getContainer().clientHeight;
     if (viewportHeight === undefined) {
       return {
-        center: startingCentre,
-        zoom: startingZoom,
+        center: config.map.startingCentre,
+        zoom: config.map.startingZoom,
       };
     }
 
@@ -94,7 +93,7 @@
 
     return {
       center: new LngLat(lngLat.lng, latitude),
-      zoom: Math.max(minZoom, Math.min(maxZoom, zoom)),
+      zoom: Math.max(config.map.minZoom, Math.min(config.map.maxZoom, zoom)),
     };
   }
 
@@ -110,8 +109,8 @@
   onMount(async () => {
     state.map = new MapLibre({
       container: 'map',
-      zoom: startingZoom,
-      center: startingCentre,
+      zoom: config.map.startingZoom,
+      center: config.map.startingCentre,
       style: map_vector as StyleSpecification,
       transformConstrain,
     });
@@ -136,7 +135,12 @@
       if (longest === '') {
         addHeatmapLayer();
       }
-      setupLongestLines(longest);
+      if (getViewViewRegion() === 'world') {
+        setupLongestLines(longest);
+      }
+      if (getViewViewRegion() === 'galiano') {
+        setupViewsheds();
+      }
       await updateTopLongestLines();
     });
 
@@ -170,7 +174,8 @@
 <Layout>
 	<ClickEffect />
 	<div id="info">
-		<CollapsableModal collapsedIcon={Info}
+		<CollapsableModal
+			collapsedIcon={Info}
 			isOpen={state.isInfoOpen}
 			onOpen={() => {
 				state.isSearchOpen = false;
