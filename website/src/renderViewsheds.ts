@@ -1,14 +1,6 @@
-import { type GeoJSONFeature, type GeoJSONSource, LngLat } from 'maplibre-gl';
-import proj4 from 'proj4';
-import { navigate } from 'svelte5-router';
-import { getLongestLine } from './getLongestLine.ts';
+import type { GeoJSONSource, LngLat } from 'maplibre-gl';
+import { type PolarSegments, Viewshed } from './polarSegments.ts';
 import { state } from './state.svelte.ts';
-import {
-  aeqdProjectionString,
-  computeBBox,
-  disablePointer,
-  toRadians,
-} from './utils.ts';
 
 export function setupViewsheds() {
   state.map?.addSource('viewshed', {
@@ -24,9 +16,9 @@ export function setupViewsheds() {
     type: 'fill',
     source: 'viewshed',
     paint: {
-      'fill-color': '#ff0000',
-      'fill-outline-color': '#ffffff',
-      'fill-opacity': 0.8,
+      'fill-color': '#00ff00',
+      'fill-outline-color': '#00ff00',
+      'fill-opacity': 0.3,
     },
   });
 
@@ -43,93 +35,45 @@ export async function render(lngLat: LngLat) {
   const bytes = await getViewshedData(lngLat);
   const segments = parseViewshedBytes(bytes);
 
-  if (import.meta.env.DEV) {
-    console.log(segments);
-  }
+  const builder = new Viewshed(lngLat, segments);
+  const viewshed = builder.create();
 
-  // longest_line.angle = longest_line.angle + ANGLE_SHIFT;
-  //
-  // const θ = toRadians(longest_line.angle);
-  // const dx = longest_line.distance * Math.cos(θ);
-  // const dy = longest_line.distance * Math.sin(θ);
-  // const rotatedClockwiseAEQD = rotate(dx, dy, -0.5);
-  // const rotatedAntiAEQD = rotate(dx, dy, +0.5);
-  //
-  // const aeqd = aeqdProjectionString(lngLat.lng, lngLat.lat);
-  // const unrotated = proj4(aeqd, proj4.WGS84, [dx, dy]);
-  // longest_line.from = lngLat;
-  // longest_line.to = new LngLat(unrotated[0], unrotated[1]);
-  // state.longestLine = longest_line;
-  //
-  // const rotatedClockwiseLonLat = proj4(aeqd, proj4.WGS84, rotatedClockwiseAEQD);
-  // const rotatedAntiLonLat = proj4(
-  //   aeqd,
-  //   '+proj=longlat +datum=WGS84 +no_defs',
-  //   rotatedAntiAEQD,
-  // );
-  // const viewCoordinates = [
-  //   lngLat.toArray(),
-  //   rotatedClockwiseLonLat,
-  //   rotatedAntiLonLat,
-  //   lngLat.toArray(),
-  // ];
-  //
-  // const longestLineGeoJSON = {
-  //   type: 'Feature',
-  //   geometry: {
-  //     type: 'Polygon',
-  //     coordinates: [viewCoordinates],
-  //   },
-  //   properties: {},
-  // } as GeoJSONFeature;
-  //
-  // const source = state.map?.getSource('longest-line') as GeoJSONSource;
-  //
-  // source?.setData(longestLineGeoJSON);
-  //
-  // state.map?.fitBounds(computeBBox(viewCoordinates), {
-  //   padding: 100,
-  //   duration: 1000,
-  // });
-  // state.isFlying = true;
-  // disablePointer();
+  const source = state.map?.getSource('viewshed') as GeoJSONSource;
+
+  if (viewshed) {
+    source?.setData(viewshed);
+  }
 }
 
 async function getViewshedData(lngLat: LngLat) {
   const response = await fetch(
-    `http://localhost:3333/viewshed/${lngLat.lng},${lngLat.lat}`,
+    `https://api.alltheviews.world/viewshed/${lngLat.lng},${lngLat.lat}`,
   );
   return await response.bytes();
 }
 
-function parseViewshedBytes(data) {
-  const buffer = data.buffer || data;
+function parseViewshedBytes(data: Uint8Array<ArrayBuffer>): PolarSegments[] {
+  const buffer = data.buffer;
   const view = new DataView(buffer);
   let offset = 0;
+  const out: PolarSegments[] = [];
 
-  const angleCount = view.getUint16(offset, false);
-  console.log(angleCount);
-  offset += 2;
-
-  const out = [];
-
-  for (let i = 0; i < angleCount; i++) {
-    const byteLength = view.getUint16(offset, false);
+  while (offset < buffer.byteLength) {
+    const angleID = view.getUint16(offset, false);
     offset += 2;
 
-    const values = [];
-    const numElements = byteLength / 2;
+    const segmentsLength = view.getUint16(offset, false);
+    offset += 2;
+
+    const pairs = [];
+    const numElements = segmentsLength / 2;
 
     for (let j = 0; j < numElements; j++) {
-      values.push(view.getUint16(offset, false));
+      pairs.push(view.getUint16(offset, false));
       offset += 2;
     }
 
-    out.push(values);
-  }
-
-  if (offset !== buffer.byteLength) {
-    console.error('Viewshed unpacker did not reach end of data');
+    out.push({ angleID, pairs: pairs });
   }
 
   return out;
