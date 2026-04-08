@@ -1,36 +1,40 @@
 import type { Map as MapLibre } from 'maplibre-gl';
-import type { LongestLine } from './getLongestLine';
-import type { LongestLineH3 } from './worldLines';
+import { getConfig } from './config';
+import type { LongestLine } from './lib/getLongestLine';
+import type { LongestLineH3 } from './lib/worldLines';
 
 export type HeatmapConfig = {
   contrast: number;
   intensity: number;
 };
 
-let map: MapLibre | undefined;
-let worldLongestLines: LongestLineH3[] | undefined;
-let longestLine: LongestLine | undefined;
-let longestLineInViewport: LongestLineH3 | undefined;
-const isFirstInteraction = false;
-const bruteForceLoadingLine = false;
-const heatmapConfig: HeatmapConfig = {
-  contrast: 1 - 0.45,
-  intensity: 1 - 0.5,
-};
-const isFlying = false;
-// Mobile-only events
-const isSearchOpen = false;
-const isInfoOpen = true;
+export interface AppState {
+  map: MapLibre | undefined;
+  config: ReturnType<typeof getConfig>;
+  worldLongestLines: LongestLineH3[] | undefined;
+  longestLine: LongestLine | undefined;
+  longestLineInViewport: LongestLineH3 | undefined;
+  isFirstInteraction: boolean;
+  bruteForceLoadingLine: boolean;
+  heatmapConfig: HeatmapConfig;
+  isFlying: boolean;
+  isSearchOpen: boolean;
+  isInfoOpen: boolean;
+}
 
-export const state = $state({
-  map,
-  worldLongestLines,
-  longestLine,
-  longestLineInViewport,
-  isFirstInteraction,
-  bruteForceLoadingLine,
-  heatmapConfig,
-  isFlying,
-  isSearchOpen,
-  isInfoOpen,
+export const state = $state<AppState>({
+  map: undefined,
+  config: getConfig(),
+  worldLongestLines: undefined,
+  longestLine: undefined,
+  longestLineInViewport: undefined,
+  isFirstInteraction: false,
+  bruteForceLoadingLine: false,
+  heatmapConfig: {
+    contrast: 1 - 0.45,
+    intensity: 1 - 0.5,
+  },
+  isFlying: false,
+  isSearchOpen: false,
+  isInfoOpen: true,
 });

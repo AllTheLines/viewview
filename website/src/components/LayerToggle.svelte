@@ -1,7 +1,7 @@
 <script lang="ts">
   export let image: string;
   export let callback: (arg0: boolean) => void;
-  let isToggled = true;
+  export let isToggled = true;
 
   function __toggle() {
     isToggled = !isToggled;
