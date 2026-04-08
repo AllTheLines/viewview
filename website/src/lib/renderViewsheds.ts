@@ -1,6 +1,6 @@
 import type { GeoJSONSource, LngLat } from 'maplibre-gl';
+import { state } from '../state.svelte.ts';
 import { type PolarSegments, Viewshed } from './polarSegments.ts';
-import { state } from './state.svelte.ts';
 
 export function setupViewsheds() {
   state.map?.addSource('viewshed', {
@@ -17,8 +17,8 @@ export function setupViewsheds() {
     source: 'viewshed',
     paint: {
       'fill-color': '#00ff00',
-      'fill-outline-color': '#00ff00',
-      'fill-opacity': 0.3,
+      'fill-outline-color': 'transparent',
+      'fill-opacity': 0.4,
     },
   });
 
@@ -35,7 +35,8 @@ export async function render(lngLat: LngLat) {
   const bytes = await getViewshedData(lngLat);
   const segments = parseViewshedBytes(bytes);
 
-  const builder = new Viewshed(lngLat, segments);
+  const scale = 50; // TODO: Get from API?
+  const builder = new Viewshed(lngLat, scale, segments);
   const viewshed = builder.create();
 
   const source = state.map?.getSource('viewshed') as GeoJSONSource;
@@ -46,8 +47,12 @@ export async function render(lngLat: LngLat) {
 }
 
 async function getViewshedData(lngLat: LngLat) {
+  let apiBase = 'https://api.alltheviews.world';
+  if (import.meta.env.DEV) {
+    apiBase = 'http://localhost:3333';
+  }
   const response = await fetch(
-    `https://api.alltheviews.world/viewshed/${lngLat.lng},${lngLat.lat}`,
+    `${apiBase}/viewshed/${lngLat.lng},${lngLat.lat}`,
   );
   return await response.bytes();
 }

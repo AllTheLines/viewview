@@ -3,9 +3,7 @@ import {
   LngLatBounds,
   type Map as MapLibre,
 } from 'maplibre-gl';
-import { getConfig } from './config.ts';
 import fragment from './fragment.glsl?raw';
-import { state as sharedState } from './state.svelte.ts';
 import {
   getParentTile,
   getPMTilesSource,
@@ -13,7 +11,8 @@ import {
   Log,
   packFloatToU8s,
   tileKey,
-} from './utils';
+} from './lib/utils';
+import { state as sharedState, state } from './state.svelte.ts';
 import vertex from './vertex.glsl?raw';
 import type { WorkerEvent } from './Worker';
 
@@ -53,8 +52,6 @@ type HeatmapState =
 const tilingConfig: { tileSize: number } = {
   tileSize: 256,
 };
-
-const config = getConfig();
 
 let fillerTile: TileGL;
 
@@ -317,7 +314,7 @@ const HeatmapLayer: CustomLayerInterface = {
       );
       gl.uniform1f(
         heatmapState.uniforms.uAverageSurfaceVisibility,
-        config.heatmap.averageVisibility,
+        state.config.heatmap.averageVisibility,
       );
 
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -380,11 +377,11 @@ function makeTile(
 
 function makeFillerTile() {
   const data = new Uint8Array(tilingConfig.tileSize ** 2 * 4);
-  data.set(packFloatToU8s(config.heatmap.averageVisibility));
+  data.set(packFloatToU8s(state.config.heatmap.averageVisibility));
 
   const tile = makeTile(
     'filler',
-    config.heatmap.averageVisibility,
+    state.config.heatmap.averageVisibility,
     new LngLatBounds(),
     data,
   );

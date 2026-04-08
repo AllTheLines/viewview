@@ -20,6 +20,12 @@ html {
   pointer-events: none;
 }
 
+.unclickable_icon {
+  display: inline-block;
+  scale: 0.7;
+  translate: 0px 6px;
+}
+
 a {
   color: color.adjust($primary-colour, $lightness: -15%);
   &:hover {

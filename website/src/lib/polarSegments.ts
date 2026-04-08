@@ -8,10 +8,11 @@ export type PolarSegments = { angleID: number; pairs: number[] };
 export class Viewshed {
   centre: LngLat;
   polar_segments: PolarSegments[];
-  scale: number = 100; // TODO: make configurable
+  scale: number;
 
-  constructor(centre: LngLat, polar_segments: PolarSegments[]) {
+  constructor(centre: LngLat, scale: number, polar_segments: PolarSegments[]) {
     this.centre = centre;
+    this.scale = scale;
     this.polar_segments = polar_segments;
   }
 

@@ -6,7 +6,7 @@ import {
   MAP_SERVER_SUBDOMAIN,
   tileKey,
   tileToLatLonBounds,
-} from './utils';
+} from './lib/utils';
 
 export type WorkerEvent =
   | { type: 'init'; source: string }

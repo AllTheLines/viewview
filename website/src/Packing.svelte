@@ -7,8 +7,8 @@
   } from 'maplibre-gl';
   import { onMount } from 'svelte';
   import Layout from './Layout.svelte';
+  import { EARTH_RADIUS, toDegrees, toRadians } from './lib/utils.ts';
   import { state } from './state.svelte.ts';
-  import { EARTH_RADIUS, toDegrees, toRadians } from './utils.ts';
 
   onMount(() => {
     state.map = new MapLibre({
