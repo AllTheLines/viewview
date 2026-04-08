@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { navigate } from 'svelte5-router';
-  import { render } from './renderLongestLine';
+  import { render } from './lib/renderLongestLine';
+  import { loadH3Lines } from './lib/worldLines';
   import { state } from './state.svelte.ts';
-  import { loadH3Lines } from './worldLines';
 
   onMount(async () => {
     if (state.worldLongestLines === undefined) {

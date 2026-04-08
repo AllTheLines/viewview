@@ -1,5 +1,6 @@
 import type { GeoTIFFImage } from 'geotiff';
 import { LngLat, type LngLatBounds } from 'maplibre-gl';
+import { state } from '../state.svelte';
 import {
   convertLngLatToRasterXY,
   convertRasterXYToLngLat,
@@ -7,7 +8,6 @@ import {
   findTilesIntersectingViewport,
 } from './getLongestLine';
 import { longestLineURL } from './renderLongestLine';
-import { state } from './state.svelte';
 import {
   CACHE_BUSTER,
   CDN_BUCKET,

@@ -2,8 +2,8 @@
   import { Search } from '@lucide/svelte';
   import { MapboxSearchBox } from '@mapbox/search-js-web';
   import { onMount } from 'svelte';
+  import { disablePointer } from '../lib/utils.ts';
   import { state } from '../state.svelte.ts';
-  import { disablePointer } from '../utils.ts';
 
   onMount(() => {
     const searchBox = new MapboxSearchBox();
@@ -114,4 +114,3 @@
 		}
 	}
 </style>
-

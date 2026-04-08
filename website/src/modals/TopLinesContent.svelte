@@ -1,8 +1,8 @@
 <script lang="ts">
   import { LngLat } from 'maplibre-gl';
   import { navigate } from 'svelte5-router';
-  import { render } from './renderLongestLine';
-  import { LongestLineH3 } from './worldLines';
+  import { render } from '../lib/renderLongestLine';
+  import { LongestLineH3 } from '../lib/worldLines';
 
   // biome-ignore lint/correctness/noUnusedVariables: used in template
   const topLines: LongestLineH3[] = [
