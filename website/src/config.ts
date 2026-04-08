@@ -1,7 +1,10 @@
 import { LngLat } from 'maplibre-gl';
-import { getPMTilesSource, getSubdomain } from './utils';
+import { getPMTilesSource, getSubdomain } from './lib/utils';
+
+export type ViewViewProject = 'world' | 'galiano';
 
 type Config = {
+  project: ViewViewProject;
   map: {
     minZoom: number;
     maxZoom: number;
@@ -16,6 +19,7 @@ type Config = {
 };
 
 export const worldConfig: Config = {
+  project: 'world',
   map: {
     minZoom: 1.6,
     maxZoom: 16,
@@ -28,6 +32,7 @@ export const worldConfig: Config = {
 };
 
 export const galianoConfig: Config = {
+  project: 'galiano',
   map: {
     minZoom: 11,
     maxZoom: 16,
@@ -39,7 +44,7 @@ export const galianoConfig: Config = {
   },
 };
 
-export function getViewViewRegion() {
+export function getViewViewProject() {
   const galianoSignature = 'galiano';
   if (
     getSubdomain()?.includes(galianoSignature) ||
@@ -53,7 +58,7 @@ export function getViewViewRegion() {
 }
 
 export function getConfig() {
-  switch (getViewViewRegion()) {
+  switch (getViewViewProject()) {
     case 'galiano':
       return galianoConfig;
     default:

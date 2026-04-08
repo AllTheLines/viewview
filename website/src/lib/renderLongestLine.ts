@@ -1,8 +1,8 @@
 import { type GeoJSONFeature, type GeoJSONSource, LngLat } from 'maplibre-gl';
 import proj4 from 'proj4';
 import { navigate } from 'svelte5-router';
+import { state } from '../state.svelte.ts';
 import { getLongestLine } from './getLongestLine.ts';
-import { state } from './state.svelte.ts';
 import {
   ANGLE_SHIFT,
   aeqdProjectionString,

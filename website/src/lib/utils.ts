@@ -1,6 +1,6 @@
 import nprogress from 'accessible-nprogress';
 import { LngLat, LngLatBounds } from 'maplibre-gl';
-import { getViewViewRegion } from './config';
+import type { AppState } from '../state.svelte';
 
 export const VERSION = 'ryan-fullworld-raw';
 export const CDN_BUCKET = 'https://cdn.alltheviews.world';
@@ -170,11 +170,27 @@ export function getPMTilesSource() {
   const params = new URLSearchParams(self.location.search);
   const source = params.get('pmtiles');
   if (!source) {
-    if (getViewViewRegion() === 'galiano') {
+    if (getSubdomain()?.includes('galiano')) {
       return 'https://pmtiles.alltheviews.world/runs/galiano/pmtiles/galiano';
     }
     return PMTILES_SERVER;
   } else {
     return source;
+  }
+}
+
+export function setVectorVisibility(state: AppState, isVisible: boolean) {
+  const layers = state.map?.getStyle().layers || [];
+  for (const layer of layers) {
+    if (layer.id === 'mountain_peaks') continue;
+    if (layer.id === 'background') continue;
+    if (layer.id === 'longest-line-fill') continue;
+    if (layer.id === 'viewshed-fill') continue;
+    if (state.map?.getLayer(layer.id))
+      state.map?.setLayoutProperty(
+        layer.id,
+        'visibility',
+        isVisible ? 'visible' : 'none',
+      );
   }
 }

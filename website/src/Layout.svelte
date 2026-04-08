@@ -12,7 +12,9 @@
 
 <div id="map"></div>
 
-<SearchBox />
+{#if state.config.project === "world"}
+	<SearchBox />
+{/if}
 
 <main>
 	<slot />
