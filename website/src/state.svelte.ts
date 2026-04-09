@@ -1,6 +1,7 @@
 import type { Map as MapLibre } from 'maplibre-gl';
 import { getConfig } from './config';
 import type { LongestLine } from './lib/getLongestLine';
+import type { Viewshed } from './lib/Viewshed';
 import type { LongestLineH3 } from './lib/worldLines';
 
 export type HeatmapConfig = {
@@ -17,6 +18,7 @@ export interface AppState {
   isFirstInteraction: boolean;
   bruteForceLoadingLine: boolean;
   heatmapConfig: HeatmapConfig;
+  viewsheds: Viewshed[];
   isFlying: boolean;
   isSearchOpen: boolean;
   isInfoOpen: boolean;
@@ -34,6 +36,7 @@ export const state = $state<AppState>({
     contrast: 1 - 0.45,
     intensity: 1 - 0.5,
   },
+  viewsheds: [],
   isFlying: false,
   isSearchOpen: false,
   isInfoOpen: true,

@@ -1,49 +1,111 @@
-import type { GeoJSONSource, LngLat } from 'maplibre-gl';
+import type { LngLat } from 'maplibre-gl';
 import { state } from '../state.svelte.ts';
-import { type PolarSegments, Viewshed } from './polarSegments.ts';
+import { DEFAULT_OPACITY, type PolarSegments, Viewshed } from './Viewshed.ts';
 
 export function setupViewsheds() {
-  state.map?.addSource('viewshed', {
-    type: 'geojson',
-    data: {
-      type: 'FeatureCollection',
-      features: [],
-    },
-  });
-
-  state.map?.addLayer({
-    id: 'viewshed-fill',
-    type: 'fill',
-    source: 'viewshed',
-    paint: {
-      'fill-color': '#00ff00',
-      'fill-outline-color': 'transparent',
-      'fill-opacity': 0.4,
-    },
-  });
+  renderAllViewsheds();
 
   state.map?.on('click', async (event) => {
     if (!state.map) {
       return;
     }
 
-    render(event.lngLat);
+    removeUnlockedViewsheds();
+    renderNewViewshed(event.lngLat);
   });
 }
 
-export async function render(lngLat: LngLat) {
+export function renderAllViewsheds() {
+  for (const viewshed of state.viewsheds) {
+    const layer = state.map?.getLayer(viewshed.getViewshedLayerID());
+    if (!layer) {
+      addViewshed(viewshed);
+    }
+
+    state.map?.setLayoutProperty(
+      viewshed.getViewshedLayerID(),
+      'visibility',
+      viewshed.isVisible ? 'visible' : 'none',
+    );
+  }
+}
+
+export function highlightViewshed(viewshedToHighlight: Viewshed) {
+  for (const viewshed of state.viewsheds) {
+    if (viewshed.id === viewshedToHighlight.id) continue;
+
+    state.map?.setPaintProperty(
+      viewshed.getViewshedLayerID(),
+      'fill-opacity',
+      0.05,
+    );
+  }
+}
+
+export function desaturateAllViewsheds() {
+  for (const viewshed of state.viewsheds) {
+    state.map?.setPaintProperty(
+      viewshed.getViewshedLayerID(),
+      'fill-opacity',
+      DEFAULT_OPACITY,
+    );
+  }
+}
+
+export function updateViewshedColour(viewshed: Viewshed) {
+  state.map?.setPaintProperty(
+    viewshed.getViewshedLayerID(),
+    'fill-color',
+    viewshed.colour,
+  );
+}
+
+export function removeUnlockedViewsheds() {
+  for (const viewshed of state.viewsheds) {
+    const layer = state.map?.getLayer(viewshed.getViewshedLayerID());
+
+    if (layer && !viewshed.isLocked) {
+      removeViewshed(viewshed);
+    }
+  }
+}
+
+export function removeViewshed(viewshed: Viewshed) {
+  state.viewsheds = state.viewsheds.filter((v) => v !== viewshed);
+  state.map?.removeLayer(viewshed.getViewshedLayerID());
+  state.map?.removeSource(viewshed.getViewshedSourceID());
+}
+
+export async function renderNewViewshed(lngLat: LngLat) {
   const bytes = await getViewshedData(lngLat);
   const segments = parseViewshedBytes(bytes);
 
   const scale = 50; // TODO: Get from API?
-  const builder = new Viewshed(lngLat, scale, segments);
-  const viewshed = builder.create();
+  const id = crypto.randomUUID();
+  const viewshed = new Viewshed(id, lngLat, scale, segments);
+  state.viewsheds.push(viewshed);
 
-  const source = state.map?.getSource('viewshed') as GeoJSONSource;
+  renderAllViewsheds();
+}
 
-  if (viewshed) {
-    source?.setData(viewshed);
-  }
+function addViewshed(viewshed: Viewshed) {
+  const sourceID = viewshed.getViewshedSourceID();
+
+  state.map?.addSource(sourceID, {
+    type: 'geojson',
+    data: viewshed.geoJSON(),
+  });
+
+  state.map?.addLayer({
+    id: viewshed.getViewshedLayerID(),
+    type: 'fill',
+    source: sourceID,
+    paint: {
+      'fill-color': viewshed.colour,
+      'fill-outline-color': 'transparent',
+      'fill-opacity': DEFAULT_OPACITY,
+    },
+  });
 }
 
 async function getViewshedData(lngLat: LngLat) {
