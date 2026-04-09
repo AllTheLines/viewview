@@ -88,7 +88,7 @@ function onWorkerMessage(event: MessageEvent<WorkerEvent>) {
   }
 }
 
-const HeatmapLayer: CustomLayerInterface = {
+export const HeatmapLayer: CustomLayerInterface = {
   id: 'heatmap-tiles',
   type: 'custom',
   renderingMode: '2d',
@@ -394,5 +394,3 @@ function makeFillerTile() {
 
   fillerTile = tile;
 }
-
-export { HeatmapLayer };
