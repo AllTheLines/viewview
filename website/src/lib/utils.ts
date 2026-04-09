@@ -185,7 +185,7 @@ export function setVectorVisibility(state: AppState, isVisible: boolean) {
     if (layer.id === 'mountain_peaks') continue;
     if (layer.id === 'background') continue;
     if (layer.id === 'longest-line-fill') continue;
-    if (layer.id === 'viewshed-fill') continue;
+    if (layer.id.includes('viewshed-')) continue;
     if (state.map?.getLayer(layer.id))
       state.map?.setLayoutProperty(
         layer.id,

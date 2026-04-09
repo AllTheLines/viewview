@@ -4,19 +4,37 @@ import proj4 from 'proj4';
 import { ANGLE_SHIFT, aeqdProjectionString, rotate, toRadians } from './utils';
 
 export type PolarSegments = { angleID: number; pairs: number[] };
+export const DEFAULT_OPACITY = 0.5;
 
 export class Viewshed {
+  id: string;
   centre: LngLat;
   polar_segments: PolarSegments[];
   scale: number;
+  colour = '#00ff00';
+  isVisible = true;
+  isLocked = false;
 
-  constructor(centre: LngLat, scale: number, polar_segments: PolarSegments[]) {
+  constructor(
+    id: string,
+    centre: LngLat,
+    scale: number,
+    polar_segments: PolarSegments[],
+  ) {
+    this.id = id;
     this.centre = centre;
     this.scale = scale;
     this.polar_segments = polar_segments;
   }
 
-  create() {
+  getViewshedLayerID() {
+    return `viewshed-layer-${this.id}`;
+  }
+  getViewshedSourceID() {
+    return `viewshed-source-${this.id}`;
+  }
+
+  geoJSON() {
     const features = [];
     for (const polar_segment of this.polar_segments) {
       for (let i = 0; i < polar_segment.pairs.length; i += 2) {

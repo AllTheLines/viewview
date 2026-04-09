@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Settings } from '@lucide/svelte';
   import {
+    getRTLTextPluginStatus,
     Map as MapLibre,
     NavigationControl,
     type StyleSpecification,
@@ -22,6 +23,7 @@
   import Acknowledgements from './modals/Acknowledgements.svelte';
   import CurrentLine from './modals/CurrentLine.svelte';
   import TopLines from './modals/TopLines.svelte';
+  import Viewsheds from './modals/Viewsheds.svelte';
   import Welcome from './modals/Welcome.svelte';
   import Slider from './Slider.svelte';
   import { state } from './state.svelte.ts';
@@ -30,6 +32,10 @@
   const config = getConfig();
 
   function addHeatmapLayer() {
+    if (state.map?.getLayer(HeatmapLayer.id) !== undefined) {
+      return;
+    }
+
     // 'mountain_peaks' is used here to mean, mountain peaks and every other layer after it.
     // This allows the heatmap to always appear below everything else.
     state.map?.addLayer(HeatmapLayer, 'mountain_peaks');
@@ -62,20 +68,19 @@
       'bottom-right',
     );
 
-    // https://maplibre.org/maplibre-gl-js/docs/API/functions/setRTLTextPlugin/
-    if (typeof window !== 'undefined') {
+    if (
+      typeof window !== 'undefined' &&
+      getRTLTextPluginStatus() === 'unavailable'
+    ) {
+      // https://maplibre.org/maplibre-gl-js/docs/API/functions/setRTLTextPlugin/
       await setRTLTextPlugin(
         'https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.3.0/dist/mapbox-gl-rtl-text.js',
-        true,
+        true, // Lazy load the plugin only when text is in arabic
       );
     }
 
     state.map.on('load', async () => {
       initClickEffect();
-
-      if (state.config.project === 'world') {
-        setVectorVisibility(state, true);
-      }
 
       if (longest === '') {
         addHeatmapLayer();
@@ -83,12 +88,13 @@
 
       if (state.config.project === 'world') {
         setupLongestLines(longest);
+        setVectorVisibility(state, true);
+        await updateTopLongestLines();
       }
+
       if (state.config.project === 'galiano') {
         setupViewsheds();
       }
-
-      await updateTopLongestLines();
     });
 
     state.map.on('movestart', () => {
@@ -102,11 +108,11 @@
         return;
       }
 
-      if (state.map?.getLayer(HeatmapLayer.id) === undefined) {
-        addHeatmapLayer();
-      }
+      addHeatmapLayer();
 
-      await updateTopLongestLines();
+      if (state.config.project === 'world') {
+        await updateTopLongestLines();
+      }
     });
 
     state.map?.on('moveend', async () => {
@@ -118,10 +124,16 @@
   });
 </script>
 
+<div id="map"></div>
+
 <Layout>
 	<ClickEffect />
 
 	<div id="info">
+		{#if state.config.project === "galiano"}
+			<Viewsheds />
+		{/if}
+
 		{#if state.config.project === "world"}
 			<Welcome />
 		{/if}
@@ -150,6 +162,13 @@
 
 <style lang="scss">
 	@use "./styles/variables.scss" as *;
+
+	#map {
+		position: absolute;
+		height: 100%;
+		width: 100%;
+	}
+
 	#info {
 		position: fixed;
 		top: 1em;
