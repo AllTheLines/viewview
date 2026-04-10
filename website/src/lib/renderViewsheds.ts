@@ -78,10 +78,12 @@ export function removeViewshed(viewshed: Viewshed) {
 
 export async function renderNewViewshed(lngLat: LngLat) {
   const bytes = await getViewshedData(lngLat);
+
   const segments = parseViewshedBytes(bytes);
 
   const scale = 50; // TODO: Get from API?
   const id = crypto.randomUUID();
+
   const viewshed = new Viewshed(id, lngLat, scale, segments);
   state.viewsheds.push(viewshed);
 
@@ -113,9 +115,16 @@ async function getViewshedData(lngLat: LngLat) {
   if (import.meta.env.DEV) {
     apiBase = 'http://localhost:3333';
   }
+
+  const start = performance.now();
   const response = await fetch(
     `${apiBase}/viewshed/${lngLat.lng},${lngLat.lat}`,
   );
+  const end = performance.now();
+  if (import.meta.env.DEV) {
+    console.log(`Viewshed fetched in ms`, end - start);
+  }
+
   return await response.bytes();
 }
 
