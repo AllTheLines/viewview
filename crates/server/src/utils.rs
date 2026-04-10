@@ -1,4 +1,4 @@
-//! Helper code
+//! Helper code.
 
 use color_eyre::Result;
 

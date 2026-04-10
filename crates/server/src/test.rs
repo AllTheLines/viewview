@@ -24,24 +24,23 @@ mod tests {
         clippy::integer_division_remainder_used,
         reason = "These are just for tests"
     )]
-    fn parse_payload_cursor(data: &[u8]) -> Vec<Vec<u16>> {
+    fn parse_payload_cursor(data: &[u8]) -> Vec<(u16, Vec<u16>)> {
         let mut cursor = std::io::Cursor::new(data);
-        let angle_count = read_u16_be(&mut cursor) as usize;
-        let mut out = Vec::with_capacity(angle_count);
+        let mut out = Vec::new();
 
-        for _ in 0..angle_count {
-            let byte_length = read_u16_be(&mut cursor) as usize;
+        while (cursor.position() as usize) < data.len() {
+            let angle_id = read_u16_be(&mut cursor);
 
-            let mut values = Vec::with_capacity(byte_length / 2);
-            let mut buf = vec![0u8; byte_length];
-            cursor.read_exact(&mut buf).unwrap();
-            for chunk in buf.chunks_exact(2) {
+            let segments_length = read_u16_be(&mut cursor) as usize;
+            let mut values = Vec::with_capacity(segments_length / 2);
+            let mut buffer = vec![0u8; segments_length];
+            cursor.read_exact(&mut buffer).unwrap();
+            for chunk in buffer.chunks_exact(2) {
                 values.push(u16::from_be_bytes(chunk.try_into().unwrap()));
             }
-            out.push(values);
+            out.push((angle_id, values));
         }
 
-        assert!(cursor.position() as usize == data.len());
         out
     }
 
@@ -87,7 +86,7 @@ mod tests {
 
         let segments = parse_payload_cursor(&body);
 
-        assert_eq!(segments[0], vec![0, 4]);
-        assert_eq!(segments[300], vec![0, 2, 3, 1]);
+        assert_eq!(segments[0], (0, vec![0, 4]));
+        assert_eq!(segments[300], (300, vec![0, 2, 3, 1]));
     }
 }
