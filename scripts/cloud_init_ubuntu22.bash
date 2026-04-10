@@ -11,7 +11,7 @@ function cloud_init_ubuntu22 {
 	  sudo apt update
 		sudo apt install --yes \
 			libvulkan1 mesa-vulkan-drivers vulkan-tools \
-			build-essential pkg-config \
+			build-essential pkg-config clang \
 			libgdal-dev gdal-bin python3-gdal rsync htop \
 			jq rclone tmux sqlite3 parallel bc
 	  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
