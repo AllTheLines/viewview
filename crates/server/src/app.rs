@@ -10,6 +10,10 @@ use axum::{
     routing,
 };
 
+use futures_util::StreamExt as _;
+use sqlx::ConnectOptions as _;
+use sqlx::Row as _;
+
 /// All state needed for the app's lifetime.
 #[derive(Clone)]
 struct AppState {
@@ -21,7 +25,17 @@ struct AppState {
 
 /// Setup the DB.
 pub async fn db(config: crate::config::Config) -> Result<sqlx::Pool<sqlx::Sqlite>> {
-    let options = sqlx::sqlite::SqliteConnectOptions::new().filename(config.db_path);
+    let options = sqlx::sqlite::SqliteConnectOptions::new()
+        .filename(config.db_path)
+        .journal_mode(sqlx::sqlite::SqliteJournalMode::Off)
+        .synchronous(sqlx::sqlite::SqliteSynchronous::Off)
+        .disable_statement_logging()
+        .read_only(true)
+        .immutable(true)
+        .pragma("locking_mode", "EXCLUSIVE")
+        .pragma("cache_size", "-20000")
+        .pragma("mmap_size", "1073741824")
+        .pragma("query_only", "ON");
     let pool = sqlx::sqlite::SqlitePool::connect_with(options).await?;
 
     Ok(pool)
@@ -51,7 +65,14 @@ pub async fn router(pool: sqlx::Pool<sqlx::Sqlite>) -> Result<Router> {
                     "https://tombh-galiano-viewview.tom-364.workers.dev".parse()?,
                 ])
                 .allow_methods([axum::http::Method::GET]),
-        );
+        )
+        .layer(tower_http::trace::TraceLayer::new_for_http().on_response(
+            |_response: &axum::response::Response,
+             latency: std::time::Duration,
+             _span: &tracing::Span| {
+                tracing::debug!("Request completed in {:?}", latency);
+            },
+        ));
 
     Ok(router)
 }
@@ -84,57 +105,48 @@ async fn get_viewshed(
             .into_response();
     };
 
-    let result: std::result::Result<Vec<(u16, Vec<u8>)>, sqlx::Error> = sqlx::query_as(
-        "
-        SELECT angle_id, MIN(visible_segments)
-        FROM polar_segments
-        WHERE dem_id = ?1
-        GROUP BY angle_id;
-        ",
-    )
-    .bind(dem_id)
-    .fetch_all(&state.pool)
+    let start = tokio::time::Instant::now();
+    let mut rows =
+        sqlx::query("SELECT angle_id, visible_segments FROM polar_segments WHERE dem_id = ?1")
+            .bind(dem_id)
+            .fetch(&state.pool);
+
+    let mut payload = Vec::with_capacity(1024 * 16);
+    let result: Result<()> = async {
+        // Streaming the results should be faster.
+        while let Some(row_result) = rows.next().await {
+            let row = row_result?;
+
+            let angle_id: u16 = row.try_get(0)?;
+            let bytes: Vec<u8> = row.try_get(1)?;
+            let bytes_length = u16::try_from(bytes.len())?;
+
+            payload.extend_from_slice(&angle_id.to_be_bytes());
+            payload.extend_from_slice(&bytes_length.to_be_bytes());
+            payload.extend_from_slice(&bytes);
+        }
+        Ok(())
+    }
     .await;
 
-    let Ok(rows) = result else {
+    if result.is_err() {
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             "Couldn't fetch viewshed data from DB",
         )
             .into_response();
-    };
+    }
 
-    if rows.is_empty() {
+    if payload.is_empty() {
         let msg = format!("No viewshed found. Using DEM ID: {dem_id}");
         return (StatusCode::NOT_FOUND, msg).into_response();
     }
 
-    if rows.len() > 360 {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "More than 360 rows found",
-        )
-            .into_response();
-    }
-
-    // Framing: for each blob: `u16` angle + `u16` length + bytes
-    let mut payload = Vec::new();
-
-    for blob in &rows {
-        payload.extend(blob.0.to_be_bytes());
-        #[expect(
-            clippy::as_conversions,
-            clippy::cast_possible_truncation,
-            reason = "The number of segments for a given angle must fit in `u16`"
-        )]
-        payload.extend((blob.1.len() as u16).to_be_bytes());
-        payload.extend(blob.1.clone());
-    }
-
     let body = bytes::Bytes::from(payload);
     tracing::debug!(
-        "Viewshed request for DEM ID {dem_id} found {} bytes",
-        body.len()
+        "Viewshed request for DEM ID {dem_id} found {} bytes in {:?}",
+        body.len(),
+        start.elapsed()
     );
     (
         StatusCode::OK,
