@@ -6,6 +6,7 @@ function s3 {
 		--host-bucket="%(bucket)s.$R2_HOST" \
 		--access_key="$VIEWVIEW_S3_ACCESS_KEY" \
 		--secret_key="$VIEWVIEW_S3_SECRET" \
+		--human \
 		"$@"
 }
 

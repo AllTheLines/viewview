@@ -9,6 +9,8 @@ function make_pmtiles {
 	# Output `.pmtile` tile.
 	local output=$2
 
+	local resolution=${3}
+
 	ensure_tiles_env
 
 	if [[ $version == "latest" ]]; then
@@ -26,19 +28,33 @@ function make_pmtiles {
 		exit 1
 	fi
 
-	prepare_all_tiffs work/raw "$archive"
+	prepare_all_tiffs work/raw "$archive" "$resolution"
 
 	# Collate all the heatmap GeoTiffs into a single virtual file.
 	gdalbuildvrt "$world_vrt" "$archive"/*.tiff
 
+	max_zoom="$(scale_to_max_zoom "$resolution")"
+
 	# Create the global `.pmtile`
-	uv run scripts/to_pmtiles.py "$world_vrt" "$output" \
+	UV_PYTHON_DOWNLOADS=automatic \
+		uv run --python 3.12 \
+		scripts/to_pmtiles.py "$world_vrt" "$output" \
 		--min_zoom 0 \
-		--max_zoom 11
+		--max_zoom "$max_zoom"
 
 	if [[ $version != "local" ]]; then
 		rclone_put "$output" viewview/runs/"$version"/pmtiles/
 	fi
+}
+
+function scale_to_max_zoom {
+	local scale=$1
+	EARTH_CIRCUMFERENCE=40075016.686
+	echo "
+	  scale=10; \
+		z = l($EARTH_CIRCUMFERENCE / (256 * $scale)) / l(2);\
+		scale=0; if (z>scale(z)) z/1 + 1 else z/1
+	" | bc -l
 }
 
 # Interpolate the TVS heatmap's data to EPSG:3857.
@@ -57,12 +73,13 @@ function process_raw_tvs_tiff {
 
 	local input=$1
 	local output=$2
+	local resolution=${3}
 
 	# These are in an array because I've been exploring splitting tiles that cross the antimeridian.
 	# Having an array makes it easier to diverge the processing into west and east branches.
 	local warp_args=(
 		"-overwrite"
-		"-tr" "100" "100"
+		"-tr" "$resolution" "$resolution"
 		"-t_srs" "EPSG:3857"
 		"-dstnodata" "0"
 		"-srcnodata" "0"
@@ -93,22 +110,24 @@ function prepare_tiff {
 
 	local source=$1
 	local destination=$2
+	local resolution=${3}
 
 	filename=$(basename "$source")
 	latitude=$(echo "$filename" | sed -E 's#.*_([0-9.-]+)\.tiff#\1#')
+	is_above_antaricta=$(echo "$latitude > -80" | bc -l)
 
-	if (($(echo "$latitude > -80" | bc -l))); then
-		process_raw_tvs_tiff "$source" "$destination/$filename"
+	if [[ "$is_above_antaricta" -eq 1 || "$filename" == "total_surfaces.tiff" ]]; then
+		process_raw_tvs_tiff "$source" "$destination/$filename" "$resolution"
 		create_overviews_for_tiff "$destination/$filename"
 	else
-		echo "Not creating preparing heatmap tiff for Antartic tile: $input"
+		echo "Not preparing heatmap tiff for Antartic tile: $input"
 	fi
-
 }
 
 function prepare_all_tiffs {
 	local source_directory=$1
 	local destination_directory=$2
+	local resolution=${3}
 
 	export -f prepare_tiff
 	export -f process_raw_tvs_tiff
@@ -117,5 +136,5 @@ function prepare_all_tiffs {
 	mkdir -p "$destination_directory"
 
 	find "$source_directory" -name "*.tiff" |
-		parallel -j +0 --halt now,fail=1 prepare_tiff {} "$destination_directory"
+		parallel -j +0 --halt now,fail=1 prepare_tiff {} "$destination_directory" "$resolution"
 }
