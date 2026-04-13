@@ -1,4 +1,11 @@
-import type { Feature, FeatureCollection, Polygon } from 'geojson';
+import union from '@turf/union';
+import type {
+  Feature,
+  FeatureCollection,
+  GeoJsonProperties,
+  MultiPolygon,
+  Polygon,
+} from 'geojson';
 import type { LngLat } from 'maplibre-gl';
 import proj4 from 'proj4';
 import { ANGLE_SHIFT, aeqdProjectionString, rotate, toRadians } from './utils';
@@ -9,7 +16,9 @@ export const DEFAULT_OPACITY = 0.5;
 export class Viewshed {
   id: string;
   centre: LngLat;
-  polar_segments: PolarSegments[];
+  geoJSON:
+    | FeatureCollection<Polygon>
+    | Feature<Polygon | MultiPolygon, GeoJsonProperties>;
   scale: number;
   colour = '#00ff00';
   isVisible = true;
@@ -24,7 +33,7 @@ export class Viewshed {
     this.id = id;
     this.centre = centre;
     this.scale = scale;
-    this.polar_segments = polar_segments;
+    this.geoJSON = this.generateGeoJSON(polar_segments);
   }
 
   getViewshedLayerID() {
@@ -34,9 +43,9 @@ export class Viewshed {
     return `viewshed-source-${this.id}`;
   }
 
-  geoJSON() {
+  generateGeoJSON(polar_segments: PolarSegments[]) {
     const features = [];
-    for (const polar_segment of this.polar_segments) {
+    for (const polar_segment of polar_segments) {
       for (let i = 0; i < polar_segment.pairs.length; i += 2) {
         const start = polar_segment.pairs[i] * this.scale;
         const end = start + polar_segment.pairs[i + 1] * this.scale;
@@ -66,23 +75,28 @@ export class Viewshed {
       }
     }
 
-    const collection: FeatureCollection<Polygon> = {
+    return {
       type: 'FeatureCollection',
       features: features,
-    };
+    } as FeatureCollection<Polygon>;
+  }
 
-    return collection;
+  unionGeoJSON() {
+    if (this.geoJSON === undefined) return;
+    const unioned = union(this.geoJSON as FeatureCollection<Polygon>);
+    if (!unioned) return;
+    this.geoJSON = unioned;
   }
 
   polarDistanceToPair(angleID: number, distance: number) {
     // TODO: Don't assume that the kernel is computing 360 angles.
-    const angle = angleID + ANGLE_SHIFT;
+    const angle = angleID - 90;
 
     const θ = toRadians(angle);
     const dx = distance * Math.cos(θ);
     const dy = distance * Math.sin(θ);
-    const rotatedClockwiseAEQD = rotate(dx, dy, -0.5);
-    const rotatedAntiAEQD = rotate(dx, dy, +0.5);
+    const rotatedClockwiseAEQD = rotate(dx, dy, -0.6);
+    const rotatedAntiAEQD = rotate(dx, dy, +0.6);
 
     const aeqd = aeqdProjectionString(this.centre.lng, this.centre.lat);
 

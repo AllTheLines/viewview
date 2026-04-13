@@ -1,8 +1,11 @@
-import type { LngLat } from 'maplibre-gl';
 import { state } from '../state.svelte.ts';
-import { DEFAULT_OPACITY, type PolarSegments, Viewshed } from './Viewshed.ts';
+import type { ViewshedWorkerEvent } from '../ViewshedWorker.ts';
+import { DEFAULT_OPACITY, Viewshed } from './Viewshed.ts';
 
 export function setupViewsheds() {
+  const worker = new Worker(new URL('../ViewshedWorker.js', import.meta.url));
+  worker.onmessage = renderNewViewshed;
+
   renderAllViewsheds();
 
   state.map?.on('click', async (event) => {
@@ -11,8 +14,36 @@ export function setupViewsheds() {
     }
 
     removeUnlockedViewsheds();
-    renderNewViewshed(event.lngLat);
+
+    worker.postMessage({
+      type: 'getViewshed',
+      coordinate: event.lngLat,
+    } as ViewshedWorkerEvent);
   });
+}
+
+export function renderNewViewshed(event: MessageEvent<ViewshedWorkerEvent>) {
+  const isViewshedData =
+    event.data.type === 'setViewshed' || event.data.type === 'updateViewshed';
+  if (!isViewshedData) return;
+
+  const viewshed = event.data.viewshed;
+  Object.setPrototypeOf(viewshed, Viewshed.prototype); // Rehydrate the serialised data.
+
+  if (event.data.type === 'setViewshed') {
+    state.viewsheds.push(viewshed);
+    renderAllViewsheds();
+  }
+
+  if (event.data.type === 'updateViewshed') {
+    updateExistingViewshedData(viewshed);
+  }
+}
+
+function updateExistingViewshedData(viewshed: Viewshed) {
+  const source = state.map?.getSource(viewshed.getViewshedSourceID());
+  // @ts-expect-error: For some reason TS thinks this is for a tile layer.
+  source?.setData(viewshed.geoJSON);
 }
 
 export function renderAllViewsheds() {
@@ -76,26 +107,12 @@ export function removeViewshed(viewshed: Viewshed) {
   state.map?.removeSource(viewshed.getViewshedSourceID());
 }
 
-export async function renderNewViewshed(lngLat: LngLat) {
-  const bytes = await getViewshedData(lngLat);
-
-  const segments = parseViewshedBytes(bytes);
-
-  const scale = 50; // TODO: Get from API?
-  const id = crypto.randomUUID();
-
-  const viewshed = new Viewshed(id, lngLat, scale, segments);
-  state.viewsheds.push(viewshed);
-
-  renderAllViewsheds();
-}
-
 function addViewshed(viewshed: Viewshed) {
   const sourceID = viewshed.getViewshedSourceID();
 
   state.map?.addSource(sourceID, {
     type: 'geojson',
-    data: viewshed.geoJSON(),
+    data: viewshed.geoJSON,
   });
 
   state.map?.addLayer({
@@ -108,49 +125,4 @@ function addViewshed(viewshed: Viewshed) {
       'fill-opacity': DEFAULT_OPACITY,
     },
   });
-}
-
-async function getViewshedData(lngLat: LngLat) {
-  let apiBase = 'https://api.alltheviews.world';
-  if (import.meta.env.DEV) {
-    apiBase = 'http://localhost:3333';
-  }
-
-  const start = performance.now();
-  const response = await fetch(
-    `${apiBase}/viewshed/${lngLat.lng},${lngLat.lat}`,
-  );
-  const end = performance.now();
-  if (import.meta.env.DEV) {
-    console.log(`Viewshed fetched in ms`, end - start);
-  }
-
-  return await response.bytes();
-}
-
-function parseViewshedBytes(data: Uint8Array<ArrayBuffer>): PolarSegments[] {
-  const buffer = data.buffer;
-  const view = new DataView(buffer);
-  let offset = 0;
-  const out: PolarSegments[] = [];
-
-  while (offset < buffer.byteLength) {
-    const angleID = view.getUint16(offset, false);
-    offset += 2;
-
-    const segmentsLength = view.getUint16(offset, false);
-    offset += 2;
-
-    const pairs = [];
-    const numElements = segmentsLength / 2;
-
-    for (let j = 0; j < numElements; j++) {
-      pairs.push(view.getUint16(offset, false));
-      offset += 2;
-    }
-
-    out.push({ angleID, pairs: pairs });
-  }
-
-  return out;
 }

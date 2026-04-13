@@ -8,7 +8,7 @@ import {
   tileToLatLonBounds,
 } from './lib/utils';
 
-export type WorkerEvent =
+export type TileWorkerEvent =
   | { type: 'init'; source: string }
   | ({ type: 'tile' } & Omit<TileGL, 'texture'> & { data: Uint8Array })
   | { type: 'getTile'; z: number; x: number; y: number };
@@ -19,7 +19,7 @@ let isProductionMapServer: boolean;
 
 const loading = new Map();
 
-self.onmessage = async (event: MessageEvent<WorkerEvent>) => {
+self.onmessage = async (event: MessageEvent<TileWorkerEvent>) => {
   if (event.data.type === 'init') {
     const { source } = event.data;
     pmtilesSource = source;
@@ -100,7 +100,7 @@ self.onmessage = async (event: MessageEvent<WorkerEvent>) => {
 
     const bounds = tileToLatLonBounds(z, x, y);
 
-    const message: WorkerEvent = {
+    const message: TileWorkerEvent = {
       type: 'tile',
       key,
       data: new Uint8Array(tvs_surfaces.buffer),
