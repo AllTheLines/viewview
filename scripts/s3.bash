@@ -41,19 +41,33 @@ function rclone_put {
 	local source=$1
 	local destination=$2
 
-	rclone copy "$source" :s3:"$destination" \
-		--s3-endpoint=https://$R2_HOST \
-		--s3-provider=Cloudflare \
-		--s3-access-key-id="$VIEWVIEW_S3_ACCESS_KEY" \
-		--s3-secret-access-key="$VIEWVIEW_S3_SECRET" \
-		--s3-no-check-bucket \
-		--progress \
-		--transfers=32 \
-		--checkers=32 \
-		--multi-thread-streams=16 \
-		--multi-thread-cutoff=0 \
-		--s3-chunk-size=64M \
+	local args=(
+		"--s3-endpoint=https://$R2_HOST"
+		--s3-provider=Cloudflare
+		"--s3-access-key-id=$VIEWVIEW_S3_ACCESS_KEY"
+		"--s3-secret-access-key=$VIEWVIEW_S3_SECRET"
+		--s3-no-check-bucket
+		--progress
+		--transfers=32
+		--checkers=32
+		--multi-thread-streams=16
+		--multi-thread-cutoff=0
+		--s3-chunk-size=64M
 		--s3-upload-concurrency=16
+	)
+
+	if [[ $source == "-" ]]; then
+		rclone rcat :s3:"$destination" "${args[@]}"
+	else
+		rclone copy "$source" :s3:"$destination" "${args[@]}"
+	fi
+}
+
+function rclone_put_zip_stream {
+	local source=$1
+	local destination=$2
+
+	cat "$source" | gzip | rclone_put - "$destination"
 }
 
 function get_srtm_folder {
