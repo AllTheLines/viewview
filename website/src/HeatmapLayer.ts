@@ -13,8 +13,8 @@ import {
   tileKey,
 } from './lib/utils';
 import { state as sharedState, state } from './state.svelte.ts';
+import type { TileWorkerEvent } from './TileWorker';
 import vertex from './vertex.glsl?raw';
-import type { WorkerEvent } from './Worker';
 
 export type TileGL = {
   key: string;
@@ -69,7 +69,7 @@ function initialise() {
   makeFillerTile();
 }
 
-function onWorkerMessage(event: MessageEvent<WorkerEvent>) {
+function onWorkerMessage(event: MessageEvent<TileWorkerEvent>) {
   if (heatmapState === undefined) {
     return;
   }
@@ -148,7 +148,7 @@ export const HeatmapLayer: CustomLayerInterface = {
       vertexBuffer,
       uniforms,
       tileCache: new Map(),
-      worker: new Worker(new URL('./Worker.js', import.meta.url)),
+      worker: new Worker(new URL('./TileWorker.js', import.meta.url)),
       lastGC: Date.now(),
     };
 
