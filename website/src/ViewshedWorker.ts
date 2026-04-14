@@ -12,7 +12,11 @@ self.onmessage = async (event: MessageEvent<ViewshedWorkerEvent>) => {
 
     const segments = parseViewshedBytes(bytes);
 
-    const scale = 50; // TODO: Get from API?
+    let scale = 1; // TODO: Get from API?
+    if (import.meta.env.DEV) {
+      scale = 10;
+    }
+
     const id = crypto.randomUUID();
 
     const viewshed = new Viewshed(id, event.data.coordinate, scale, segments);

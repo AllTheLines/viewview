@@ -15,6 +15,8 @@ type Config = {
     // The average surface area visibile from a point far out at sea, where it can only see sea.
     // This is used to fill regions for which there is no elevation data.
     averageVisibility: number;
+    defaultContrast: number;
+    defaultIntensity: number;
   };
 };
 
@@ -28,6 +30,8 @@ export const worldConfig: Config = {
   },
   heatmap: {
     averageVisibility: 700000.0,
+    defaultContrast: 1 - 0.45,
+    defaultIntensity: 1 - 0.5,
   },
 };
 
@@ -35,12 +39,14 @@ export const galianoConfig: Config = {
   project: 'galiano',
   map: {
     minZoom: 11,
-    maxZoom: 16,
-    startingZoom: 11.0,
+    maxZoom: 20,
+    startingZoom: 11.5,
     startingCentre: new LngLat(-123.445503, 48.934705),
   },
   heatmap: {
-    averageVisibility: 900000.0,
+    averageVisibility: 39000000.0,
+    defaultContrast: 1 - 0.09,
+    defaultIntensity: 1 - 0.6,
   },
 };
 
