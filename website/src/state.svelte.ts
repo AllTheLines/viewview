@@ -4,6 +4,8 @@ import type { LongestLine } from './lib/getLongestLine';
 import type { Viewshed } from './lib/Viewshed';
 import type { LongestLineH3 } from './lib/worldLines';
 
+const config = getConfig();
+
 export type HeatmapConfig = {
   contrast: number;
   intensity: number;
@@ -26,15 +28,15 @@ export interface AppState {
 
 export const state = $state<AppState>({
   map: undefined,
-  config: getConfig(),
+  config,
   worldLongestLines: undefined,
   longestLine: undefined,
   longestLineInViewport: undefined,
   isFirstInteraction: false,
   bruteForceLoadingLine: false,
   heatmapConfig: {
-    contrast: 1 - 0.45,
-    intensity: 1 - 0.5,
+    contrast: config.heatmap.defaultContrast,
+    intensity: config.heatmap.defaultIntensity,
   },
   viewsheds: [],
   isFlying: false,
