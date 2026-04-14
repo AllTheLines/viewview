@@ -8,7 +8,7 @@ import type {
 } from 'geojson';
 import type { LngLat } from 'maplibre-gl';
 import proj4 from 'proj4';
-import { ANGLE_SHIFT, aeqdProjectionString, rotate, toRadians } from './utils';
+import { aeqdProjectionString, rotate, toRadians } from './utils';
 
 export type PolarSegments = { angleID: number; pairs: number[] };
 export const DEFAULT_OPACITY = 0.5;

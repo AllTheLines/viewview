@@ -11,7 +11,7 @@ export const PMTILES_SERVER = `${MAP_SERVER}/runs/${VERSION}/pmtiles/${WORLD_PMT
 
 // This is for busting Cloudflare asset cache. Like for an updated `world.pmtiles`,
 // longest lines index, etc.
-export const CACHE_BUSTER = '?buster=19:26-20/01/2026';
+export const CACHE_BUSTER = '?buster=23:05-19/04/2026';
 
 export const EARTH_RADIUS = 6371_000.0;
 
