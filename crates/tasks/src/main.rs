@@ -1,4 +1,4 @@
-//! Entrypoint
+//! Entrypoint.
 #![expect(
     clippy::panic_in_result_fn,
     reason = "This is just code for short tasks, so panicking is better"
@@ -48,17 +48,9 @@ mod packer;
 mod stitch;
 mod tile;
 
-#[expect(
-    clippy::exhaustive_structs,
-    reason = "This lib is mostly for our internal use"
-)]
-pub mod projector;
-
 use clap::Parser as _;
 use color_eyre::Result;
 use tracing_subscriber::{Layer as _, layer::SubscriberExt as _, util::SubscriberInitExt as _};
-
-use crate::projector::LonLatCoord;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -77,10 +69,12 @@ async fn main() -> Result<()> {
         config::Commands::Packer(packer_config) => {
             let mut packer = packer::Packer::new(packer_config.clone())?;
             match packer_config.one {
-                Some(coordinate) => packer.run_one(LonLatCoord(geo::coord! {
-                    x: coordinate.0,
-                    y: coordinate.1
-                }))?,
+                Some(coordinate) => {
+                    packer.run_one(shared::projector::LonLatCoord(geo::coord! {
+                        x: coordinate.0,
+                        y: coordinate.1
+                    }))?;
+                }
                 None => packer.run_all()?,
             }
         }

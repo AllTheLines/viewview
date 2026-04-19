@@ -3,10 +3,19 @@ resolver = "2"
 members = [
     "crates/server",
     "crates/tasks",
+    "crates/shared",
 ]
 
 [workspace.dependencies]
+color-eyre = "0.6.5"
 clap = { version = "4.5.47", features = ["derive"] }
+geo = "0.31.0"
+proj4rs = { version = "0.1.9", features = ["aeqd"] }
+rstar = "0.12.2"
+shared = { path = "crates/shared", version = "0.1.0" }
+serde = "1.0.228"
+serde_json = "1.0.149"
+sqlx = { version = "0.8.6", features = [ "runtime-tokio" ] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.20", default-features = false, features = ["env-filter", "ansi"] }
 

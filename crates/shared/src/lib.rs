@@ -5,4 +5,7 @@
     reason = "This lib is mostly for our internal use"
 )]
 
+pub mod metadata;
 pub mod projector;
+pub mod utils;
+
