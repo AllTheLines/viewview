@@ -5,5 +5,5 @@
 pub struct Config {
     /// Path to the viewshed database.
     #[arg(long, value_name = "Database path")]
-    pub db_path: std::path::PathBuf,
+    pub db_dir: std::path::PathBuf,
 }

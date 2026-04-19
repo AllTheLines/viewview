@@ -13,7 +13,7 @@ impl LonLatCoord {
     /// Parse coordinates from a string.
     ///
     /// # Errors
-    /// On parsing errors
+    /// On parsing errors.
     #[inline]
     pub fn parse(coordinates: &str) -> Result<Self> {
         let mut parts = coordinates.split(',');
@@ -62,7 +62,7 @@ impl rstar::Point for LonLatCoord {
 
 /// Convert between different coordinate system.
 pub struct Convert {
-    /// The lat/lon base coordinates for the AEQD mercator projected coordinates.
+    /// The lon/lat base coordinates for the AEQD mercator projected coordinates.
     pub base: LonLatCoord,
 }
 

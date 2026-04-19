@@ -5,7 +5,7 @@ use color_eyre::Result;
 /// The marker to indicate that this is a local, non-production run.
 pub const RUN_ID_LOCAL: &str = "local";
 
-/// `Config`
+/// `Config`.
 #[derive(clap::Parser, Debug)]
 #[clap(author, version)]
 #[command(name = "vv-tasks")]
@@ -35,9 +35,9 @@ pub enum Commands {
 /// `atlas` subcommands.
 #[derive(clap::Subcommand, Debug)]
 pub enum AtlasCommands {
-    /// Create a new machine
+    /// Create a new machine.
     NewMachine(NewMachine),
-    /// Run
+    /// Run.
     Run(Atlas),
     /// Run and manage all the tasks for processing the entire planet.
     Worker(Worker),
@@ -54,7 +54,7 @@ pub enum AtlasCommands {
 /// `cargo run packer` arguments.
 #[derive(clap::Parser, Debug, Clone)]
 pub struct Packer {
-    /// Just run for one step
+    /// Just run for one step.
     #[arg(
         long,
         allow_hyphen_values(true),
@@ -113,7 +113,7 @@ pub struct StitchAll {
     #[arg(long, value_name = "Path to master tiles list")]
     pub master: std::path::PathBuf,
 
-    /// Number of CPUS to use,
+    /// Number of CPUS to use.
     #[arg(long, value_name = "Number of cpus", default_value_t = number_of_cpus_on_machine())]
     pub num_cpus: usize,
 }
@@ -134,7 +134,7 @@ pub struct Atlas {
     #[arg(long, value_name = "Path to master tiles list")]
     pub master: std::path::PathBuf,
 
-    /// The lon/lat coord from which to start processing
+    /// The lon/lat coord from which to start processing.
     #[arg(
         long,
         allow_hyphen_values(true),
@@ -152,7 +152,7 @@ pub struct Atlas {
     #[arg(long, value_name = "Amount of tiles to process")]
     pub amount: Option<usize>,
 
-    /// Maximum width of tile to process
+    /// Maximum width of tile to process.
     #[arg(long, value_name = "Max width of tile")]
     pub max_tile_width: Option<f32>,
 
@@ -198,7 +198,7 @@ pub enum Backend {
     Vulkan,
     /// Vulkan shader but run on the CPU.
     VulkanCPU,
-    /// Optimised cache-efficient CPU kernel
+    /// Optimised cache-efficient CPU kernel.
     CPU,
 }
 
@@ -231,7 +231,7 @@ pub enum ComputeProvider {
     DigitalOcean,
     /// Run on Vultr compute. Requires an already authed `vultr-ctl`.
     Vultr,
-    /// Run on Google Cloud. Requires an already authed and installed `gcloud`
+    /// Run on Google Cloud. Requires an already authed and installed `gcloud`.
     GoogleCloud,
 }
 
@@ -287,4 +287,3 @@ pub fn number_of_cpus_on_machine() -> usize {
         .filter(|cpu| *cpu > 0)
         .unwrap_or(1)
 }
-
