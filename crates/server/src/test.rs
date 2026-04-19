@@ -46,11 +46,10 @@ mod tests {
 
     async fn app() -> axum::Router {
         let config = crate::config::Config {
-            db_path: "./fixtures/sample_16x16.db".into(),
+            db_dir: "./fixtures/shards".into(),
         };
 
-        let pool = crate::app::db(config).await.unwrap();
-        crate::app::router(pool).await.unwrap()
+        crate::app::build(config).await.unwrap()
     }
 
     #[tokio::test]
@@ -73,7 +72,7 @@ mod tests {
         let response = app()
             .await
             .oneshot(
-                Request::get("/viewshed/-3.1229856,51.4897910")
+                Request::get("/viewshed/-3.123,51.4898")
                     .body(Body::empty())
                     .unwrap(),
             )

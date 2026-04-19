@@ -11,8 +11,7 @@ use tracing_subscriber::{Layer as _, layer::SubscriberExt as _, util::Subscriber
 
 mod app;
 mod config;
-mod metadata;
-mod utils;
+mod get_viewshed;
 
 #[cfg(test)]
 mod test;
@@ -22,8 +21,7 @@ mod test;
 async fn main() -> Result<()> {
     setup_logging()?;
     let config = crate::config::Config::parse();
-    let pool = app::db(config.clone()).await?;
-    let router = app::router(pool).await?;
+    let router = app::build(config).await?;
 
     let address = "0.0.0.0:3333";
 

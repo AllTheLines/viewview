@@ -11,8 +11,7 @@ use std::{collections::VecDeque, panic};
 use color_eyre::{Result, eyre::ContextCompat as _};
 use geo::{Area as _, BooleanOps as _, Contains as _, Intersects as _, Within as _};
 use rstar::PointDistance as _;
-
-use crate::projector::LonLatCoord;
+use shared::projector::LonLatCoord;
 
 /// Where to save the final packed tiles output.
 const TILES_OUTPUT: &str = "output/tiles.csv";
@@ -38,7 +37,7 @@ const WINDOW_STEP: f64 = WINDOW_RADIUS / 2.0f64;
 
 /// A single point of elevation that represents the highest elevation within the resolution range of
 /// the point. The resolution is defined by another process, `max_subtile.rs`.
-type PointRstar = rstar::primitives::GeomWithData<LonLatCoord, i32>;
+type PointRstar = rstar::primitives::GeomWithData<shared::projector::LonLatCoord, i32>;
 /// How we store tiles for fast lookups.
 pub type TileRstar = rstar::primitives::GeomWithData<LonLatCoord, crate::tile::Tile>;
 
@@ -53,7 +52,7 @@ pub struct Packer {
     ///   3. AEQD anchored to the cnetre of a given tile. This is necessary for things like
     ///      constructing the tile's actual corners. The simple act of adding a distance to a point
     ///      must be done in as local as possible projection.
-    projector: crate::projector::Convert,
+    projector: shared::projector::Convert,
     /// An unchanging canonical reference of all the world's maximum elevation points.
     canonical: rstar::RTree<PointRstar>,
     /// A stack of points, each of which must at some point be proven to fall within a tile.
@@ -76,8 +75,8 @@ impl Packer {
             stack: VecDeque::new(),
             // tiles: rstar::RTree::new(),
             tiles: rstar::RTree::new(),
-            projector: crate::projector::Convert {
-                base: crate::projector::LonLatCoord(geo::Coord::zero()),
+            projector: shared::projector::Convert {
+                base: shared::projector::LonLatCoord(geo::Coord::zero()),
             },
         })
     }
@@ -145,13 +144,13 @@ impl Packer {
 
     /// Calculate the number of degrees to go Eastward to reach the next window.
     fn calculate_longtitude_step(latitude: f64) -> f64 {
-        let degrees_per_meter = 1.0 / crate::projector::Convert::meters_per_degree(latitude);
+        let degrees_per_meter = 1.0 / shared::projector::Convert::meters_per_degree(latitude);
         f64::from(degrees_per_meter) * WINDOW_STEP
     }
 
     /// Do a sort of "carriage return" to the next latitude South.
     fn start_new_latitude(current: LonLatCoord) -> Result<Option<LonLatCoord>> {
-        let projector = crate::projector::Convert { base: current };
+        let projector = shared::projector::Convert { base: current };
         let down = projector.to_degrees(geo::coord! {
             x: 0.0f64,
             y: -WINDOW_STEP,
@@ -180,7 +179,7 @@ impl Packer {
     /// Build a view onto a subset of the total data.
     fn build_window(&mut self, centre: LonLatCoord) -> Result<()> {
         self.stack = VecDeque::new();
-        self.projector = crate::projector::Convert { base: centre };
+        self.projector = shared::projector::Convert { base: centre };
 
         tracing::debug!("Ordering around coordinate: {centre:?}");
         for canonical_point in self.canonical.nearest_neighbor_iter(&centre) {
@@ -461,7 +460,7 @@ impl Packer {
         let mut nearest_tile = *nearest_tile_reference;
         let old_width = nearest_tile.data.width;
 
-        let tile_projecter = crate::projector::Convert {
+        let tile_projecter = shared::projector::Convert {
             base: nearest_tile.data.centre,
         };
 
@@ -622,7 +621,7 @@ impl Packer {
         )]
         let elevation = elevation_i32 as f32;
 
-        (2.0 * crate::projector::EARTH_RADIUS * 1000.0)
+        (2.0 * shared::projector::EARTH_RADIUS * 1000.0)
             .mul_add(elevation, elevation.powi(2))
             .sqrt()
             * 2.0
@@ -910,7 +909,7 @@ impl Packer {
         let magic = 1.5;
         let latitude = tile.data.centre.0.y;
         let extension =
-            (crate::projector::Convert::meters_per_degree(latitude) / subtile_resolution) * magic;
+            (shared::projector::Convert::meters_per_degree(latitude) / subtile_resolution) * magic;
         let new_width = tile.data.width + extension;
         self.set_tile_width(tile.data.centre, new_width)?;
         self.ensure_tile_is_big_enough(tile)?;

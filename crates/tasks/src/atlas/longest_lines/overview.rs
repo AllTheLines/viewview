@@ -13,7 +13,7 @@ use color_eyre::{Result, eyre::ContextCompat as _};
 #[derive(Debug, Clone, Copy)]
 struct LongestLine {
     /// The coordinates of the line.
-    lonlat: crate::projector::LonLatCoord,
+    lonlat: shared::projector::LonLatCoord,
     /// The raster coordinates of the line in its containing COG. Used mostly for debugging
     /// because different COG can contain the same line.
     coord: geo::Coord,
@@ -31,7 +31,7 @@ type StateHash = Arc<tokio::sync::RwLock<HashMap>>;
 /// Representation of a longest lines COG file.
 struct Tile {
     /// The AEQD to lon/lat coordinate converter
-    projector: crate::projector::Convert,
+    projector: shared::projector::Convert,
     /// The raw point data for the tile
     buffer: gdal::raster::Buffer<f32>,
     /// The width of the tile in points
@@ -53,7 +53,7 @@ impl Tile {
         )]
         let offset = width as f64 / 2.0f64;
         let tile = Self {
-            projector: crate::projector::Convert { base: centre },
+            projector: shared::projector::Convert { base: centre },
             buffer,
             width,
             offset,
@@ -65,7 +65,7 @@ impl Tile {
     }
 
     /// Get the lon/lat coordinates representing the centre of the longest lines COG.
-    fn parse_centre_coords(path: &std::path::Path) -> Result<crate::projector::LonLatCoord> {
+    fn parse_centre_coords(path: &std::path::Path) -> Result<shared::projector::LonLatCoord> {
         let filestem = path
             .file_stem()
             .context("Couldn't get file stem of longest lines tile")?
@@ -85,7 +85,7 @@ impl Tile {
             .get(1)
             .context("Latitude not present in path parts")?
             .parse()?;
-        let coord = crate::projector::LonLatCoord(geo::coord! {x: lon, y: lat});
+        let coord = shared::projector::LonLatCoord(geo::coord! {x: lon, y: lat});
 
         Ok(coord)
     }
@@ -148,7 +148,7 @@ impl Tile {
     }
 
     /// Convert the index of a single point in a tile to its lon/lat coordinate.
-    fn coord_to_lonlat(&self, point_coord: geo::Coord) -> Result<crate::projector::LonLatCoord> {
+    fn coord_to_lonlat(&self, point_coord: geo::Coord) -> Result<shared::projector::LonLatCoord> {
         #[expect(
             clippy::cast_precision_loss,
             clippy::as_conversions,
@@ -255,7 +255,7 @@ async fn update_state(world: &StateHash, local: HashMap) -> Result<()> {
     }
 
     let mut longest = LongestLine {
-        lonlat: crate::projector::LonLatCoord(geo::Coord::zero()),
+        lonlat: shared::projector::LonLatCoord(geo::Coord::zero()),
         coord: geo::Coord::zero(),
         packed: crate::atlas::longest_lines::packed::LineOfSight(0.0),
     };

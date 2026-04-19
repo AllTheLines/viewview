@@ -1,32 +1,59 @@
 //! The main app code.
 
-use color_eyre::Result;
+use std::sync::Arc;
 
-use axum::{
-    Router,
-    extract::{Path, State},
-    http::StatusCode,
-    response::IntoResponse,
-    routing,
-};
+use color_eyre::{Result, eyre::ContextCompat as _};
 
-use futures_util::StreamExt as _;
+use axum::{Router, routing};
+
 use sqlx::ConnectOptions as _;
-use sqlx::Row as _;
+
+/// Shorthand for a single connection to a single shard. Even though it's a `Pool` it's limited to
+/// a concurrency of 1.
+pub type Shard = Arc<sqlx::Pool<sqlx::Sqlite>>;
 
 /// All state needed for the app's lifetime.
 #[derive(Clone)]
-struct AppState {
-    /// Pool of connections to the DB.
-    pool: sqlx::Pool<sqlx::Sqlite>,
+pub struct AppState {
+    /// A collection of single-concurrency pools, one for each database shard.
+    pub shards: Vec<Shard>,
     /// Metadata about the underlying DEM that generated the viewsheds.
-    metadata: crate::metadata::MetaData,
+    pub metadata: shared::metadata::MetaData,
 }
 
-/// Setup the DB.
-pub async fn db(config: crate::config::Config) -> Result<sqlx::Pool<sqlx::Sqlite>> {
+/// Entrypoint for starting the server.
+pub async fn build(config: crate::config::Config) -> Result<axum::Router> {
+    let pools = crate::app::all_databases(config).await?;
+    crate::app::router(pools).await
+}
+
+/// Setup all the databases.
+pub async fn all_databases(config: crate::config::Config) -> Result<Vec<Shard>> {
+    #[expect(
+        clippy::redundant_closure_for_method_calls,
+        reason = "It's too verbose"
+    )]
+    let db_paths: Vec<_> = std::fs::read_dir(&config.db_dir)?
+        .filter_map(|result| result.ok())
+        .map(|file| file.path())
+        .filter(|path| path.extension().is_some_and(|ext| ext == "db"))
+        .collect();
+
+    let mut pools = Vec::new();
+    for path in db_paths {
+        let pool = one_database(&path).await?;
+        pools.push(Arc::new(pool));
+    }
+
+    tracing::info!("Connected to {} databases.", pools.len());
+
+    Ok(pools)
+}
+
+/// Setup a DB.
+async fn one_database(path: &std::path::PathBuf) -> Result<sqlx::Pool<sqlx::Sqlite>> {
     let options = sqlx::sqlite::SqliteConnectOptions::new()
-        .filename(config.db_path)
+        .filename(path)
         .journal_mode(sqlx::sqlite::SqliteJournalMode::Off)
         .synchronous(sqlx::sqlite::SqliteSynchronous::Off)
         .disable_statement_logging()
@@ -36,19 +63,31 @@ pub async fn db(config: crate::config::Config) -> Result<sqlx::Pool<sqlx::Sqlite
         .pragma("cache_size", "-20000")
         .pragma("mmap_size", "1073741824")
         .pragma("query_only", "ON");
-    let pool = sqlx::sqlite::SqlitePool::connect_with(options).await?;
+
+    let pool = sqlx::sqlite::SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(options)
+        .await?;
 
     Ok(pool)
 }
 
 /// Server routes.
-pub async fn router(pool: sqlx::Pool<sqlx::Sqlite>) -> Result<Router> {
-    let metadata = load_metadata(&pool).await?;
-    let state = AppState { pool, metadata };
+async fn router(shards: Vec<Shard>) -> Result<Router> {
+    let metadata = load_metadata(
+        shards
+            .first()
+            .context("No DBs available to query metadate from.")?,
+    )
+    .await?;
+    let state = AppState { shards, metadata };
 
     let router = Router::new()
         .route("/", routing::get(|| async { "hello" }))
-        .route("/viewshed/{coordinate}", routing::get(get_viewshed))
+        .route(
+            "/viewshed/{coordinate}",
+            routing::get(crate::get_viewshed::get_viewshed),
+        )
         .with_state(state)
         .layer(
             tower_http::compression::CompressionLayer::new()
@@ -78,80 +117,12 @@ pub async fn router(pool: sqlx::Pool<sqlx::Sqlite>) -> Result<Router> {
 }
 
 /// Load the metadata for the DEM that generated the viewsheds.
-async fn load_metadata(pool: &sqlx::Pool<sqlx::Sqlite>) -> Result<crate::metadata::MetaData> {
+async fn load_metadata(shard: &sqlx::Pool<sqlx::Sqlite>) -> Result<shared::metadata::MetaData> {
     let (json,): (String,) = sqlx::query_as("SELECT json FROM metadata")
-        .fetch_one(pool)
+        .fetch_one(shard)
         .await?;
 
-    let metadata: crate::metadata::MetaData = serde_json::from_str(&json)?;
+    let metadata: shared::metadata::MetaData = serde_json::from_str(&json)?;
     tracing::info!("Loaded metadata: {metadata:?}");
     Ok(metadata)
-}
-
-/// Return the polar segments for an entire viewshed.
-async fn get_viewshed(
-    State(state): State<AppState>,
-    Path(coordinate): Path<String>,
-) -> impl IntoResponse {
-    let Ok(lonlat) = tasks::projector::LonLatCoord::parse(&coordinate) else {
-        return (StatusCode::BAD_REQUEST, "Couldn't parse coordinate").into_response();
-    };
-
-    let Ok(dem_id) = crate::utils::latlon_to_dem_id(&state.metadata, lonlat) else {
-        return (
-            StatusCode::BAD_REQUEST,
-            "Couldn't get a DEM ID for the provided coordinate",
-        )
-            .into_response();
-    };
-
-    let start = tokio::time::Instant::now();
-    let mut rows =
-        sqlx::query("SELECT angle_id, visible_segments FROM polar_segments WHERE dem_id = ?1")
-            .bind(dem_id)
-            .fetch(&state.pool);
-
-    let mut payload = Vec::with_capacity(1024 * 16);
-    let result: Result<()> = async {
-        // Streaming the results should be faster.
-        while let Some(row_result) = rows.next().await {
-            let row = row_result?;
-
-            let angle_id: u16 = row.try_get(0)?;
-            let bytes: Vec<u8> = row.try_get(1)?;
-            let bytes_length = u16::try_from(bytes.len())?;
-
-            payload.extend_from_slice(&angle_id.to_be_bytes());
-            payload.extend_from_slice(&bytes_length.to_be_bytes());
-            payload.extend_from_slice(&bytes);
-        }
-        Ok(())
-    }
-    .await;
-
-    if result.is_err() {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Couldn't fetch viewshed data from DB",
-        )
-            .into_response();
-    }
-
-    if payload.is_empty() {
-        let msg = format!("No viewshed found. Using DEM ID: {dem_id}");
-        return (StatusCode::NOT_FOUND, msg).into_response();
-    }
-
-    let body = bytes::Bytes::from(payload);
-    tracing::debug!(
-        "Viewshed request for DEM ID {dem_id} found {} bytes in {:?}",
-        body.len(),
-        start.elapsed()
-    );
-    (
-        StatusCode::OK,
-        [("content-type", "application/octet-stream")],
-        body,
-    )
-        .into_response()
 }
