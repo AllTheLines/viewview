@@ -57,7 +57,7 @@ impl Atlas {
                 .next()
                 .context("No width in tile.csv line")?
                 .parse::<f32>()?;
-            let centre = crate::projector::LonLatCoord(geo::Coord { x: lon, y: lat });
+            let centre = shared::projector::LonLatCoord(geo::Coord { x: lon, y: lat });
 
             tiles.push(crate::tile::Tile { centre, width });
         }
@@ -95,7 +95,7 @@ impl Atlas {
         let mut tile_store = super::db::atlas_worker_store().await?;
 
         tracing::debug!("Adding tile jobs to worker...");
-        let start_from = crate::projector::LonLatCoord(config.centre.into());
+        let start_from = shared::projector::LonLatCoord(config.centre.into());
         let amount_of_tiles_to_add = config.amount.unwrap_or_else(|| atlas.tiles.size());
         let mut count = 0;
         for master_tile in atlas
@@ -113,21 +113,15 @@ impl Atlas {
                 tile: master_tile.data,
             };
 
-
             // map the priority of the tile width (10,000->900,000) to an integer 1-9
             // and then invert the priority so that the smallest go first
             let priority = -((tile_args.tile.width / 100_000.0f32) as i32);
 
-            let ctx = SqlContext::new()
-                .with_priority(priority);
+            let ctx = SqlContext::new().with_priority(priority);
 
-            let task = Task::builder(tile_args)
-                .with_ctx(ctx)
-                .build();
+            let task = Task::builder(tile_args).with_ctx(ctx).build();
 
-            tile_store
-                .push_task(task)
-                .await?;
+            tile_store.push_task(task).await?;
 
             count += 1;
             if count >= amount_of_tiles_to_add {

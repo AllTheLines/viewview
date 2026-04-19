@@ -1,0 +1,15 @@
+[package]
+name = "shared"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+color-eyre.workspace = true 
+geo.workspace = true
+proj4rs.workspace = true
+rstar.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

@@ -21,14 +21,15 @@ pub const ARCSEC_PER_DEG: f32 = 3600.0;
 #[repr(C)]
 #[derive(Copy, Clone, Debug, PartialEq, bytemuck::Zeroable, bytemuck::Pod)]
 pub struct MaxSubTile {
-    /// Longtitude
+    /// Longtitude.
     pub lon: f32,
-    /// Latitude
+    /// Latitude.
     pub lat: f32,
     /// The maximum height within the subtile region.
     pub max_height: i32,
 }
 
+/// Break the world down into smaller manageable tiles.
 pub struct Subtiler {
     /// Keep track of _all_ the subtiles on the planet.
     subtiles: Vec<MaxSubTile>,

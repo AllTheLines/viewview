@@ -4,13 +4,13 @@ use color_eyre::{Result, eyre::ContextCompat as _};
 use geo::{Area as _, BoundingRect as _, Buffer as _};
 use rstar::PointDistance as _;
 
-use crate::projector::LonLatCoord;
+use shared::projector::LonLatCoord;
 
 /// The tile data itself.
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Tile {
     /// The centre of the tile.
-    pub centre: crate::projector::LonLatCoord,
+    pub centre: shared::projector::LonLatCoord,
     /// The width of the tile. Therefore, not the distance from the centre to an edge. Width is
     /// better than radius because it defines the minimum line of sight distance we are interested
     /// in.
@@ -24,8 +24,8 @@ impl Tile {
     }
 
     /// The centre coordinate reprojected to the given metric projection.
-    pub fn centre_metric(&self, anchor: crate::projector::LonLatCoord) -> Result<geo::Coord> {
-        let projecter = crate::projector::Convert { base: anchor };
+    pub fn centre_metric(&self, anchor: shared::projector::LonLatCoord) -> Result<geo::Coord> {
+        let projecter = shared::projector::Convert { base: anchor };
         projecter.to_meters(self.centre)
     }
 
@@ -46,7 +46,7 @@ impl Tile {
     /// Make a polygon representing the tile in metric coordinates.
     pub fn to_polygon_metric(
         self,
-        anchor: crate::projector::LonLatCoord,
+        anchor: shared::projector::LonLatCoord,
     ) -> Result<geo::MultiPolygon> {
         let centre = self.centre_metric(anchor)?;
         let circle = geo::Point::new(centre.x, centre.y).buffer(self.radius());
@@ -82,7 +82,7 @@ impl Tile {
 
     /// Calculate the distance in meters of the tile from the given point.
     pub fn distance_from(&self, point_lonlat: LonLatCoord) -> Result<f64> {
-        let projector = crate::projector::Convert { base: point_lonlat };
+        let projector = shared::projector::Convert { base: point_lonlat };
         let point = projector.to_meters(self.centre)?;
 
         Ok(self.centre_metric(point_lonlat)?.distance_2(&point).sqrt())
@@ -99,7 +99,7 @@ impl Tile {
         let center_lat = origin.y().to_radians();
         let bearing_rad = bearing.to_radians();
 
-        let rad = meters / f64::from(crate::projector::EARTH_RADIUS * 1000.0);
+        let rad = meters / f64::from(shared::projector::EARTH_RADIUS * 1000.0);
 
         let lat =
             { center_lat.sin() * rad.cos() + center_lat.cos() * rad.sin() * bearing_rad.cos() }
