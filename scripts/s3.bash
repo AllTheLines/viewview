@@ -67,7 +67,7 @@ function rclone_put_zip_stream {
 	local source=$1
 	local destination=$2
 
-	cat "$source" | gzip | rclone_put - "$destination"
+	cat "$source" | pigz | rclone_put - "$destination"
 }
 
 function get_srtm_folder {
