@@ -38,7 +38,7 @@ function make_pmtiles {
 	# Create the global `.pmtile`
 	UV_PYTHON_DOWNLOADS=automatic \
 		uv run --python 3.12 \
-		scripts/to_pmtiles.py "$world_vrt" "$output" \
+		"$PROJECT_ROOT/scripts/to_pmtiles.py" "$world_vrt" "$output" \
 		--min_zoom 0 \
 		--max_zoom "$max_zoom"
 
