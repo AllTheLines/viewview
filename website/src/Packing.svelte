@@ -46,14 +46,14 @@
       }
 
       const tilesCSV = await result.text();
-      state.map?.addSource('my-geojson', {
+      state.map?.addSource('packing', {
         type: 'geojson',
         data: tilesCSVToGeoJSON(tilesCSV),
       });
       state.map?.addLayer({
         id: 'fills',
         type: 'fill',
-        source: 'my-geojson',
+        source: 'packing',
         paint: {
           'fill-outline-color': '#ff1234',
           'fill-color': '#ff0000',
@@ -168,6 +168,3 @@
 </script>
 
 <Layout></Layout>
-
-<style>
-</style>

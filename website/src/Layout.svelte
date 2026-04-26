@@ -5,6 +5,8 @@
   import { state } from './state.svelte.ts';
 </script>
 
+<div id="map"></div>
+
 {#if state.config.project === "world"}
 	<SearchBox />
 {/if}
@@ -12,3 +14,11 @@
 <main>
 	<slot />
 </main>
+
+<style>
+	#map {
+		position: absolute;
+		height: 100%;
+		width: 100%;
+	}
+</style>

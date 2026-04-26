@@ -124,8 +124,6 @@
   });
 </script>
 
-<div id="map"></div>
-
 <Layout>
 	<ClickEffect />
 
@@ -162,12 +160,6 @@
 
 <style lang="scss">
 	@use "./styles/variables.scss" as *;
-
-	#map {
-		position: absolute;
-		height: 100%;
-		width: 100%;
-	}
 
 	#info {
 		position: fixed;
