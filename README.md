@@ -69,12 +69,23 @@ So can we strike an optimal balance? This is what the `Packer` in this repo trie
 
 Creates arbitrary tiles out of the global DEM data.
 
+Stitch one:
 ```
 cargo run --bin tasks -- stitch \
   --dems /publicish/dems \
   --centre -3.049208402633667,53.24937438964844 \
   --width 366610.1875
 ```
+(optionally takes `--scale` argument)
+
+Stitch all from a folder:
+```
+cargo run --bin tasks -- atlas stitch-all \
+  --tmp-directory /mnt/disks/data/tmp \
+  --dems /mnt/disks/data/srtm/ \
+  --master website/public/tiles.csv
+```
+(optionally takes `--scale` argument)
 
 ## Calculate Total Viewsheds
 
@@ -85,10 +96,6 @@ Outputs `.bt` heatmap.
 ## Prepare For Cloud
 
 ```
-# Note that all these depend on a `./output` path existing.
-./ctl.sh prepare_for_cloud ../total-viewsheds/output/total_surfaces.bt
-./ctl.sh prepare_for_cloud ../total-viewsheds/output/longest_lines.bt
-
 ./ctl.sh make_pmtiles latest website/public/world.pmtiles
 ```
 

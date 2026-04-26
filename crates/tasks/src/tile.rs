@@ -11,7 +11,7 @@ use shared::projector::LonLatCoord;
 pub struct Tile {
     /// The centre of the tile.
     pub centre: shared::projector::LonLatCoord,
-    /// The width of the tile. Therefore, not the distance from the centre to an edge. Width is
+    /// The width of the tile in meters. Therefore, not the distance from the centre to an edge. Width is
     /// better than radius because it defines the minimum line of sight distance we are interested
     /// in.
     pub width: f32,

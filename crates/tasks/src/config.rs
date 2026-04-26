@@ -47,7 +47,7 @@ pub enum AtlasCommands {
     LongestLinesOverviews(LongestLinesOverviews),
     /// Output the current run's config.
     CurrentRunConfig(CurrentRunConfig),
-    /// Stitch the entire world's `.bt` files and save them to S3.
+    /// Stitch the entire world's `.tiff` files and save them to S3.
     StitchAll(StitchAll),
 }
 
@@ -100,6 +100,19 @@ pub struct Stitch {
     /// The width of the tile in meters.
     #[arg(long, value_name = "Tile width")]
     pub width: f32,
+
+    /// Where to save stitched Geotiffs.
+    #[arg(
+        long,
+        value_name = "Path to output directory",
+        default_value = "./output"
+    )]
+    pub output_dir: std::path::PathBuf,
+
+    /// Override dynamic scaling. If not supplied the scale is based on the tile's distance from
+    /// the equator.
+    #[arg(long, value_name = "Raster scale")]
+    pub scale: Option<f32>,
 }
 
 /// `cargo run atlas stitch-all` arguments.
@@ -113,9 +126,22 @@ pub struct StitchAll {
     #[arg(long, value_name = "Path to master tiles list")]
     pub master: std::path::PathBuf,
 
+    /// Where to save stitched Geotiffs before uploading to the bucket.
+    #[arg(
+        long,
+        value_name = "Path to temporary directory",
+        default_value = "./output"
+    )]
+    pub tmp_directory: std::path::PathBuf,
+
     /// Number of CPUS to use.
     #[arg(long, value_name = "Number of cpus", default_value_t = number_of_cpus_on_machine())]
     pub num_cpus: usize,
+
+    /// Override dynamic scaling. If not supplied the scale is based on the tile's distance from
+    /// the equator.
+    #[arg(long, value_name = "Raster scale")]
+    pub scale: Option<f32>,
 }
 
 /// Worker daemon to run Atlas jobs.

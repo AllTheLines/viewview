@@ -1,4 +1,5 @@
 import nprogress from 'accessible-nprogress';
+import type { GeoTIFFImage } from 'geotiff';
 import { LngLat, LngLatBounds } from 'maplibre-gl';
 import type { AppState } from '../state.svelte';
 
@@ -201,4 +202,10 @@ export async function getElevationAtCoord(coord: LngLat) {
   const result = await fetch(url);
   const payload = await result.json();
   return payload.geoPoints[0].elevation;
+}
+
+export function getScaleFromCog(cog: GeoTIFFImage) {
+  const resolution = cog.getResolution();
+  const scale = Math.abs(resolution[0]);
+  return scale;
 }

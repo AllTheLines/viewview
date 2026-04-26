@@ -8,9 +8,9 @@ use tokio::io::AsyncWriteExt as _;
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Zeroable, bytemuck::Pod)]
 pub struct Grided {
-    /// Longtitude
+    /// Longtitude.
     pub lon: f32,
-    /// Latitude
+    /// Latitude.
     pub lat: f32,
     /// The distance of the line of sight in meters.
     pub distance: u32,

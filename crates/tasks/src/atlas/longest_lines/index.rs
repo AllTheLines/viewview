@@ -25,10 +25,7 @@ pub async fn compile() -> Result<()> {
     let mut index = Vec::new();
     for tile in tiles {
         let filename = tile.cog_filename();
-        let line = format!(
-            "{filename} {}",
-            tile.width * crate::atlas::tile_job::DEM_SCALE
-        );
+        let line = format!("{filename} {}", tile.width);
         index.push(line);
     }
 

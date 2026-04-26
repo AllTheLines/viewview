@@ -3,7 +3,7 @@
 use color_eyre::{Result, eyre::ContextCompat as _};
 
 /// The radius of the planet in kilometers.
-pub const EARTH_RADIUS: f32 = 6371.0;
+pub const EARTH_RADIUS: f32 = 6378.137;
 
 /// A longtitude/latitude coordinate.
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, PartialEq, Default)]
