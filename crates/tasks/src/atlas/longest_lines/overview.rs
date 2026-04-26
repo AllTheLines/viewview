@@ -30,11 +30,11 @@ type StateHash = Arc<tokio::sync::RwLock<HashMap>>;
 
 /// Representation of a longest lines COG file.
 struct Tile {
-    /// The AEQD to lon/lat coordinate converter
+    /// The AEQD to lon/lat coordinate converter.
     projector: shared::projector::Convert,
-    /// The raw point data for the tile
+    /// The raw point data for the tile.
     buffer: gdal::raster::Buffer<f32>,
-    /// The width of the tile in points
+    /// The width of the tile in points.
     width: usize,
     /// Offset to the centre of the tile in points.
     offset: f64,

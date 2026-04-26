@@ -9,6 +9,7 @@ import {
   clamp,
   endLoadingSpinner,
   getElevationAtCoord,
+  getScaleFromCog,
   Log,
   startLoadingSpinner,
   VERSION,
@@ -245,8 +246,7 @@ async function findNearestCOGURLs(coordinate: LngLat) {
   const cogFilenames = [];
   for (const [filename, cog] of cogsIndex) {
     const distance = coordinate.distanceTo(cog.centre);
-    const scale = 100; // TODO: I thought we decided to set this in the indexer?
-    const radius = cog.width / 2 / scale;
+    const radius = cog.width / 2;
     Log.debug(
       `👀 Checking Longest Line COG: ${filename}`,
       `with centre: ${cog.centre} and radius ${radius}`,
@@ -338,8 +338,7 @@ export function convertRasterXYToLngLat(
     geo.ProjCenterLongGeoKey,
     geo.ProjCenterLatGeoKey,
   );
-  const resolution = cog.getResolution();
-  const scale = Math.abs(resolution[0]);
+  const scale = getScaleFromCog(cog);
   const maxIndex = cog.getWidth() - 1.0;
   const offset = maxIndex / 2.0;
   const y_flipped = maxIndex - y;

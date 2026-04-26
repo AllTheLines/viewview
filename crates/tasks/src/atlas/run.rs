@@ -4,10 +4,9 @@
 //! 2. Get tiles around a point that haven't been crunched yet
 //!   1. Stitch the relevant tile
 //!   2. TVS the tile
-//! 3. Run `.ctl.sh prepare_for_cloud` for `total_surfaces.bt` and `longest_lines.bt`.
 //!
 //! These can and probably should be run manually after a bunch of tiles have been processed.
-//! 4. Create the new `world.pmtile`: `./ctl.sh make_pmtiles latest website/public/world.pmtiles`
+//! 3. Create the new `world.pmtile`: `./ctl.sh make_pmtiles latest website/public/world.pmtiles`.
 
 use color_eyre::{Result, eyre::ContextCompat as _};
 

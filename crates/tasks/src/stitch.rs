@@ -5,12 +5,16 @@
 use std::sync::Arc;
 
 use color_eyre::{Result, eyre::ContextCompat as _};
+use shared::projector::EARTH_RADIUS;
 
 /// A virtual DEM that represents _all_ the DEM data for the planet.
 const VIRTUAL_DEM_FILE: &str = "index.vrt";
 
 /// How we mark points as containing no data.
 const NODATA_VALUE: &str = "-32768";
+
+/// The dimensions of an SRTM3 pixel at the equator. Pixels get smaller the further from the equator.
+const SRTM3_RESOLUTION_AT_EQUATOR: f64 = 92.766_242_327_727_98f64;
 
 /// Entrypoint.
 pub async fn make_tile(
@@ -19,7 +23,6 @@ pub async fn make_tile(
 ) -> Result<String> {
     build_virtual_dem(machine, config).await?;
     let filename = stitch(machine, config).await?;
-    set_centre_as_extent(machine, config, &filename).await?;
 
     Ok(filename)
 }
@@ -88,7 +91,7 @@ fn find_all_hgts(config: &crate::config::Stitch) -> Result<Vec<String>> {
 /// The canonical name for the stitched file. It's needed to be able to put and get the file from
 /// the S3 bucket.
 pub fn canonical_filename(lon: f64, lat: f64) -> String {
-    format!("{lon},{lat}.bt")
+    format!("{lon},{lat}.tiff")
 }
 
 /// Call `gdalwarp` to construct a new stitched tile. Data will also be interpolated to metric.
@@ -96,14 +99,16 @@ async fn stitch(
     machine: &Arc<crate::atlas::machines::connection::Connection>,
     config: &crate::config::Stitch,
 ) -> Result<String> {
-    let resolution = 100.0;
-    let resolution_string = resolution.to_string();
+    let resolution = get_resolution(config);
+    let resolution_string = format!("{resolution:.12}");
+
     let aeqd = format!(
         "+proj=aeqd +lat_0={} +lon_0={} +units=m +datum=WGS84 +no_defs",
         config.centre.1, config.centre.0
     );
     let output = format!(
-        "./output/{}",
+        "{}/{}",
+        config.output_dir.display(),
         canonical_filename(config.centre.0, config.centre.1)
     );
     let hgt_index = config.dems.join(VIRTUAL_DEM_FILE).display().to_string();
@@ -120,8 +125,8 @@ async fn stitch(
         (half_width * 2.0) / 3.0
     );
 
-    let min = format!("-{half_width}");
-    let max = format!("{half_width}");
+    let min = format!("-{half_width:.12}");
+    let max = format!("{half_width:.12}");
     let arguments = vec![
         "-overwrite",
         "-dstnodata",
@@ -138,8 +143,14 @@ async fn stitch(
         &resolution_string,
         "-r",
         "bilinear",
+        "-co",
+        "COMPRESS=ZSTD",
+        "-co",
+        "PREDICTOR=2",
+        "-co",
+        "TILED=YES",
         "-of",
-        "BT",
+        "GTiff",
         &hgt_index,
         output.as_str(),
     ];
@@ -151,33 +162,50 @@ async fn stitch(
         })
         .await?;
 
+    tracing::info!("Stitched tile saved to: {output}");
+
     Ok(output)
 }
 
-/// Re-purpose the new tile's extent header to instead define its centre.
-async fn set_centre_as_extent(
-    machine: &Arc<crate::atlas::machines::connection::Connection>,
-    config: &crate::config::Stitch,
-    file: &str,
-) -> Result<()> {
-    let lon = config.centre.0.to_string();
-    let lat = config.centre.1.to_string();
-    let arguments = vec![
-        "-a_ullr",
-        lon.as_str(),
-        lat.as_str(),
-        lon.as_str(),
-        lat.as_str(),
-        file,
-    ];
+/// Decide on the resolution to use for the stitched tile.
+fn get_resolution(config: &crate::config::Stitch) -> f32 {
+    if let Some(resolution) = config.scale {
+        return resolution;
+    }
+    let vertical_resolution = calculate_longitude_resolution(config.centre.1);
+    #[expect(
+        clippy::as_conversions,
+        clippy::cast_possible_truncation,
+        reason = "This doesn't need accuracy"
+    )]
+    let resolution = (vertical_resolution.midpoint(SRTM3_RESOLUTION_AT_EQUATOR)) as f32;
+    resolution
+}
 
-    machine
-        .command(crate::atlas::machines::connection::Command {
-            executable: "gdal_edit.py".into(),
-            args: arguments,
-            ..Default::default()
-        })
-        .await?;
+/// Calculate the vertical height of a pixel in the SRTM3 dataset. Because SRTM is degree-based
+/// then the height of a pixel changes depending on how far it is from the equator.
+fn calculate_longitude_resolution(latitude_degrees: f64) -> f64 {
+    const ARC_SECONDS: f64 = 3.0; // For SRTM3
+    const SECONDS_PER_DEGREE: f64 = 3600.0;
+    let earth_radius_meters = f64::from(EARTH_RADIUS * 1000.0);
+    let latitude_radians = latitude_degrees.to_radians();
+    let arc_second_radians = (ARC_SECONDS / SECONDS_PER_DEGREE).to_radians();
 
-    Ok(())
+    earth_radius_meters * latitude_radians.cos() * arc_second_radians
+}
+
+#[expect(clippy::float_cmp, reason = "Just tests")]
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn pixel_height_at_latitude() {
+        assert_eq!(
+            calculate_longitude_resolution(0.0),
+            SRTM3_RESOLUTION_AT_EQUATOR
+        );
+        assert_eq!(calculate_longitude_resolution(45.0), 65.595639015131f64);
+        assert_eq!(calculate_longitude_resolution(-45.0), 65.595639015131f64);
+    }
 }

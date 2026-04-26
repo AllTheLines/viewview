@@ -7,8 +7,7 @@ use apalis::{layers::WorkerBuilderExt as _, prelude::Layer as _};
 /// The URL for the worker web UI.
 const WEB_UI_HOST: &str = "localhost:3003";
 
-
-/// Start the Atlas daemon
+/// Start the Atlas daemon.
 pub async fn start_all(
     _: &crate::config::Worker,
     broadcaster: std::sync::Arc<std::sync::Mutex<apalis_board_api::sse::TracingBroadcaster>>,
@@ -53,10 +52,8 @@ async fn start_existing_machines() -> Result<()> {
     );
 
     for job in jobs {
-        crate::atlas::machines::new_machine_job::new_machine_handler(
-            job.machine.as_ref().clone(),
-        )
-        .await?;
+        crate::atlas::machines::new_machine_job::new_machine_handler(job.machine.as_ref().clone())
+            .await?;
     }
 
     Ok(())

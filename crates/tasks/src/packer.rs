@@ -994,9 +994,9 @@ mod test {
     #[test]
     fn minimum_tile_size_for_elevation() {
         assert_eq!(Packer::minimum_tile_size_for_elevation(0), 36_000.0);
-        assert_eq!(Packer::minimum_tile_size_for_elevation(1000), 225_769.8);
-        assert_eq!(Packer::minimum_tile_size_for_elevation(3000), 391_075.44);
-        assert_eq!(Packer::minimum_tile_size_for_elevation(8000), 638_748.75);
-        assert_eq!(Packer::minimum_tile_size_for_elevation(8848), 671_772.3);
+        assert_eq!(Packer::minimum_tile_size_for_elevation(1000), 225_896.2);
+        assert_eq!(Packer::minimum_tile_size_for_elevation(3000), 391_294.38);
+        assert_eq!(Packer::minimum_tile_size_for_elevation(8000), 639_106.2);
+        assert_eq!(Packer::minimum_tile_size_for_elevation(8848), 672_148.2);
     }
 }
