@@ -201,7 +201,7 @@ impl TileRunner<'_> {
         }
 
         if !self.job.config.is_local_run() {
-            self.s3_put_longest_lines_cog(&self.job.tile.cog_filename())
+            self.s3_put_longest_lines_tiff()
                 .await?;
         }
 
@@ -213,10 +213,10 @@ impl TileRunner<'_> {
     /// There isn't a huge difference between this and the post-processed one, but it's a shame
     /// to have to recompute the entire planet just to get hold of this.
     async fn s3_put_raw_tvs_tiff(&self) -> Result<()> {
-        let tvs_tiff = self.job.tile.cog_filename();
-        let source = format!("{}/tmp/plain.tif", self.job_directory);
+        let filename = self.job.tile.cog_filename();
+        let source = format!("{}/total_surfaces.tiff", self.job_directory);
         let destination = format!(
-            "s3://viewview/runs/{}/raw/{tvs_tiff}",
+            "s3://viewview/runs/{}/tvs/{filename}",
             self.job.config.run_id
         );
 
@@ -226,21 +226,13 @@ impl TileRunner<'_> {
     }
 
     /// Sync a longest lines COG to our S3 bucket.
-    async fn s3_put_longest_lines_cog(&self, filename: &str) -> Result<()> {
-        let source_cogs = self
-            .job
-            .config
-            .longest_lines_cogs
-            .clone()
-            .unwrap_or_else(|| LONGEST_LINES_DIRECTORY.into())
-            .join(filename)
-            .display()
-            .to_string();
+    async fn s3_put_longest_lines_tiff(&self) -> Result<()> {
 
-        let source = format!("{}/{source_cogs}", self.job_directory);
+        let filename = self.job.tile.cog_filename();
+        let source = format!("{}/longest_lines.tiff", self.job_directory);
 
         let destination = format!(
-            "s3://viewview/runs/{}/longest_lines_cogs/{filename}",
+            "s3://viewview/runs/{}/longest_lines/{filename}",
             self.job.config.run_id
         );
 
