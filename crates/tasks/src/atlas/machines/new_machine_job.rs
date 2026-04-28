@@ -21,9 +21,7 @@ impl NewMachineJob {
 }
 
 /// The callback to run when a new machine job is added.
-pub async fn new_machine_handler(
-    job: super::new_machine_job::NewMachineJob,
-) -> Result<()> {
+pub async fn new_machine_handler(job: super::new_machine_job::NewMachineJob) -> Result<()> {
     let machine_task_id = get_machine_task_id_hack(job.clone()).await?;
 
     tokio::spawn(async move {
@@ -36,7 +34,7 @@ pub async fn new_machine_handler(
 }
 
 /// Get the internal ID of the job. Just a hack until this is fixed:
-///   <https://github.com/apalis-dev/apalis/issues/645>
+///   <https://github.com/apalis-dev/apalis/issues/645>.
 async fn get_machine_task_id_hack(
     job_to_find: super::new_machine_job::NewMachineJob,
 ) -> Result<String> {

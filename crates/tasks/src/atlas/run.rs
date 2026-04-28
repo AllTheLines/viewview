@@ -112,6 +112,11 @@ impl Atlas {
                 tile: master_tile.data,
             };
 
+            #[expect(
+                clippy::as_conversions,
+                clippy::cast_possible_truncation,
+                reason = "Truncation is unlikely to happen™"
+            )]
             // map the priority of the tile width (10,000->900,000) to an integer 1-9
             // and then invert the priority so that the smallest go first
             let priority = -((tile_args.tile.width / 100_000.0f32) as i32);

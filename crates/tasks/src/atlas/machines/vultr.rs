@@ -1,4 +1,4 @@
-//! Managing Vultr resources
+//! Managing Vultr resources.
 
 use color_eyre::Result;
 

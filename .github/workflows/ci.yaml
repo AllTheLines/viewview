@@ -45,6 +45,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install libgdal-dev gdal-bin
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.94.1
+          components: clippy,rustfmt
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -59,4 +70,9 @@ jobs:
       - name: Biome
         working-directory: website
         run: node_modules/.bin/biome check
+
+      - name: Lint
+        run: cargo clippy -- --deny warnings
+      - name: Formatting
+        run: cargo fmt --check
 
