@@ -12,8 +12,8 @@ use tokio::sync::Mutex;
 /// The directory where all our viewview input/output goes.
 pub const WORKING_DIRECTORY: &str = "work";
 
-/// The default directory where all the longest lines COGs live.
-pub const LONGEST_LINES_DIRECTORY: &str = "longest_lines";
+/// Filename for longest lines COG.
+const LONGEST_LINES_COG: &str = "longest_lines.cog.tiff";
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 /// A worker job that processes a tile.
@@ -196,28 +196,61 @@ impl TileRunner<'_> {
 
     /// Process the assets needed to display the output on the website.
     async fn assets(&self) -> Result<()> {
+        self.make_longest_lines_cog().await?;
+
         if !self.job.config.is_local_run() {
+            self.s3_put_longest_lines_cog().await?;
             self.s3_put_raw_tvs_tiff().await?;
         }
 
-        if !self.job.config.is_local_run() {
-            self.s3_put_longest_lines_tiff()
-                .await?;
-        }
+        Ok(())
+    }
+
+    /// It needs to be a COG because it's queried from the browser.
+    async fn make_longest_lines_cog(&self) -> Result<()> {
+        let plain_tif = format!("{}/longest_lines.tiff", self.job_directory);
+        let cog = format!("{}/{}", self.job_directory, LONGEST_LINES_COG);
+
+        let args = vec![
+            "-of",
+            "COG",
+            // Smallest valid size (cos we're just querying for single raster points)
+            "-co",
+            "BLOCKSIZE=128",
+            "-co",
+            "RESAMPLING=NEAREST",
+            "-co",
+            "OVERVIEWS=NONE",
+            "-co",
+            "COMPRESS=DEFLATE",
+            "-co",
+            "PREDICTOR=3",
+            &plain_tif,
+            &cog,
+        ];
+
+        self.machine
+            .command(crate::atlas::machines::connection::Command {
+                executable: "/usr/bin/gdal_translate".into(),
+                args,
+                env: vec![],
+                ..Default::default()
+            })
+            .await?;
 
         Ok(())
     }
 
     /// Sync the raw, pre-projected finished heatmap for the tile to our S3 bucket.
     ///
-    /// There isn't a huge difference between this and the post-processed one, but it's a shame
-    /// to have to recompute the entire planet just to get hold of this.
+    /// It's tempting to do the full post-processing here, but it's a lossy step, so any mistake
+    /// and we can't get back the data.
     async fn s3_put_raw_tvs_tiff(&self) -> Result<()> {
-        let filename = self.job.tile.cog_filename();
         let source = format!("{}/total_surfaces.tiff", self.job_directory);
         let destination = format!(
-            "s3://viewview/runs/{}/tvs/{filename}",
-            self.job.config.run_id
+            "s3://viewview/runs/{}/raw/{}",
+            self.job.config.run_id,
+            self.job.tile.canonical_filename()
         );
 
         self.machine.sync_file_to_s3(&source, &destination).await?;
@@ -226,17 +259,16 @@ impl TileRunner<'_> {
     }
 
     /// Sync a longest lines COG to our S3 bucket.
-    async fn s3_put_longest_lines_tiff(&self) -> Result<()> {
-
-        let filename = self.job.tile.cog_filename();
-        let source = format!("{}/longest_lines.tiff", self.job_directory);
-
+    /// It needs to be a COG because it's queried from the browser.
+    async fn s3_put_longest_lines_cog(&self) -> Result<()> {
+        let cog = format!("{}/{}", self.job_directory, LONGEST_LINES_COG);
         let destination = format!(
-            "s3://viewview/runs/{}/longest_lines/{filename}",
-            self.job.config.run_id
+            "s3://viewview/runs/{}/longest_lines_cogs/{}",
+            self.job.config.run_id,
+            self.job.tile.canonical_filename()
         );
 
-        self.machine.sync_file_to_s3(&source, &destination).await?;
+        self.machine.sync_file_to_s3(&cog, &destination).await?;
 
         Ok(())
     }
