@@ -120,6 +120,7 @@ RUST_LOG=info,axum=trace,apalis=trace,tasks=trace \
 ```
 
 Add tile jobs:
+(tiles are automatically pulled down from s3://viewview/stitched)
 
 ```
 # Saving data locally, useful for development:
@@ -130,8 +131,7 @@ RUST_LOG=trace cargo run --bin tasks -- atlas run \
   --centre -4.549624919891357,47.44954299926758 \
   --amount 1 \
   --skip 10 \
-  --tvs-executable ../total-viewsheds/target/release/total-viewsheds \
-  --longest-lines-cogs website/public/longest_lines
+  --tvs-executable ../total-viewsheds/target/release/total-viewsheds
 
 # Saving data on remote machines and S3, used for production:
 RUST_LOG=off,tasks=trace cargo run --bin tasks -- atlas run \
@@ -139,8 +139,7 @@ RUST_LOG=off,tasks=trace cargo run --bin tasks -- atlas run \
   --run-id 0.1 \
   --master website/public/tiles.csv \
   --centre -13.949958801269531,57.94995880126953 \
-  --tvs-executable /root/tvs/target/release/total-viewsheds \
-  --longest-lines-cogs output/longest_lines
+  --tvs-executable /root/tvs/target/release/total-viewsheds
 ```
 
 Atlas doesn't run the following commands, you'll want to manually run them after a

@@ -186,10 +186,6 @@ pub struct Atlas {
     #[arg(long, value_name = "TVS executable")]
     pub tvs_executable: std::path::PathBuf,
 
-    /// Where to load/save longest lines COGs.
-    #[arg(long, value_name = "Longest lines COGs directory")]
-    pub longest_lines_cogs: Option<std::path::PathBuf>,
-
     /// Where to run the computations, locally or on a cloud provider.
     #[arg(
         long,
