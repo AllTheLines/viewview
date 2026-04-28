@@ -12,19 +12,12 @@ pub async fn compile() -> Result<()> {
         color_eyre::eyre::bail!("Can't save longest lines when there's no current run config.");
     };
 
+    let index_path = "longest_lines_index.txt";
     let tiles = crate::atlas::db::get_completed_tiles().await?;
-    let default_directory = std::path::Path::new(crate::atlas::tile_job::WORKING_DIRECTORY)
-        .join(crate::atlas::tile_job::LONGEST_LINES_DIRECTORY);
-
-    let index_path = config
-        .clone()
-        .longest_lines_cogs
-        .unwrap_or(default_directory)
-        .join("index.txt");
 
     let mut index = Vec::new();
     for tile in tiles {
-        let filename = tile.cog_filename();
+        let filename = tile.canonical_filename();
         let line = format!("{filename} {}", tile.width);
         index.push(line);
     }
@@ -34,7 +27,7 @@ pub async fn compile() -> Result<()> {
         index.len(),
         index_path
     );
-    std::fs::write(index_path.clone(), index.join("\n"))?;
+    std::fs::write(index_path, index.join("\n"))?;
 
     if !config.is_local_run() {
         let destination = format!(
@@ -42,7 +35,7 @@ pub async fn compile() -> Result<()> {
             config.run_id
         );
         crate::atlas::machines::local::Machine::connection()
-            .sync_file_to_s3(&index_path.display().to_string(), &destination)
+            .sync_file_to_s3(index_path, &destination)
             .await?;
     }
 

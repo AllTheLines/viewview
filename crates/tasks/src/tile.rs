@@ -112,7 +112,7 @@ impl Tile {
     }
 
     /// Canonical filename for the tile.
-    pub fn cog_filename(&self) -> String {
+    pub fn canonical_filename(&self) -> String {
         format!("{}_{}.tiff", self.centre.0.x, self.centre.0.y)
     }
 }
