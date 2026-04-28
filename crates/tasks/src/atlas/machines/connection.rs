@@ -20,7 +20,7 @@ pub struct Command<'command> {
     pub args: Vec<&'command str>,
     /// Environment variables to pass to the command process.
     pub env: Vec<(&'command str, &'command str)>,
-    /// The directory in which to run the command
+    /// The directory in which to run the command.
     pub current_dir: Option<std::path::PathBuf>,
 }
 

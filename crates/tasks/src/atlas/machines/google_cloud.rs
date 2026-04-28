@@ -1,16 +1,15 @@
-//! `google_cloud` is a Google Cloud
+//! `google_cloud` is a Google Cloud.
 
 use color_eyre::eyre::Result;
-use std::net::{IpAddr};
-use std::time::{SystemTime};
+use std::net::IpAddr;
+use std::time::SystemTime;
 
-
-/// Machine implements the `machine::Machine` trait for privisioning a Google Cloud machine
+/// Machine implements the `machine::Machine` trait for privisioning a Google Cloud machine.
 pub struct Machine;
 
 impl Machine {
     /// provision runs the whole provisioning workflow for a Google Cloud machine,
-    /// returning the IP address of the new machine
+    /// returning the IP address of the new machine.
     async fn provision(name: &str, ssh_key_id: &str) -> Result<IpAddr> {
         let command = super::connection::Command {
             executable: "./ctl.sh".into(),
@@ -28,13 +27,18 @@ impl Machine {
     ///
     /// Google Cloud frequently hands out the same IP to different runs creating
     /// issues with host checking. Instead of infecting all other ssh commands with key checking,
-    /// it is much easier just to clear that IP out from `known_hosts`
+    /// it is much easier just to clear that IP out from `known_hosts`.
     async fn wait_for_machine_to_boot(ip_address: IpAddr) -> Result<()> {
         let ip_string = ip_address.to_string();
 
         let delete_ip = super::connection::Command {
             executable: "ssh-keygen".into(),
-            args: vec!["-f", "/home/ryan/.ssh/known_hosts", "-R", ip_string.as_str()],
+            args: vec![
+                "-f",
+                "/home/ryan/.ssh/known_hosts",
+                "-R",
+                ip_string.as_str(),
+            ],
             ..Default::default()
         };
         super::local::Machine::command(delete_ip.clone()).await?;
@@ -61,7 +65,7 @@ impl Machine {
         color_eyre::eyre::bail!("Timed out waiting for machine {ip_string} to boot.");
     }
 
-    /// `init` provisions a `GoogleCloud` Debian machine with the Ubuntu startup script
+    /// `init` provisions a `GoogleCloud` Debian machine with the Ubuntu startup script.
     async fn init(ip_address: IpAddr) -> Result<String> {
         let connect = format!("atlas@{ip_address}");
 

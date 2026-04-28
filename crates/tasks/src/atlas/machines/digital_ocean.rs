@@ -1,4 +1,4 @@
-//! Managing Digital Ocean resources
+//! Managing Digital Ocean resources.
 
 use color_eyre::Result;
 

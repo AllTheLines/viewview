@@ -62,7 +62,8 @@ pub async fn tile_processor(
     };
 
     // clear out the previous run's state
-    state.daemon
+    state
+        .daemon
         .command(crate::atlas::machines::connection::Command {
             executable: "rm".into(),
             args: vec!["-rf", WORKING_DIRECTORY],
@@ -73,7 +74,6 @@ pub async fn tile_processor(
     // We allow more than one so that all tasks apart from computation can run in parallel.
     // Computation concurrency is effectively 1 due to mutex locking in the tile job.
     let worker_concurrency = 2;
-
 
     WorkerBuilder::new(tile_worker_name.clone())
         .backend(tile_store)
