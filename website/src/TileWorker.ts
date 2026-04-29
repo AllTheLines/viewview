@@ -41,13 +41,15 @@ self.onmessage = async (event: MessageEvent<TileWorkerEvent>) => {
 
     let bytes: Uint8Array<ArrayBufferLike> | ArrayBuffer;
     let url = `${pmtilesSource}/${z}/${x}/${y}.bin${CACHE_BUSTER}`;
-    if (z <= 8) {
+    if (pmtilesSource.endsWith('world') && z <= 8) {
       // For zoom levels 0-8 we skip the Cloudflare Worker and use a CDN cache. This saves
       // on Cloudflare Worker monthly quotas.
       url = url
         .replace(`https://${MAP_SERVER_SUBDOMAIN}.`, 'https://cdn.')
         .replace('world.pmtiles/world', 'cache')
         .replace('.bin', '');
+    } else {
+      console.warn('Not using CDN for tiles at low zoom levels');
     }
 
     if (isProductionMapServer) {

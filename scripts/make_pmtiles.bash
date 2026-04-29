@@ -9,6 +9,7 @@ function make_pmtiles {
 	# Output `.pmtile` tile.
 	local output=$2
 
+	# Resolution in metres of the output .pmtile
 	local resolution=${3}
 
 	ensure_tiles_env
