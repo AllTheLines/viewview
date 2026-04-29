@@ -12,12 +12,9 @@ export const PMTILES_SERVER = `${MAP_SERVER}/runs/${VERSION}/pmtiles/${WORLD_PMT
 
 // This is for busting Cloudflare asset cache. Like for an updated `world.pmtiles`,
 // longest lines index, etc.
-export const CACHE_BUSTER = '?buster=23:05-19/04/2026';
+export const CACHE_BUSTER = '?buster=15:28-29/04/2026';
 
 export const EARTH_RADIUS = 6371_000.0;
-
-// Inherited from the TVS algorithm. It's to counter unfavourable floating point rounding.
-export const ANGLE_SHIFT = 0.0001;
 
 export const Log = {
   // biome-ignore lint/suspicious/noExplicitAny: needed for debugging.

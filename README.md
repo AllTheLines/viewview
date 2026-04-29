@@ -151,7 +151,7 @@ bunch of tiles have been processed:
 # This requires a machine with a lot of disk, RAM and CPU. As of writing, I'd recommend
 # 3TB disk, >150GB RAM and at least 48 cores.
 # Replace `latest` with `local` to skip syncing files to S3.
-./ctl.sh make_pmtiles latest work/world.pmtiles
+./ctl.sh make_pmtiles latest work/world.pmtiles 100
 ```
 
 * Create an index of all the COG (optimised GeoTiff) files that contain all the longest lines of sight for every point on the planet. Should only take seconds to run.
@@ -165,7 +165,7 @@ RUST_LOG=off,tasks=trace cargo run --bin tasks -- atlas longest-lines-index
 
 RUST_LOG=off,tasks=trace cargo run --release --bin tasks -- \
   atlas longest-lines-overviews \
-  --tiffs work/longest_lines
+  --tiffs work/longest_lines --run-id 0.1
 ```
 
 ## Static Site Website

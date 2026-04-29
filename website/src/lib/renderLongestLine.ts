@@ -6,7 +6,6 @@ import { state } from '../state.svelte.ts';
 import { getLongestLine, makeGoogleEarthLink } from './getLongestLine.ts';
 
 import {
-  ANGLE_SHIFT,
   aeqdProjectionString,
   computeBBox,
   disablePointer,
@@ -71,7 +70,7 @@ export async function render(lngLat: LngLat) {
     console.log(longestLine);
   }
 
-  longestLine.angle = longestLine.angle + ANGLE_SHIFT;
+  longestLine.angle = longestLine.angle - 90;
 
   const θ = toRadians(longestLine.angle);
   const dx = longestLine.distance * Math.cos(θ);
