@@ -14,7 +14,7 @@ function cache_cacheable_tiles {
 	export -f cache_tile
 
 	# Takes about 15 minutes for zoom levels 0-8
-	for z in {0..1}; do
+	for z in {0..8}; do
 		max=$((2 ** z - 1))
 		parallel --jobs 20 cache_tile "$version $z {1} {2}" ::: $(seq 0 $max) ::: $(seq 0 $max)
 	done
@@ -32,7 +32,7 @@ function cache_tile {
 	local x=$3
 	local y=$4
 	local path="$z/$x/$y"
-	local base="runs/$version/pmtiles/world.pmtiles/world"
+	local base="runs/$version/pmtiles/world"
 
 	curl \
 		--create-dirs \

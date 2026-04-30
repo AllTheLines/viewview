@@ -3,16 +3,16 @@ import type { GeoTIFFImage } from 'geotiff';
 import { LngLat, LngLatBounds } from 'maplibre-gl';
 import type { AppState } from '../state.svelte';
 
-export const VERSION = 'ryan-fullworld-raw';
+export const VERSION = 'ryan-world2-run-refraction23';
 export const CDN_BUCKET = 'https://cdn.alltheviews.world';
 export const MAP_SERVER_SUBDOMAIN = 'pmtiles';
 export const MAP_SERVER = `https://${MAP_SERVER_SUBDOMAIN}.alltheviews.world`;
-export const WORLD_PMTILES = 'world.pmtiles/world'; // TODO move the file to its proper place
+export const WORLD_PMTILES = 'world';
 export const PMTILES_SERVER = `${MAP_SERVER}/runs/${VERSION}/pmtiles/${WORLD_PMTILES}`;
 
 // This is for busting Cloudflare asset cache. Like for an updated `world.pmtiles`,
 // longest lines index, etc.
-export const CACHE_BUSTER = '?buster=15:28-29/04/2026';
+export const CACHE_BUSTER = '?buster=18:36-30/04/2026';
 
 export const EARTH_RADIUS = 6371_000.0;
 

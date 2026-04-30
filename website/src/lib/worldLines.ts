@@ -18,7 +18,8 @@ import {
 } from './utils';
 
 /// The filename for the longest lines grid.
-const LONGEST_LINES_GRIDED_FILENAME = 'longest_lines_grided.bin';
+const LONGEST_LINES_GRIDED_FILENAME =
+  'longest_lines_cogs/longest_lines_grided.bin';
 
 export class LongestLineH3 {
   coordinate: LngLat;

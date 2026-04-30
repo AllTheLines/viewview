@@ -46,7 +46,7 @@ self.onmessage = async (event: MessageEvent<TileWorkerEvent>) => {
       // on Cloudflare Worker monthly quotas.
       url = url
         .replace(`https://${MAP_SERVER_SUBDOMAIN}.`, 'https://cdn.')
-        .replace('world.pmtiles/world', 'cache')
+        .replace('pmtiles/world', 'pmtiles/cache')
         .replace('.bin', '');
     } else {
       console.warn('Not using CDN for tiles at low zoom levels');
