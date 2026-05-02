@@ -1,5 +1,7 @@
 # A View Of All Views
 
+![Screenshot of app](screenshot.webp)
+
 This repo is for all the supporting code used to find and display the longest line of sight on the planet.
 
 The main viewshed algorithm is another repo https://github.com/AllTheLines/CacheTVS
@@ -91,7 +93,7 @@ cargo run --bin tasks -- atlas stitch-all \
 
 Using https://github.com/AllTheLines/CacheTVS
 
-Outputs `.bt` heatmap.
+Outputs `total_surfaces.tiff` and `longest_lines.tiff`.
 
 ## Prepare For Cloud
 
@@ -146,13 +148,15 @@ RUST_LOG=off,tasks=trace cargo run --bin tasks -- atlas run \
 Atlas doesn't run the following commands, you'll want to manually run them after a
 bunch of tiles have been processed:
 
-* Create the gigantic (10s of GBs) global `.pmtile` that contains the TVS heatmap for the entire planet.
+* Create the gigantic (~500GB) global `.pmtile` that contains the TVS heatmap for the entire planet.
 ```
 # This requires a machine with a lot of disk, RAM and CPU. As of writing, I'd recommend
 # 3TB disk, >150GB RAM and at least 48 cores.
 # Replace `latest` with `local` to skip syncing files to S3.
 ./ctl.sh make_pmtiles latest work/world.pmtiles 100
 ```
+
+Note that this process creates a _temporary_ version of the `.pmtile`, and then copies that to its final destination. So you need at least 1.2TB of disk for a world PMTile. And then of course you need space to download the raw .tiffs, and space to save the post-processed versions of those .tiffs. So at least 2TB is a good idea.
 
 * Create an index of all the COG (optimised GeoTiff) files that contain all the longest lines of sight for every point on the planet. Should only take seconds to run.
 ```

@@ -23,10 +23,10 @@ struct LongestLine {
 
 /// A hash where each key is an H3 grid cell and its value is the longest line of sight within
 /// that grid cell.
-type HashMap = std::collections::HashMap<h3o::CellIndex, LongestLine>;
+type LongestInGrids = std::collections::HashMap<h3o::CellIndex, LongestLine>;
 
-/// Keep track of the current longest line in each H3 grid.
-type StateHash = Arc<tokio::sync::RwLock<HashMap>>;
+/// Keep track of work per tile.
+type StateHash = Arc<tokio::sync::RwLock<std::collections::HashMap<String, LongestInGrids>>>;
 
 /// Representation of a longest lines COG file.
 struct Tile {
@@ -42,7 +42,7 @@ struct Tile {
 
 impl Tile {
     /// Entrypoint.
-    fn process(path: &std::path::Path) -> Result<HashMap> {
+    fn process(path: &std::path::Path) -> Result<LongestInGrids> {
         let centre = Self::parse_centre_coords(path)?;
         let buffer = Self::load(path)?;
         let width = buffer.width();
@@ -105,10 +105,10 @@ impl Tile {
 
     /// Iterate through every longest line in COG, associate it with a H3 grid, check to see if
     /// it's the longest in the grid and set record it if so.
-    fn find_longest_lines(&self) -> Result<HashMap> {
+    fn find_longest_lines(&self) -> Result<LongestInGrids> {
         tracing::trace!("Looping through {} points", self.buffer.len());
 
-        let mut local = HashMap::new();
+        let mut local = LongestInGrids::new();
         for (index, &value) in self.buffer.data().iter().enumerate() {
             let coord = self.index_to_coord(index);
             let lonlat = self.coord_to_lonlat(coord)?;
@@ -192,44 +192,65 @@ pub async fn run(config: &crate::config::LongestLinesOverviews) -> Result<()> {
         let world_clone = Arc::clone(&world);
         let jobs_clone = Arc::clone(&jobs);
         let completed_jobs = Arc::clone(&completed_jobs_master);
-        let handle = tokio::task::spawn(async move {
-            tracing::debug!("Spawning worker {worker}");
 
-            loop {
-                let job = jobs_clone.write().await.pop();
-                match job {
-                    Some(tiff) => {
-                        let result: Result<()> = async {
-                            let local = Tile::process(&tiff)?;
-                            update_state(&world_clone, local).await?;
-                            completed_jobs.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                            tracing::info!(
-                                "{}/{total_jobs} completed jobs",
-                                completed_jobs.load(std::sync::atomic::Ordering::Relaxed)
-                            );
-                            Ok(())
+        tracing::debug!("Spawning worker {worker}");
+        let handle = std::thread::spawn(move || {
+            #[expect(clippy::expect_used, reason = "I'm lazy")]
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("Couldn't build Tokio runtime in current thread");
+
+            runtime.block_on(async {
+                loop {
+                    let job = jobs_clone.write().await.pop();
+                    match job {
+                        Some(tiff) => {
+                            let filename = tiff.display().to_string();
+                            let result: Result<()> = async {
+                                let local = Tile::process(&tiff)?;
+                                world_clone.write().await.insert(filename.clone(), local);
+                                let current_world = world_clone.read().await.clone();
+                                std::thread::spawn(move || compile_world(&current_world));
+                                completed_jobs.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                                tracing::info!(
+                                    "{}/{total_jobs} completed jobs",
+                                    completed_jobs.load(std::sync::atomic::Ordering::Relaxed)
+                                );
+                                Ok(())
+                            }
+                            .await;
+                            if let Err(error) = result {
+                                tracing::error!(
+                                    "Error running longest lines job for {filename}: {error}"
+                                );
+                                #[expect(clippy::exit, reason = "Everything needs to work!")]
+                                std::process::exit(1);
+                            }
                         }
-                        .await;
-                        if let Err(error) = result {
-                            tracing::error!("Error running longest lines job: {error}");
-                            #[expect(clippy::exit, reason = "Everything needs to work!")]
-                            std::process::exit(1);
+                        None => {
+                            tracing::debug!("Worker {worker} shutting down");
+                            break;
                         }
-                    }
-                    None => {
-                        tracing::debug!("Worker {worker} shutting down");
-                        break;
                     }
                 }
-            }
+            });
         });
 
         handles.push(handle);
     }
 
-    for result in futures::future::join_all(handles).await {
-        result?;
+    for handle in handles {
+        #[expect(clippy::expect_used, reason = "I'm lazy")]
+        handle.join().expect("Error joining thread");
     }
+
+    let grided = compile_world(&world.read().await.clone())?;
+    super::grided::write(
+        format!("./output/{LONGEST_LINES_GRIDED_FILENAME}",).into(),
+        &grided,
+    )
+    .await?;
 
     sync_to_s3(
         format!("./output/{LONGEST_LINES_GRIDED_FILENAME}").into(),
@@ -240,17 +261,22 @@ pub async fn run(config: &crate::config::LongestLinesOverviews) -> Result<()> {
     Ok(())
 }
 
-/// Take all the newly found longest lines in a COG and check to see if they're longer than any of
-/// the currently recorded global ones.
-async fn update_state(world: &StateHash, local: HashMap) -> Result<()> {
+/// Take all the per-tile grided longest lines and compile a global canonical grid of longest lines.
+fn compile_world(
+    world: &std::collections::HashMap<String, LongestInGrids>,
+) -> Result<Vec<super::grided::Grided>> {
+    let mut master = LongestInGrids::new();
+
     #[expect(clippy::iter_over_hash_type, reason = "We don't mind about ordering")]
-    for (cell, line) in local {
-        if let Some(existing) = world.write().await.get_mut(&cell) {
-            if line.packed.distance() > existing.packed.distance() {
-                *existing = line;
+    for grid_for_tile in world.values() {
+        for (cell, line) in grid_for_tile {
+            if let Some(existing) = master.get_mut(cell) {
+                if line.packed.distance() > existing.packed.distance() {
+                    *existing = *line;
+                }
+            } else {
+                master.insert(*cell, *line);
             }
-        } else {
-            world.write().await.insert(cell, line);
         }
     }
 
@@ -261,9 +287,10 @@ async fn update_state(world: &StateHash, local: HashMap) -> Result<()> {
     };
 
     let mut grided = Vec::new();
-    let count = world.read().await.len();
+    let count = master.len();
+
     #[expect(clippy::iter_over_hash_type, reason = "We don't mind about ordering")]
-    for entry in world.read().await.values() {
+    for entry in master.values() {
         if entry.packed.distance() > longest.packed.distance() {
             longest = *entry;
         }
@@ -296,13 +323,7 @@ async fn update_state(world: &StateHash, local: HashMap) -> Result<()> {
         );
     };
 
-    super::grided::write(
-        format!("./output/{LONGEST_LINES_GRIDED_FILENAME}",).into(),
-        &grided,
-    )
-    .await?;
-
-    Ok(())
+    Ok(grided)
 }
 
 /// Find all the `.tiff`s in a given directory.
