@@ -1,4 +1,4 @@
-import type { LngLat } from 'maplibre-gl';
+import { LngLat } from 'maplibre-gl';
 import { type PolarSegments, Viewshed } from './lib/Viewshed';
 
 export type ViewshedWorkerEvent =
@@ -10,28 +10,39 @@ self.onmessage = async (event: MessageEvent<ViewshedWorkerEvent>) => {
   if (event.data.type === 'getViewshed') {
     const bytes = await getViewshedData(event.data.coordinate);
 
-    const segments = parseViewshedBytes(bytes);
+    const payload = parseViewshedBytes(bytes);
 
-    let scale = 1; // TODO: Get from API?
+    let demScale = 1; // TODO: Get from API?
     if (import.meta.env.DEV) {
-      scale = 10;
+      demScale = 100;
     }
 
     const id = crypto.randomUUID();
 
-    const viewshed = new Viewshed(id, event.data.coordinate, scale, segments);
+    const viewshed = new Viewshed(
+      id,
+      payload.lonLatOfBiggestViewshed,
+      demScale,
+      payload.angleScale,
+      payload.segments,
+    );
+
     const messageDirty = {
       type: 'setViewshed',
       viewshed,
     } as ViewshedWorkerEvent;
     self.postMessage(messageDirty);
 
-    viewshed.unionGeoJSON();
-    const messageClean = {
-      type: 'updateViewshed',
-      viewshed,
-    } as ViewshedWorkerEvent;
-    self.postMessage(messageClean);
+    // TODO:
+    //   This is reeeeeally slow for higher angular resolutions.
+    //   So we need to construct the viewsheds server side
+    //
+    // viewshed.unionGeoJSON();
+    // const messageClean = {
+    //   type: "updateViewshed",
+    //   viewshed,
+    // } as ViewshedWorkerEvent;
+    // self.postMessage(messageClean);
   }
 };
 
@@ -53,14 +64,27 @@ async function getViewshedData(lngLat: LngLat) {
   return await response.bytes();
 }
 
-function parseViewshedBytes(data: Uint8Array<ArrayBuffer>): PolarSegments[] {
+function parseViewshedBytes(data: Uint8Array<ArrayBuffer>): {
+  angleScale: number;
+  lonLatOfBiggestViewshed: LngLat;
+  segments: PolarSegments[];
+} {
   const buffer = data.buffer;
   const view = new DataView(buffer);
   let offset = 0;
-  const out: PolarSegments[] = [];
+  const segments: PolarSegments[] = [];
+
+  const angleScale = view.getUint32(offset);
+  offset += 4;
+
+  const lonOfBiggestViewshed = view.getFloat32(offset, false);
+  offset += 4;
+  const latOfBiggestViewshed = view.getFloat32(offset, false);
+  offset += 4;
+  const lngLat = new LngLat(lonOfBiggestViewshed, latOfBiggestViewshed);
 
   while (offset < buffer.byteLength) {
-    const angleID = view.getUint16(offset, false);
+    const angle = view.getUint16(offset, false) / angleScale;
     offset += 2;
 
     const segmentsLength = view.getUint16(offset, false);
@@ -74,8 +98,8 @@ function parseViewshedBytes(data: Uint8Array<ArrayBuffer>): PolarSegments[] {
       offset += 2;
     }
 
-    out.push({ angleID, pairs: pairs });
+    segments.push({ angle, pairs: pairs });
   }
 
-  return out;
+  return { angleScale, lonLatOfBiggestViewshed: lngLat, segments };
 }
