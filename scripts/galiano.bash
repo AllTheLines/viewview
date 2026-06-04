@@ -1,3 +1,5 @@
+# shellcheck disable=SC2155
+
 # CRS: NAD83(CSRS) / UTM zone 10N (already metric and equally spaced pixels)
 # Center: 467048.260, 5420616.975 (-123.44996829267, 48.9376084029813)
 # Pixels: 87616x78341 (target for factor of 48 87648x87648)
@@ -10,7 +12,6 @@
 # 	compute dsm-1.0.tiff \
 # 	--thread-count 160 \
 # 	--database-per-thread \
-# 	--backend cpu \
 # 	--process total-surfaces,viewsheds \
 # 	--observer-height 0.0 \
 # 	--aoi-point -123.57209623620894,49.02110568820024 \
@@ -18,6 +19,9 @@
 # 	--aoi-point -123.34211991205905,48.83884334550575 \
 # 	--aoi-point -123.61305988176157,48.99841636016359 \
 # 	--aoi-point -123.57209623620894,49.0211056882002 \
+# 	--tvs-source-path /mnt/disks/viewshed/total_surfaces.tiff \
+# 	--only-save-biggest-viewsheds 16 \
+# 	--angle-subdivisions 10 \
 # 	--output-dir /mnt/disks/viewshed \
 # 	--viewsheds-db-path /mnt/disks/viewshed/dbs
 
@@ -33,8 +37,7 @@ function galiano_prepare {
 	local resolution=$3
 
 	read -r xcentre ycentre <<<"$(
-		gdalinfo \
-			-json "$input" | jq -r '.cornerCoordinates.center | join(" ")'
+		gdalinfo -json "$input" | jq -r '.cornerCoordinates.center | join(" ")'
 	)"
 
 	source_crs=$(gdalsrsinfo -o wkt "$input")
@@ -57,6 +60,15 @@ function galiano_prepare {
 		"$output"
 
 	pad_to_factor "$output"
+
+	read -r xcentre ycentre <<<"$(
+		gdalinfo -json "$output" | jq -r '.cornerCoordinates.center | join(" ")'
+	)"
+
+	if (($(echo "scale=3; $xcentre != 0 || $ycentre != 0" | bc -l))); then
+		echo "Recentering from $xcentre,$ycentre to 0,0..."
+		recentre "$output"
+	fi
 
 }
 
@@ -98,4 +110,36 @@ function pad_to_factor {
 		"$input" "$temp"
 
 	mv "$temp" "$input"
+}
+
+
+# Ensure that the centre of the georeference matches the centre of the raster.
+function recentre() {
+	local input_file="$1"
+
+	local temp=$(dirname "$input")/tmp.tiff
+
+	local info=$(gdalinfo -json "$input_file")
+
+	local lon_0=$(echo "$info" | jq '.wgs84Extent.coordinates[0] | (.[0][0] + .[2][0]) / 2')
+	local lat_0=$(echo "$info" | jq '.wgs84Extent.coordinates[0] | (.[0][1] + .[2][1]) / 2')
+
+	local width=$(echo "$info" | jq -r '.size[0]')
+	local height=$(echo "$info" | jq -r '.size[1]')
+	local resolution_x=$(echo "$info" | jq -r '.geoTransform[1]')
+	local resolution_y=$(echo "$info" | jq -r '.geoTransform[5] | abs')
+
+	local x_min=$(python3 -c "print(-($width * $resolution_x) / 2.0)")
+	local x_max=$(python3 -c "print(($width * $resolution_x) / 2.0)")
+	local y_min=$(python3 -c "print(-($height * $resolution_y) / 2.0)")
+	local y_max=$(python3 -c "print(($height * $resolution_y) / 2.0)")
+
+	gdalwarp \
+		-t_srs "+proj=aeqd +lat_0=$lat_0 +lon_0=$lon_0 +datum=WGS84 +units=m" \
+		-te "$x_min" "$y_min" "$x_max" "$y_max" \
+		-r bilinear \
+		-dstnodata 0 \
+		"$input_file" "$temp"
+
+	mv "$temp" "$input_file"
 }
