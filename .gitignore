@@ -10,3 +10,4 @@
 *.pmtiles
 .env
 /state
+rustc-ice-*
