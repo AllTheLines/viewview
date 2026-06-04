@@ -14,7 +14,7 @@ bytemuck = { version = "1.23.2", features = ["derive"] }
 clap.workspace = true
 color-eyre.workspace = true
 futures = "0.3.31"
-gdal = { version = "0.18.0", features = ["bindgen"] }
+gdal = { version = "0.19.0", features = ["bindgen"] }
 geo.workspace = true
 geojson = { version = "0.24.2", features = ["geo-types"] }
 h3o = "0.9.4"
