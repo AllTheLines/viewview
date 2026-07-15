@@ -17,7 +17,7 @@
   import { transformConstrain } from './lib/mapConstrains.ts';
   import { setupLongestLines } from './lib/renderLongestLine.ts';
   import { setupViewsheds } from './lib/renderViewsheds.ts';
-  import { enablePointer, setVectorVisibility } from './lib/utils.ts';
+  import { enablePointer, setVectorMapVisibilities } from './lib/utils.ts';
   import { findLongestLineInBoundsFromGrid } from './lib/worldLines.ts';
   import map_vector from './map_vector.styles.json';
   import Acknowledgements from './modals/Acknowledgements.svelte';
@@ -28,7 +28,7 @@
   import Slider from './Slider.svelte';
   import { state } from './state.svelte.ts';
 
-  let { longest } = $props();
+  let { coordinate } = $props();
   const config = getConfig();
 
   function addHeatmapLayer() {
@@ -82,18 +82,20 @@
     state.map.on('load', async () => {
       initClickEffect();
 
-      if (longest === '') {
-        addHeatmapLayer();
-      }
-
       if (state.config.project === 'world') {
-        setupLongestLines(longest);
-        setVectorVisibility(state, true);
+        if (coordinate === '') {
+          // If there's a coordinate then the map is going to move and zoom over some GeoJSON.
+          // So only render the heatmap _after_ the moving has finished.
+          addHeatmapLayer();
+        }
+        setupLongestLines(coordinate);
+        setVectorMapVisibilities(state, true);
         await updateTopLongestLines();
       }
 
       if (state.config.project === 'galiano') {
-        setupViewsheds();
+        addHeatmapLayer();
+        setupViewsheds(coordinate);
       }
     });
 

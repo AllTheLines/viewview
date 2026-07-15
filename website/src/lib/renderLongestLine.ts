@@ -9,6 +9,7 @@ import {
   aeqdProjectionString,
   computeBBox,
   disablePointer,
+  extractCoordFromURL,
   rotate,
   toRadians,
 } from './utils.ts';
@@ -45,17 +46,9 @@ export function setupLongestLines(coordFromURL: string | undefined) {
   });
 
   if (coordFromURL?.startsWith('longest/')) {
-    const coord = extractCoordFromURL(coordFromURL);
+    const coord = extractCoordFromURL(coordFromURL.replace('longest/', ''));
     render(coord);
   }
-}
-
-function extractCoordFromURL(coordFromURL: string) {
-  const parts = coordFromURL.replace('longest/', '').split('_');
-  const lng = parseFloat(parts[0]);
-  const lat = parseFloat(parts[1]);
-  const coord = new LngLat(lng, lat);
-  return coord;
 }
 
 export async function render(lngLat: LngLat) {

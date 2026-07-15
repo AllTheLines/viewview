@@ -177,7 +177,7 @@ export function getPMTilesSource() {
   }
 }
 
-export function setVectorVisibility(state: AppState, isVisible: boolean) {
+export function setVectorMapVisibilities(state: AppState, isVisible: boolean) {
   const layers = state.map?.getStyle().layers || [];
   for (const layer of layers) {
     if (layer.id === 'mountain_peaks') continue;
@@ -205,4 +205,18 @@ export function getScaleFromCog(cog: GeoTIFFImage) {
   const resolution = cog.getResolution();
   const scale = Math.abs(resolution[0]);
   return scale;
+}
+
+export function extractCoordFromURL(coordFromURL: string) {
+  const parts = coordFromURL.split('_');
+  const lng = parseFloat(parts[0]);
+  const lat = parseFloat(parts[1]);
+  const coord = new LngLat(lng, lat);
+  return coord;
+}
+
+export function getRandomColor(): string {
+  return `#${Math.floor(Math.random() * 16777215)
+    .toString(16)
+    .padStart(6, '0')}`;
 }
