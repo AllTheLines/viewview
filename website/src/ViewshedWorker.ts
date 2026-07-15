@@ -1,9 +1,13 @@
 import { LngLat } from 'maplibre-gl';
 import { type PolarSegments, Viewshed } from './lib/Viewshed';
+import init from './lib/viewshed-reconstructor/viewshed_reconstructor.js';
+
+await init();
+self.postMessage({ status: 'ready' });
 
 export type ViewshedWorkerEvent =
   | { type: 'getViewshed'; coordinate: LngLat }
-  | { type: 'setViewshed'; viewshed: Viewshed }
+  | { type: 'renderViewshed'; viewshed: Viewshed }
   | { type: 'updateViewshed'; viewshed: Viewshed };
 
 self.onmessage = async (event: MessageEvent<ViewshedWorkerEvent>) => {
@@ -28,21 +32,10 @@ self.onmessage = async (event: MessageEvent<ViewshedWorkerEvent>) => {
     );
 
     const messageDirty = {
-      type: 'setViewshed',
+      type: 'renderViewshed',
       viewshed,
     } as ViewshedWorkerEvent;
     self.postMessage(messageDirty);
-
-    // TODO:
-    //   This is reeeeeally slow for higher angular resolutions.
-    //   So we need to construct the viewsheds server side
-    //
-    // viewshed.unionGeoJSON();
-    // const messageClean = {
-    //   type: "updateViewshed",
-    //   viewshed,
-    // } as ViewshedWorkerEvent;
-    // self.postMessage(messageClean);
   }
 };
 
@@ -58,7 +51,7 @@ async function getViewshedData(lngLat: LngLat) {
   );
   const end = performance.now();
   if (import.meta.env.DEV) {
-    console.log(`Viewshed fetched in ms`, end - start);
+    console.log(`Viewshed fetched in: ${end - start}ms`);
   }
 
   return await response.bytes();
@@ -90,15 +83,15 @@ function parseViewshedBytes(data: Uint8Array<ArrayBuffer>): {
     const segmentsLength = view.getUint16(offset, false);
     offset += 2;
 
-    const pairs = [];
-    const numElements = segmentsLength / 2;
+    const bitpacks = [];
+    const numElements = segmentsLength / 4;
 
-    for (let j = 0; j < numElements; j++) {
-      pairs.push(view.getUint16(offset, false));
-      offset += 2;
+    for (let i = 0; i < numElements; i++) {
+      bitpacks.push(view.getUint32(offset, false));
+      offset += 4;
     }
 
-    segments.push({ angle, pairs: pairs });
+    segments.push({ angle, bitpacks });
   }
 
   return { angleScale, lonLatOfBiggestViewshed: lngLat, segments };
