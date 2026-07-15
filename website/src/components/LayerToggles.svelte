@@ -3,7 +3,7 @@
   import heatmap_layer from '../images/heatmap_layer.png';
   import mountain_peak from '../images/mountain_peak.png';
   import vector_layer from '../images/vector_layer.png';
-  import { setVectorVisibility } from '../lib/utils';
+  import { setVectorMapVisibilities } from '../lib/utils';
   import { state } from '../state.svelte';
   import LayerToggle from './LayerToggle.svelte';
 </script>
@@ -21,7 +21,7 @@
 	/>
 	<LayerToggle
 		image={vector_layer}
-		callback={(isToggled) => setVectorVisibility(state, isToggled)}
+		callback={(isToggled) => setVectorMapVisibilities(state, isToggled)}
 		isToggled={state.config.project === "world"}
 	/>
 	<LayerToggle

@@ -11,7 +11,7 @@
 	<div>
 		<Route path="/*coordinate">
 			{#snippet children(params)}
-				<Home longest={params.coordinate} />
+				<Home coordinate={params.coordinate} />
 			{/snippet}
 		</Route>
 		<Route path="/tile-packing-the-world"><Packing /></Route>
