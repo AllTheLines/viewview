@@ -346,7 +346,6 @@ export function convertRasterXYToLngLat(
   const x_metric = (x - offset) * scale;
   const y_metric = (y_flipped - offset) * scale;
   const [lng, lat] = proj4(projection, proj4.WGS84, [x_metric, y_metric]);
-  console.log(x, y, x_metric, y_metric, lng, lat);
 
   return new LngLat(lng, lat);
 }
