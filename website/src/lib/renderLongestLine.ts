@@ -9,6 +9,7 @@ import {
   aeqdProjectionString,
   computeBBox,
   disablePointer,
+  PRE_VARIABLY_SCALED_TIFFS__LINE_ANGLE,
   rotate,
   toRadians,
 } from './utils.ts';
@@ -70,7 +71,7 @@ export async function render(lngLat: LngLat) {
     console.log(longestLine);
   }
 
-  longestLine.angle = longestLine.angle - 90;
+  longestLine.angle = longestLine.angle + PRE_VARIABLY_SCALED_TIFFS__LINE_ANGLE;
 
   const θ = toRadians(longestLine.angle);
   const dx = longestLine.distance * Math.cos(θ);

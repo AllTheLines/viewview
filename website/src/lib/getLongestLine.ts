@@ -11,8 +11,9 @@ import {
   getElevationAtCoord,
   getScaleFromCog,
   Log,
+  PRE_VARIABLY_SCALED_TIFFS__COG_SCALE,
+  PRE_VARIABLY_SCALED_TIFFS__RUN_VERSION,
   startLoadingSpinner,
-  VERSION,
 } from './utils';
 
 // Masks for unpacking bit-packed line of sight data.
@@ -246,7 +247,7 @@ async function findNearestCOGURLs(coordinate: LngLat) {
   const cogFilenames = [];
   for (const [filename, cog] of cogsIndex) {
     const distance = coordinate.distanceTo(cog.centre);
-    const radius = cog.width / 2;
+    const radius = cog.width / 2 / PRE_VARIABLY_SCALED_TIFFS__COG_SCALE;
     Log.debug(
       `👀 Checking Longest Line COG: ${filename}`,
       `with centre: ${cog.centre} and radius ${radius}`,
@@ -354,8 +355,9 @@ export function convertRasterXYToLngLat(
 function getLongestLinesSource() {
   const params = new URLSearchParams(self.location.search);
   const source = params.get('longest_lines');
+  const version = PRE_VARIABLY_SCALED_TIFFS__RUN_VERSION;
   if (!source) {
-    return `${CDN_BUCKET}/runs/${VERSION}/longest_lines_cogs`;
+    return `${CDN_BUCKET}/runs/${version}/longest_lines_cogs`;
   } else {
     return source;
   }
