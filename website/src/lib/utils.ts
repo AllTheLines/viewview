@@ -10,9 +10,19 @@ export const MAP_SERVER = `https://${MAP_SERVER_SUBDOMAIN}.alltheviews.world`;
 export const WORLD_PMTILES = 'world';
 export const PMTILES_SERVER = `${MAP_SERVER}/runs/${VERSION}/pmtiles/${WORLD_PMTILES}`;
 
+// All these `PRE_VARIABLY_SCALED_TIFFS__*` values are for old runs that didn't have variably scaled
+// .tiffs. We're just using them whilst the latest run is the high refraction run,
+// 'ryan-world2-run-refraction23', which produces notably longer lines of sight. Should we update the
+// Top Ten list of longest lines?
+export const PRE_VARIABLY_SCALED_TIFFS__RUN_VERSION = 'ryan-fullworld-raw';
+// Should be `0`
+export const PRE_VARIABLY_SCALED_TIFFS__COG_SCALE = 100;
+// Should be `-90`
+export const PRE_VARIABLY_SCALED_TIFFS__LINE_ANGLE = 0;
+
 // This is for busting Cloudflare asset cache. Like for an updated `world.pmtiles`,
 // longest lines index, etc.
-export const CACHE_BUSTER = '?buster=18:36-30/04/2026';
+export const CACHE_BUSTER = '?buster=17:47-25/08/2026';
 
 export const EARTH_RADIUS = 6371_000.0;
 
