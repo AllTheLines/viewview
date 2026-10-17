@@ -70,7 +70,7 @@ async fn main() -> Result<()> {
             let mut packer = packer::Packer::new(packer_config.clone())?;
             match packer_config.one {
                 Some(coordinate) => {
-                    packer.run_one(shared::projector::LonLatCoord(geo::coord! {
+                    packer.run_one(tvs_lib::projector::LonLatCoord(geo::coord! {
                         x: coordinate.0,
                         y: coordinate.1
                     }))?;

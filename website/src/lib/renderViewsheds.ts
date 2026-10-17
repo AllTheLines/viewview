@@ -1,12 +1,41 @@
 import { state } from '../state.svelte.ts';
 import type { ViewshedWorkerEvent } from '../ViewshedWorker.ts';
+import {
+  endLoadingSpinner,
+  extractCoordFromURL,
+  startLoadingSpinner,
+} from './utils.ts';
 import { DEFAULT_OPACITY, Viewshed } from './Viewshed.ts';
 
-export function setupViewsheds() {
-  const worker = new Worker(new URL('../ViewshedWorker.js', import.meta.url));
-  worker.onmessage = renderNewViewshed;
+function startViewshedWorker(): Promise<Worker> {
+  return new Promise((resolve) => {
+    const worker = new Worker(new URL('../ViewshedWorker.js', import.meta.url));
+    worker.onmessage = mainThreadViewshedWorkerCallbacks;
+
+    worker.addEventListener('message', function onReady(event) {
+      if (event.data.status === 'ready') {
+        worker.removeEventListener('message', onReady);
+        resolve(worker);
+      }
+    });
+  });
+}
+
+export async function setupViewsheds(coordFromURL: string | undefined) {
+  const worker = await startViewshedWorker();
 
   renderAllViewsheds();
+
+  if (coordFromURL?.startsWith('viewshed')) {
+    const coordinate = extractCoordFromURL(
+      coordFromURL.replace('viewshed/', ''),
+    );
+    startLoadingSpinner();
+    worker.postMessage({
+      type: 'getViewshed',
+      coordinate,
+    } as ViewshedWorkerEvent);
+  }
 
   state.map?.on('click', async (event) => {
     if (!state.map) {
@@ -15,6 +44,7 @@ export function setupViewsheds() {
 
     removeUnlockedViewsheds();
 
+    startLoadingSpinner();
     worker.postMessage({
       type: 'getViewshed',
       coordinate: event.lngLat,
@@ -22,15 +52,18 @@ export function setupViewsheds() {
   });
 }
 
-export function renderNewViewshed(event: MessageEvent<ViewshedWorkerEvent>) {
+export function mainThreadViewshedWorkerCallbacks(
+  event: MessageEvent<ViewshedWorkerEvent>,
+) {
   const isViewshedData =
-    event.data.type === 'setViewshed' || event.data.type === 'updateViewshed';
+    event.data.type === 'renderViewshed' ||
+    event.data.type === 'updateViewshed';
   if (!isViewshedData) return;
 
   const viewshed = event.data.viewshed;
   Object.setPrototypeOf(viewshed, Viewshed.prototype); // Rehydrate the serialised data.
 
-  if (event.data.type === 'setViewshed') {
+  if (event.data.type === 'renderViewshed') {
     state.viewsheds.push(viewshed);
     renderAllViewsheds();
   }
@@ -38,6 +71,8 @@ export function renderNewViewshed(event: MessageEvent<ViewshedWorkerEvent>) {
   if (event.data.type === 'updateViewshed') {
     updateExistingViewshedData(viewshed);
   }
+
+  endLoadingSpinner();
 }
 
 function updateExistingViewshedData(viewshed: Viewshed) {

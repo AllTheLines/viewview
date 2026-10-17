@@ -3,6 +3,10 @@ public/scratch
 public/**/*.tiff
 public/longest_lines_grided.bin
 
+src/lib/viewshed-reconstructor/.gitignore
+src/lib/viewshed-reconstructor/README.md
+src/lib/viewshed-reconstructor/package.json
+
 # Local
 .DS_Store
 *.local
