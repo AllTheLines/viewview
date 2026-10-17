@@ -9,8 +9,8 @@ import {
   aeqdProjectionString,
   computeBBox,
   disablePointer,
-  PRE_VARIABLY_SCALED_TIFFS__LINE_ANGLE,
   extractCoordFromURL,
+  PRE_VARIABLY_SCALED_TIFFS__LINE_ANGLE,
   rotate,
   toRadians,
 } from './utils.ts';

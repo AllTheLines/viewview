@@ -9,21 +9,21 @@
 # How to compute:
 #
 # RUSTFLAGS='-Ctarget-cpu=native' cargo run --release --features=ring_data \
-# 	compute dsm-1.0.tiff \
+# 	compute /mnt/disks/local-ssd-raid/dsm-1.0.tiff \
 # 	--thread-count 160 \
 # 	--database-per-thread \
-# 	--process total-surfaces,viewsheds \
+# 	--process all \
 # 	--observer-height 0.0 \
 # 	--aoi-point -123.57209623620894,49.02110568820024 \
 # 	--aoi-point -123.29132955324245,48.87887000504236 \
 # 	--aoi-point -123.34211991205905,48.83884334550575 \
 # 	--aoi-point -123.61305988176157,48.99841636016359 \
 # 	--aoi-point -123.57209623620894,49.0211056882002 \
-# 	--tvs-source-path /mnt/disks/viewshed/total_surfaces.tiff \
+# 	--tvs-source-path /mnt/disks/local-ssd-raid/total_surfaces.tiff \
 # 	--only-save-biggest-viewsheds 16 \
 # 	--angle-subdivisions 10 \
-# 	--output-dir /mnt/disks/viewshed \
-# 	--viewsheds-db-path /mnt/disks/viewshed/dbs
+# 	--output-dir /mnt/disks/local-ssd-raid/output \
+# 	--viewsheds-db-path /mnt/disks/local-ssd-raid/dbs
 
 # Convert the Galiano DSM to:
 #   * a square

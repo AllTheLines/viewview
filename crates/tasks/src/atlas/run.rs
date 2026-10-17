@@ -56,7 +56,7 @@ impl Atlas {
                 .next()
                 .context("No width in tile.csv line")?
                 .parse::<f32>()?;
-            let centre = shared::projector::LonLatCoord(geo::Coord { x: lon, y: lat });
+            let centre = tvs_lib::projector::LonLatCoord(geo::Coord { x: lon, y: lat });
 
             tiles.push(crate::tile::Tile { centre, width });
         }
@@ -94,7 +94,7 @@ impl Atlas {
         let mut tile_store = super::db::atlas_worker_store().await?;
 
         tracing::debug!("Adding tile jobs to worker...");
-        let start_from = shared::projector::LonLatCoord(config.centre.into());
+        let start_from = tvs_lib::projector::LonLatCoord(config.centre.into());
         let amount_of_tiles_to_add = config.amount.unwrap_or_else(|| atlas.tiles.size());
         let mut count = 0;
         for master_tile in atlas

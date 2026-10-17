@@ -16,11 +16,11 @@ pub async fn get_viewshed(
     State(state): State<crate::app::AppState>,
     Path(coordinate): Path<String>,
 ) -> impl IntoResponse {
-    let Ok(lonlat) = shared::projector::LonLatCoord::parse(&coordinate) else {
+    let Ok(lonlat) = tvs_lib::projector::LonLatCoord::parse(&coordinate) else {
         return (StatusCode::BAD_REQUEST, "Couldn't parse coordinate").into_response();
     };
 
-    let Ok(dem_id) = shared::utils::lonlat_to_dem_id(&state.metadata, lonlat) else {
+    let Ok(dem_id) = tvs_lib::utils::lonlat_to_dem_id(&state.metadata, lonlat) else {
         return (
             StatusCode::BAD_REQUEST,
             "Couldn't get a DEM ID for the provided coordinate",
@@ -52,7 +52,7 @@ pub async fn get_viewshed(
                 // TODO: This should all be done via another table. It'll save a fair bit of storage
                 // space too.
                 if !is_dem_id_of_biggest_added {
-                    let lonlat_of_biggest_viewshed = shared::utils::dem_id_to_lonlat(
+                    let lonlat_of_biggest_viewshed = tvs_lib::utils::dem_id_to_lonlat(
                         &state.metadata,
                         dem_id_of_biggest_viewshed,
                     )?;

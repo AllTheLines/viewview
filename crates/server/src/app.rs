@@ -18,7 +18,7 @@ pub struct AppState {
     /// A collection of single-concurrency pools, one for each database shard.
     pub shards: Vec<Shard>,
     /// Metadata about the underlying DEM that generated the viewsheds.
-    pub metadata: shared::metadata::MetaData,
+    pub metadata: tvs_lib::metadata::MetaData,
 }
 
 /// Entrypoint for starting the server.
@@ -102,6 +102,8 @@ async fn router(shards: Vec<Shard>) -> Result<Router> {
                     "https://map.alltheviews.world".parse()?,
                     "https://galiano.alltheviews.world".parse()?,
                     "https://tombh-galiano-viewview.tom-364.workers.dev".parse()?,
+                    "https://tombh-render-high-angle-count-viewsheds-viewview.tom-364.workers.dev"
+                        .parse()?,
                 ])
                 .allow_methods([axum::http::Method::GET]),
         )
@@ -117,12 +119,12 @@ async fn router(shards: Vec<Shard>) -> Result<Router> {
 }
 
 /// Load the metadata for the DEM that generated the viewsheds.
-async fn load_metadata(shard: &sqlx::Pool<sqlx::Sqlite>) -> Result<shared::metadata::MetaData> {
+async fn load_metadata(shard: &sqlx::Pool<sqlx::Sqlite>) -> Result<tvs_lib::metadata::MetaData> {
     let (json,): (String,) = sqlx::query_as("SELECT json FROM metadata")
         .fetch_one(shard)
         .await?;
 
-    let metadata: shared::metadata::MetaData = serde_json::from_str(&json)?;
+    let metadata: tvs_lib::metadata::MetaData = serde_json::from_str(&json)?;
     tracing::info!("Loaded metadata: {metadata:?}");
     Ok(metadata)
 }

@@ -5,7 +5,7 @@
 use std::sync::Arc;
 
 use color_eyre::{Result, eyre::ContextCompat as _};
-use shared::projector::EARTH_RADIUS;
+use tvs_lib::projector::EARTH_RADIUS;
 
 /// A virtual DEM that represents _all_ the DEM data for the planet.
 const VIRTUAL_DEM_FILE: &str = "index.vrt";
@@ -68,7 +68,7 @@ async fn build_virtual_dem(
 fn find_all_hgts(config: &crate::config::Stitch) -> Result<Vec<String>> {
     let mut hgts = Vec::new();
     for result in std::fs::read_dir(config.dems.clone())? {
-        let file = result?.path().clone();
+        let file = result?.path();
         if !file.is_file() {
             continue;
         }
@@ -194,7 +194,7 @@ fn calculate_longitude_resolution(latitude_degrees: f64) -> f64 {
     earth_radius_meters * latitude_radians.cos() * arc_second_radians
 }
 
-#[expect(clippy::float_cmp, reason = "Just tests")]
+#[expect(clippy::float_cmp_const, reason = "Just tests")]
 #[cfg(test)]
 mod test {
     use super::*;
