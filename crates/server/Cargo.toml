@@ -8,16 +8,16 @@ axum = "0.8.4"
 bytes = "1.11.1"
 clap.workspace = true
 color-eyre = "0.6.5"
+futures-util = "0.3.32"
 serde.workspace = true
 serde_json.workspace = true
 sqlx.workspace = true
-shared.workspace = true
+tvs-lib.workspace = true
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.20", default-features = false, features = ["env-filter", "ansi"] }
 tokio = { version = "1.47.1", features = ["rt-multi-thread"] }
 tower = "0.5.2"
 tower-http = { version = "0.6.6", features = ["fs", "trace", "cors", "compression-gzip", "compression-br"] }
-futures-util = "0.3.32"
 
 [lints]
 workspace = true

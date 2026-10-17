@@ -2,6 +2,10 @@
 
 use color_eyre::Result;
 
+#[expect(
+    clippy::double_must_use,
+    reason = "Do we even need async_trait anymore?"
+)]
 #[async_trait::async_trait]
 /// A trait that represents a compute resource.
 pub trait Machine: Sync + Send {
