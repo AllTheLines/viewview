@@ -3,10 +3,15 @@ import { pluginSass } from '@rsbuild/plugin-sass';
 import { pluginSvelte } from '@rsbuild/plugin-svelte';
 
 export default defineConfig({
+  dev: {
+    hmr: true,
+    liveReload: true,
+  },
   plugins: [
     pluginSvelte({
       svelteLoaderOptions: {
         emitCss: true,
+        preprocess: [],
       },
     }),
     pluginSass(),
@@ -26,16 +31,12 @@ export default defineConfig({
       },
     },
   },
-  performance: {
-    chunkSplit: {
-      override: {
-        cacheGroups: {
-          maplibre: {
-            test: /maplibre-gl/,
-            name: 'maplibre-shared',
-            chunks: 'all',
-          },
-        },
+  splitChunks: {
+    cacheGroups: {
+      maplibre: {
+        test: /maplibre-gl/,
+        name: 'maplibre-shared',
+        chunks: 'all',
       },
     },
   },

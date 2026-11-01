@@ -1,7 +1,8 @@
 import type { GeoTIFFImage } from 'geotiff';
-import { fromUrl as geotiffFromURL } from 'geotiff';
+import { fromUrl as geotiffFromURL, Pool } from 'geotiff';
 import { LngLat, type LngLatBounds } from 'maplibre-gl';
 import proj4 from 'proj4';
+import { state } from '../state.svelte';
 import {
   aeqdProjectionString,
   CACHE_BUSTER,
@@ -28,15 +29,13 @@ export type LongestLine = {
   googleEarth: string;
 };
 
-type IndexedTile = {
+export type IndexedTile = {
   centre: LngLat;
   width: number;
 };
 
-// Source of the longest lines COGs.
-const LONGEST_LINES_COGS = getLongestLinesSource();
-// Contents of index of Longest Lines COGs.
-const cogsIndex: Map<string, IndexedTile> = new Map();
+const pool = new Pool();
+
 // Our local cache of COG files.
 const cogs: Map<string, GeoTIFFImage> = new Map();
 
@@ -167,11 +166,12 @@ async function getPointFromRaster(cog: GeoTIFFImage, x: number, y: number) {
 export async function findLongestInWindow(cog: GeoTIFFImage, window: number[]) {
   Log.debug(
     `Raster size: ${cog.getWidth()}x${cog.getHeight()}.`,
-    'Fetching data from raster using window:',
+    `Fetching data from raster using window:`,
     window,
   );
   const raster = (await cog.readRasters({
     window,
+    samples: [0],
   })) as Float32Array[];
   const packedLines = raster[0];
 
@@ -199,11 +199,11 @@ export async function findLongestInWindow(cog: GeoTIFFImage, window: number[]) {
 }
 
 async function getCOG(filename: string) {
-  const url = `${LONGEST_LINES_COGS}/${filename}`;
+  const url = `${getLongestLinesSource()}/${filename}`;
   let cog = cogs.get(url);
 
   if (cog === undefined) {
-    const tiff = await geotiffFromURL(url);
+    const tiff = await geotiffFromURL(url, { cache: true, pool });
     const image = await tiff.getImage();
     cog = image;
     cogs.set(url, image);
@@ -213,10 +213,10 @@ async function getCOG(filename: string) {
 }
 
 async function ensureLongestLinesIndexLoaded() {
-  if (cogsIndex.size > 0) {
+  if (state.cogsIndex.size > 0) {
     return;
   }
-  const indexURL = `${LONGEST_LINES_COGS}/index.txt${CACHE_BUSTER}`;
+  const indexURL = `${getLongestLinesSource()}/index.txt${CACHE_BUSTER}`;
   Log.debug(`Fetching Longest Line COGs file: ${indexURL}`);
 
   const result = await fetch(indexURL);
@@ -235,27 +235,40 @@ async function ensureLongestLinesIndexLoaded() {
       parseFloat(lonLatParts[1]),
     );
     const width = parseInt(lineParts[1], 10);
-    cogsIndex.set(filename, { centre, width });
+    state.cogsIndex.set(filename, { centre, width });
   }
 
-  Log.debug('Longest Lines index', cogsIndex);
+  Log.debug('Longest Lines index', state.cogsIndex);
 }
 
 async function findNearestCOGURLs(coordinate: LngLat) {
   await ensureLongestLinesIndexLoaded();
 
+  let scale = 1;
+  if (
+    state.heatmapConfig.longestLinesRun ===
+    PRE_VARIABLY_SCALED_TIFFS__RUN_VERSION
+  ) {
+    scale = PRE_VARIABLY_SCALED_TIFFS__COG_SCALE;
+  }
+
+  console.log(
+    state.heatmapConfig.longestLinesRun,
+    PRE_VARIABLY_SCALED_TIFFS__RUN_VERSION,
+  );
+
   const cogFilenames = [];
-  for (const [filename, cog] of cogsIndex) {
+  for (const [filename, cog] of state.cogsIndex) {
     const distance = coordinate.distanceTo(cog.centre);
-    const radius = cog.width / 2 / PRE_VARIABLY_SCALED_TIFFS__COG_SCALE;
-    Log.debug(
-      `👀 Checking Longest Line COG: ${filename}`,
-      `with centre: ${cog.centre} and radius ${radius}`,
-      `Distance from click: ${distance}`,
-    );
+    const radius = cog.width / 2 / scale;
+    // Log.debug(
+    //   `👀 Checking Longest Line COG: ${filename}`,
+    //   `with centre: ${cog.centre} and radius ${radius}`,
+    //   `Distance from click: ${distance}`,
+    // );
     if (distance < radius) {
       cogFilenames.push(filename);
-      Log.debug(`✅ Longest Line COG found: ${cogFilenames}`);
+      Log.debug(`✅ Longest Line COG found: ${cog}`);
     }
   }
 
@@ -267,7 +280,7 @@ export async function findTilesIntersectingViewport(
 ) {
   await ensureLongestLinesIndexLoaded();
   const cogsNearby = [];
-  for (const [filename, tile] of cogsIndex) {
+  for (const [filename, tile] of state.cogsIndex) {
     if (isTileIntersectingViewport(tile, viewportBounds)) {
       Log.debug('Viewport-intersecting tile found:', tile);
       const cog = await getCOG(filename);
@@ -354,7 +367,7 @@ export function convertRasterXYToLngLat(
 function getLongestLinesSource() {
   const params = new URLSearchParams(self.location.search);
   const source = params.get('longest_lines');
-  const version = PRE_VARIABLY_SCALED_TIFFS__RUN_VERSION;
+  const version = state.heatmapConfig.longestLinesRun;
   if (!source) {
     return `${CDN_BUCKET}/runs/${version}/longest_lines_cogs`;
   } else {

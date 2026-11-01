@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Settings } from '@lucide/svelte';
   import {
     getRTLTextPluginStatus,
     Map as MapLibre,
@@ -9,7 +8,6 @@
   } from 'maplibre-gl';
   import { onMount } from 'svelte';
   import ClickEffect, { initClickEffect } from './ClickEffect.svelte';
-  import CollapsableModal from './components/CollapsableModal.svelte';
   import LayerToggles from './components/LayerToggles.svelte';
   import { getConfig } from './config.ts';
   import { HeatmapLayer } from './HeatmapLayer.ts';
@@ -18,14 +16,14 @@
   import { setupLongestLines } from './lib/renderLongestLine.ts';
   import { setupViewsheds } from './lib/renderViewsheds.ts';
   import { enablePointer, setVectorMapVisibilities } from './lib/utils.ts';
-  import { findLongestLineInBoundsFromGrid } from './lib/worldLines.ts';
+  import { updateTopLongestLines } from './lib/worldLines.ts';
   import map_vector from './map_vector.styles.json';
   import Acknowledgements from './modals/Acknowledgements.svelte';
   import CurrentLine from './modals/CurrentLine.svelte';
   import TopLines from './modals/TopLines.svelte';
+  import UISettings from './modals/UISettings.svelte';
   import Viewsheds from './modals/Viewsheds.svelte';
   import Welcome from './modals/Welcome.svelte';
-  import Slider from './Slider.svelte';
   import { state } from './state.svelte.ts';
 
   let { coordinate } = $props();
@@ -39,15 +37,6 @@
     // 'mountain_peaks' is used here to mean, mountain peaks and every other layer after it.
     // This allows the heatmap to always appear below everything else.
     state.map?.addLayer(HeatmapLayer, 'mountain_peaks');
-  }
-
-  async function updateTopLongestLines() {
-    const bounds = state.map?.getBounds();
-    if (bounds === undefined) {
-      return;
-    }
-
-    state.longestLineInViewport = await findLongestLineInBoundsFromGrid(bounds);
   }
 
   onMount(async () => {
@@ -139,18 +128,18 @@
 		{/if}
 
 		{#if state.config.project === "world"}
-			<TopLines />
+			{#key state.heatmapConfig.longestLinesRun}
+				<TopLines />
+			{/key}
 		{/if}
 
 		{#if state.longestLine}
-			<CurrentLine />
+			{#key state.longestLine}
+				<CurrentLine />
+			{/key}
 		{/if}
 
-		<CollapsableModal collapsedIcon={Settings} isOpen={false}>
-			<h2>Heatmap Settings</h2>
-			<Slider setting={"contrast"} />
-			<Slider setting={"intensity"} />
-		</CollapsableModal>
+		<UISettings />
 
 		{#if state.config.project === "world"}
 			<Acknowledgements />

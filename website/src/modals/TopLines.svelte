@@ -8,7 +8,16 @@
   import TopLinesContent from './TopLinesContent.svelte';
 </script>
 
-<CollapsableModal collapsedIcon={TrophyIcon} isOpen={false}>
+<CollapsableModal
+	collapsedIcon={TrophyIcon}
+	isOpen={state.isTopLinesOpen}
+	onOpen={() => {
+		state.isTopLinesOpen = true;
+	}}
+	onClose={() => {
+		state.isTopLinesOpen = false;
+	}}
+>
 	<h2>Top Lines Of Sight</h2>
 	<TopLinesContent />
 	In current viewport<span class="unclickable_icon"><Monitor /></span>:

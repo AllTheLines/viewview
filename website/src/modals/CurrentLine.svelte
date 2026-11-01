@@ -3,6 +3,19 @@
   import CollapsableModal from '../components/CollapsableModal.svelte';
   import { lonLatRound } from '../lib/utils';
   import { state } from '../state.svelte';
+
+  // biome-ignore lint/correctness/noUnusedVariables: I think it's just caused by the `{#if state.longestLine}`
+  let offset = 0;
+  if (
+    state.longestLine?.angle &&
+    state.heatmapConfig.longestLinesRun !== 'ryan-fullworld-raw'
+  ) {
+    if (state.longestLine.angle < 90) {
+      offset = 270;
+    } else {
+      offset = -90;
+    }
+  }
 </script>
 
 <CollapsableModal collapsedIcon={DraftingCompass}>
@@ -13,7 +26,7 @@
 				Distance: {(state.longestLine.distance || 0) / 1000}km
 			</div>
 			<div>
-				Bearing: {state.longestLine.angle}°
+				Bearing: {state.longestLine.angle + offset}°
 			</div>
 			<div>
 				From: {lonLatRound(state.longestLine.from)}

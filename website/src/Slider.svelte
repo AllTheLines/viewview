@@ -70,15 +70,17 @@
 </script>
 
 <div class="container">
-	<p>{capitalise(setting)}: {value.toFixed(2)}</p>
+	{#if value}
+		<p>{capitalise(setting)}: {value.toFixed(2)}</p>
 
-	<div class="track" use:sliderAction>
-		<div
-			class="thumb"
-			style:left="{value * 100}%"
-			class:active={isDragging}
-		></div>
-	</div>
+		<div class="track" use:sliderAction>
+			<div
+				class="thumb"
+				style:left="{value * 100}%"
+				class:active={isDragging}
+			></div>
+		</div>
+	{/if}
 </div>
 
 <style>
