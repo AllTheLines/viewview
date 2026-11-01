@@ -3,19 +3,17 @@ import type { GeoTIFFImage } from 'geotiff';
 import { LngLat, LngLatBounds } from 'maplibre-gl';
 import type { AppState } from '../state.svelte';
 
-export const VERSION = 'ryan-world2-run-refraction23';
+export const DEFAULT_RUN = 'ryan-world2-run-refraction23';
 export const CDN_BUCKET = 'https://cdn.alltheviews.world';
 export const MAP_SERVER_SUBDOMAIN = 'pmtiles';
 export const MAP_SERVER = `https://${MAP_SERVER_SUBDOMAIN}.alltheviews.world`;
 export const WORLD_PMTILES = 'world';
-export const PMTILES_SERVER = `${MAP_SERVER}/runs/${VERSION}/pmtiles/${WORLD_PMTILES}`;
+export const PMTILES_SERVER = `${MAP_SERVER}/runs/${DEFAULT_RUN}/pmtiles/${WORLD_PMTILES}`;
 
 // All these `PRE_VARIABLY_SCALED_TIFFS__*` values are for old runs that didn't have variably scaled
-// .tiffs. We're just using them whilst the latest run is the high refraction run,
-// 'ryan-world2-run-refraction23', which produces notably longer lines of sight. Should we update the
-// Top Ten list of longest lines?
+// .tiffs. We're just using them whilst the default run is 'ryan-fullworld-raw'.
 export const PRE_VARIABLY_SCALED_TIFFS__RUN_VERSION = 'ryan-fullworld-raw';
-// Should be `0`
+// Should be `1`
 export const PRE_VARIABLY_SCALED_TIFFS__COG_SCALE = 100;
 // Should be `-90`
 export const PRE_VARIABLY_SCALED_TIFFS__LINE_ANGLE = 0;

@@ -47,6 +47,10 @@ a {
   display: none;
 }
 
+fieldset {
+  all: unset;
+}
+
 .maplibregl-canvas-container.maplibregl-interactive {
   cursor: pointer;
 }

@@ -1,5 +1,6 @@
 import { LngLat } from 'maplibre-gl';
 import { getPMTilesSource, getSubdomain } from './lib/utils';
+import type { RunName } from './state.svelte';
 
 export type ViewViewProject = 'world' | 'galiano';
 
@@ -17,6 +18,7 @@ type Config = {
     averageVisibility: number;
     defaultContrast: number;
     defaultIntensity: number;
+    defaultLongestLinesRun: RunName;
   };
 };
 
@@ -32,6 +34,7 @@ export const worldConfig: Config = {
     averageVisibility: 700000.0,
     defaultContrast: 1 - 0.45,
     defaultIntensity: 1 - 0.5,
+    defaultLongestLinesRun: 'ryan-fullworld-raw',
   },
 };
 
@@ -47,6 +50,7 @@ export const galianoConfig: Config = {
     averageVisibility: 39000000.0,
     defaultContrast: 1 - 0.09,
     defaultIntensity: 1 - 0.6,
+    defaultLongestLinesRun: 'galiano',
   },
 };
 

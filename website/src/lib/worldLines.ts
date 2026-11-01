@@ -14,7 +14,6 @@ import {
   endLoadingSpinner,
   Log,
   startLoadingSpinner,
-  VERSION,
 } from './utils';
 
 /// The filename for the longest lines grid.
@@ -43,7 +42,7 @@ export class LongestLineH3 {
 }
 
 export async function loadH3Lines() {
-  let indexURL = `${CDN_BUCKET}/runs/${VERSION}/${LONGEST_LINES_GRIDED_FILENAME}${CACHE_BUSTER}`;
+  let indexURL = `${CDN_BUCKET}/runs/${state.heatmapConfig.longestLinesRun}/${LONGEST_LINES_GRIDED_FILENAME}${CACHE_BUSTER}`;
   const params = new URLSearchParams(self.location.search);
   const source = params.get('grid');
   if (source) {
@@ -147,4 +146,13 @@ function convertViewportBoundsToCOGWindow(
     southEast.x_point,
     southEast.y_point,
   ];
+}
+
+export async function updateTopLongestLines() {
+  const bounds = state.map?.getBounds();
+  if (bounds === undefined) {
+    return;
+  }
+
+  state.longestLineInViewport = await findLongestLineInBoundsFromGrid(bounds);
 }

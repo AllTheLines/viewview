@@ -114,7 +114,7 @@ function rebalance_queue {
 }
 
 function replay_last_run {
-  requeue_running
-  rebalance_queue
-  restart_failed_jobs
+	requeue_running
+	rebalance_queue
+	restart_failed_jobs
 }

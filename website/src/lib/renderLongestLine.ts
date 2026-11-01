@@ -1,19 +1,20 @@
 import { type GeoJSONFeature, type GeoJSONSource, LngLat } from 'maplibre-gl';
 import proj4 from 'proj4';
 import { navigate } from 'svelte5-router';
-
 import { state } from '../state.svelte.ts';
 import { getLongestLine, makeGoogleEarthLink } from './getLongestLine.ts';
-
 import {
   aeqdProjectionString,
   computeBBox,
   disablePointer,
   extractCoordFromURL,
+  Log,
   PRE_VARIABLY_SCALED_TIFFS__LINE_ANGLE,
+  PRE_VARIABLY_SCALED_TIFFS__RUN_VERSION,
   rotate,
   toRadians,
 } from './utils.ts';
+import { updateTopLongestLines } from './worldLines.ts';
 
 export function setupLongestLines(coordFromURL: string | undefined) {
   state.map?.addSource('longest-line', {
@@ -46,10 +47,24 @@ export function setupLongestLines(coordFromURL: string | undefined) {
     navigate(longestLineURL(coord.lng, coord.lat));
   });
 
+  if (coordFromURL !== undefined) {
+    renderFromURL(coordFromURL);
+  }
+}
+
+function renderFromURL(coordFromURL: string) {
   if (coordFromURL?.startsWith('longest/')) {
     const coord = extractCoordFromURL(coordFromURL.replace('longest/', ''));
     render(coord);
   }
+}
+
+export async function changeRunSource() {
+  const pathWithoutLeadingSlash = window.location.pathname.replace(/^\/+/, '');
+  state.worldLongestLines = undefined;
+  state.cogsIndex = new Map();
+  await updateTopLongestLines();
+  renderFromURL(pathWithoutLeadingSlash);
 }
 
 export async function render(lngLat: LngLat) {
@@ -61,12 +76,19 @@ export async function render(lngLat: LngLat) {
   state.longestLine = longestLine;
 
   if (import.meta.env.DEV) {
-    console.log(longestLine);
+    Log.debug('Longest line', longestLine);
   }
 
-  longestLine.angle = longestLine.angle + PRE_VARIABLY_SCALED_TIFFS__LINE_ANGLE;
+  let offset = -90;
 
-  const θ = toRadians(longestLine.angle);
+  if (
+    state.heatmapConfig.longestLinesRun ===
+    PRE_VARIABLY_SCALED_TIFFS__RUN_VERSION
+  ) {
+    offset = PRE_VARIABLY_SCALED_TIFFS__LINE_ANGLE;
+  }
+
+  const θ = toRadians(longestLine.angle + offset);
   const dx = longestLine.distance * Math.cos(θ);
   const dy = longestLine.distance * Math.sin(θ);
   const rotatedClockwiseAEQD = rotate(dx, dy, -0.5);
