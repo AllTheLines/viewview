@@ -2,6 +2,14 @@
 title: FAQs
 ---
 
+## Can I hire you?
+
+Yes! AllTheViews required an intersection of many skills such as viewshed computation, scientific computing,
+low level CPU and GPU optimizations, existing and custom GIS data formats, web development, and data visualization.
+
+If you have a project that needs any or all of the above skills reach out to hireus@alltheviews.world and we can 
+see what we can do for you!
+
 ## How Did You Do It?
 
 Tom and Ryan go into detail on their respective blogs:
@@ -31,6 +39,7 @@ The sea actually has above average visibility, due to it generally not being blo
 ## What Is The Longest View From Mount Everest?
 
 [It is 453.3km, looking South to the peaks of Parasnath in India](https://map.alltheviews.world/longest/86.92073822021484_27.988929748535156). Even though Mount Everest is the tallest mountain on Earth, its longest view is nearly 100km shorter than the world's longest.
+
 
 ## How Do I Contact You?
 

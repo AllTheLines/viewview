@@ -2,14 +2,16 @@
 title: About Us
 ---
 
+> Interested in our work? [Hire us!](/faq/#can-i-hire-you)
+
 Tom and Ryan are two friends united behind a single problem: finding the longest line
 of sight. Ryan met Tom through a tech forum, [HackerNews](https://news.ycombonator.com), 
 after reaching out to recruit him for a company opening. They instantly clicked and have
 kept in touch since.
 
-Recently (in July of 2025), Tom started working on an algorithm to find the longest line of sight,
-and Ryan noticed it through a post on a tech forum explaining the project. For the last
-6 months both have spent innumerous hours engineering [a tool](https://github.com/AllTheLines/CacheTVS) 
+In July of 2025, Tom started working on an algorithm to find the longest line of sight,
+and Ryan noticed it through a post on a tech forum explaining the project. Since then,
+both have spent innumerous hours engineering [a tool](https://github.com/AllTheLines/CacheTVS) 
 for the longest line of sight for every point on the planet, and to let others explore the beautiful world and all its
 long lines of sight.
 
