@@ -934,3 +934,9 @@ figure figcaption {
     display: none;
   }
 }
+
+.cta {
+    padding: .4rem;
+    background: #fd6612;
+    color: white;
+}

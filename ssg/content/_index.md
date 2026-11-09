@@ -1,6 +1,4 @@
 
-> Interested in our work? [Hire us!](/faq/#can-i-hire-you)
-
 # The Longest Lines Of Sight
 
 With the help of a custom-developed algorithm, [CacheTVS](https://github.com/AllTheLines/CacheTVS), we have exhaustively

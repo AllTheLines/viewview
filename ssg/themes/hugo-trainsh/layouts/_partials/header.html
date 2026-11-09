@@ -2,7 +2,6 @@
   <a class="title" href="{{ "/" | relLangURL }}">
     <h1>{{ .Site.Title }}</h1>
   </a>
-
   <nav class="site-nav">
     {{- with site.Params.nav -}}
     {{- $html := . | markdownify -}}
