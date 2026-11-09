@@ -1,8 +1,8 @@
+---
+title: FAQs
+---
+
 > Interested in our work? [Hire us!](/hire-us)
-
-# FAQs
-
-
 
 ## How Did You Do It?
 

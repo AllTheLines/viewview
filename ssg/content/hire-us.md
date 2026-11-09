@@ -1,4 +1,6 @@
-# What We Offer
+---
+title: Hire Us
+---
 
 ## Licensing and Support
 
