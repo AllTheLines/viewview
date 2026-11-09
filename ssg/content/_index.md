@@ -1,8 +1,4 @@
-
-
 # The Longest Lines Of Sight
-
-> Interested in our work? [Hire us!](/hire-us)
 
 With the help of a custom-developed algorithm, [CacheTVS](https://github.com/AllTheLines/CacheTVS), we have exhaustively
 checked _every single_ view on Earth in search of the coveted **longest line of sight on the planet**.

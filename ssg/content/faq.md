@@ -2,8 +2,6 @@
 title: FAQs
 ---
 
-> Interested in our work? [Hire us!](/hire-us)
-
 ## How Did You Do It?
 
 Tom and Ryan go into detail on their respective blogs:

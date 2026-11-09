@@ -2,8 +2,6 @@
 title: "About Us"
 --- 
 
-> Interested in our work? [Hire us!](/hire-us)
-
 Tom and Ryan are two friends united behind a single problem: finding the longest line
 of sight. Ryan met Tom through a tech forum, [HackerNews](https://news.ycombonator.com), 
 after reaching out to recruit him for a company opening. They instantly clicked and have

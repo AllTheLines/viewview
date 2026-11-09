@@ -16,7 +16,7 @@
 	}}
 >
 	<h2>All The Views In The World</h2>
-    <i>Interested in our work? Hire us: <a href="https://alltheviews.world/hire-us"/></i>
+    <i>Interested in our work? <a href="https://alltheviews.world/hire-us">Hire us</a></i>
 	<p>We've calculated all the views on the planet.</p>
 	<p>Click on any point to show the longest line of sight at that location</p>
 	<p>
