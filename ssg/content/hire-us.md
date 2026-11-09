@@ -1,9 +1,27 @@
-# AllTheViews Consultancy
+# What We Offer
 
-Test test
+## Licensing and Support
 
-# Can I hire you?
+[CacheTVS](https://github.com/AllTheLines/CacheTVS), the viewshed algorithm behind AllTheViews, is available for licensing 
+for custom applications such as:
 
-Yes! AllTheViews required an intersection of many skills such as viewshed computation, scientific computing, low level CPU and GPU optimizations, existing and custom GIS data formats, web development, and data visualization.
+- Lines of sight for point to point radio
+- Cell tower coverage
+- Bulk viewshed processing 
 
-If you have a project that needs any or all of the above skills reach out to hireus@alltheviews.world and we can see what we can do for you!
+If you feel CacheTVS fits your needs contact us at: licensing@alltheviews.world
+
+## Contracting
+
+Tom an Ryan are a proven team of software developers with over two decades 
+of collective experience under their belt. AllTheViews is the quintissential 
+example of the many services they offer for hire such as:
+
+- High performance scientific computing
+- Low level CPU and GPU optimizations
+- Procuring and stitching GIS datasets
+- Custom compression formats
+- Web development and data visualization
+
+If any of these skills would help your organization email: hireus@alltheviews.world
+
