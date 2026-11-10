@@ -34,7 +34,7 @@ The sea actually has above average visibility, due to it generally not being blo
 
 ## Interested In Our Work?
 
-You can view the [hire us](/hire-us)
+Checkout this page to [hire us](/hire-us)
 
 ## How Do I Contact You?
 
