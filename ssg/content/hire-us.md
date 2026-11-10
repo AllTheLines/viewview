@@ -1,5 +1,7 @@
 ---
 title: Hire Us
+params:
+  disableHire: "true"
 ---
 
 ## Licensing and Support

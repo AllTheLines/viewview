@@ -13,11 +13,14 @@
 		</p>
 	</header>
 	{{- else -}}
+    {{ $disableHire := .Page.Params.disableHire }}
 	<header class="page-header">
-        <blockquote>
-          <p> Interested in our work? <a href="/hire-us">Hire us!</a> </p>
-        </blockquote>
-		<h1 class="page-title">{{ .Title }}</h1>
+      {{- if (not $disableHire) -}}
+      <blockquote>
+        <p> Interested in our work? <a href="/hire-us">Hire us!</a> </p>
+      </blockquote>
+      {{- end -}}
+	  <h1 class="page-title">{{ .Title }}</h1>
 	</header>
 	{{- end -}}
 
