@@ -6,6 +6,11 @@ title = 'All The Views'
 [outputs]
   home = ["HTML", "RSS", "JSON"]
 
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+
 [params]
   mainSections = ["posts"]
-  nav = "[Home](/) [News](/news/) [FAQ](/faq/) [About](/about/) |&nbsp; [Map ↗](https://map.alltheviews.world)"
+  nav = "[Home](/) [News](/news/) [FAQ](/faq/) [About](/about/) <a class='cta' href='/hire-us/'>Hire Us</a> |&nbsp; [Map ↗](https://map.alltheviews.world)"
